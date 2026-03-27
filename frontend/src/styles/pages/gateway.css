@@ -29,9 +29,17 @@
   font-family: 'Cormorant Garamond', serif;
   font-size: clamp(2rem, 5vw, 4rem);
   font-weight: 500;
-  line-height: var(--lh-heading);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
   color: var(--cream);
   margin-bottom: var(--sp-4);
+}
+
+.gw-rule {
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(to right, var(--gold), transparent);
+  margin: 0 auto var(--sp-4);
 }
 
 .gw-sub {
@@ -48,14 +56,23 @@
   gap: var(--sp-4);
   max-width: 960px;
   margin: 0 auto;
-  padding: 0 var(--sp-4) 100px;
+  padding: var(--sp-4) var(--sp-4) 100px;
   padding-left: max(var(--sp-4), var(--safe-left));
   padding-right: max(var(--sp-4), var(--safe-right));
 }
 
-/* Gateway card overrides (base styles in cards.css) */
+/* Stagger card entrance */
+.gw-grid .gc {
+  animation: fadeUp var(--dur-long) var(--ease-std) both;
+}
+.gw-grid .gc:nth-child(1) { animation-delay: 0.15s; }
+.gw-grid .gc:nth-child(2) { animation-delay: 0.25s; }
+.gw-grid .gc:nth-child(3) { animation-delay: 0.35s; }
+.gw-grid .gc:nth-child(4) { animation-delay: 0.45s; }
+.gw-grid .gc:nth-child(5) { animation-delay: 0.55s; }
+.gw-grid .gc:nth-child(6) { animation-delay: 0.65s; }
 
-/* ── SM 600px+ — 2 columns ── */
+/* SM 600px+ */
 @media (min-width: 600px) {
   .gw-grid {
     grid-template-columns: 1fr 1fr;
@@ -67,7 +84,7 @@
   }
 }
 
-/* ── MD 905px+ — 3 columns ── */
+/* MD 905px+ */
 @media (min-width: 905px) {
   .gw-grid {
     grid-template-columns: 1fr 1fr 1fr;

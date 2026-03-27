@@ -23,15 +23,23 @@
 
 .login-back:hover {
   color: var(--gold);
+  transform: translateX(-3px);
+}
+
+.login-back {
+  transition: all var(--dur-short) var(--ease-std);
 }
 
 .login-glow {
   position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width: 600px;
   height: 600px;
   border-radius: 50%;
   filter: blur(100px);
-  background: radial-gradient(circle, rgba(201,168,76,0.06), transparent 70%);
+  background: radial-gradient(circle, rgba(201,168,76,0.08), transparent 70%);
   pointer-events: none;
 }
 
@@ -116,6 +124,8 @@
   border-radius: var(--r-lg);
   position: relative;
   overflow: hidden;
+  animation: fadeUp var(--dur-long) var(--ease-std) both;
+  box-shadow: 0 0 40px rgba(201,168,76,0.08);
 }
 
 .admin-login-box::before {

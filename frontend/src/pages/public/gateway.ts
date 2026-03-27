@@ -18,9 +18,10 @@ export const gatewayPage: Page = {
     return `
     <section class="gateway">
       <div class="gw-head">
-        <div class="gw-step">Step 1 — Profile Selection</div>
-        <h2 class="gw-h2">Which best describes you?</h2>
-        <p class="gw-sub">Select your profile to reveal your tailored application. Your selection determines which funding pathways are matched to you.</p>
+        <div class="gw-step fade-in">Step 1 — Profile Selection</div>
+        <h2 class="gw-h2 fade-up stagger-1">Which best describes you?</h2>
+        <div class="gw-rule fade-up stagger-2"></div>
+        <p class="gw-sub fade-up stagger-2">Select your profile to reveal your tailored application. Your selection determines which funding pathways are matched to you.</p>
       </div>
       <div class="gw-grid" role="list">${cards}</div>
     </section>`;

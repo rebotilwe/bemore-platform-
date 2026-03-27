@@ -1,7 +1,7 @@
 export function renderNav(_currentPath: string): string {
   return `
     <nav id="main-nav" role="navigation" aria-label="Main navigation">
-      <div class="nav-logo display">BE<span>MORE</span></div>
+      <a class="nav-logo display" href="#/">BE<span>MORE</span></a>
       <button class="nav-burger" id="nav-burger" aria-label="Toggle menu" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
