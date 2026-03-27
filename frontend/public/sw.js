@@ -1,4 +1,5 @@
-// Moved to public/sw.js — this file is no longer used
+// BeMore Deal Accelerator — Service Worker
+// In development, this is a no-op. Production build replaces this.
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', event => {
   event.waitUntil(
