@@ -150,6 +150,7 @@
 
 .ro {
   flex: 1;
+  min-height: var(--touch-min);
   padding: 14px 20px;
   background: var(--ink-soft);
   border: 1px solid rgba(249,245,238,0.1);

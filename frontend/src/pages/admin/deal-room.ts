@@ -2,15 +2,70 @@ import type { Page, Application, FunderName } from '../../types/index.ts';
 import { api } from '../../api.ts';
 import { toast } from '../../components/toast.ts';
 import { CATEGORY_LABELS } from '../../constants/categories.ts';
+import { STATUS_LABELS, STATUS_CSS } from '../../constants/status.ts';
 import { FUNDERS } from '../../constants/funders.ts';
+import { formatDate } from '../../utils/format.ts';
 import { mountAdminLayout } from './layout.ts';
+import { renderAppDetail, openModal } from '../../components/app-detail-modal.ts';
+
+const TAG_CSS: Record<string, string> = {
+  developer: 'tag-developer', landowner: 'tag-landowner', student: 'tag-student',
+  professional: 'tag-professional', investor: 'tag-investor', aspiring: 'tag-aspiring',
+};
+
+function renderSummary(apps: Application[]): string {
+  const shortlisted = apps.filter(a => a.status === 'shortlisted').length;
+  const invited = apps.filter(a => a.status === 'invited').length;
+  const funded = apps.filter(a => a.status === 'funded').length;
+  const withSummit = apps.filter(a => a.dealRoom?.summitAccess).length;
+  const withDealRoom = apps.filter(a => a.dealRoom?.dealRoomEntry).length;
+  const funderCounts: Record<string, number> = {};
+  apps.forEach(a => a.dealRoom?.funders?.forEach(f => { funderCounts[f] = (funderCounts[f] || 0) + 1; }));
+
+  return `
+  <div class="dr-summary">
+    <div class="dr-summary-card">
+      <div class="dr-summary-val display">${apps.length}</div>
+      <div class="dr-summary-lbl">Total Pipeline</div>
+    </div>
+    <div class="dr-summary-card">
+      <div class="dr-summary-val display">${shortlisted}</div>
+      <div class="dr-summary-lbl">Shortlisted</div>
+    </div>
+    <div class="dr-summary-card">
+      <div class="dr-summary-val display">${invited}</div>
+      <div class="dr-summary-lbl">Invited</div>
+    </div>
+    <div class="dr-summary-card">
+      <div class="dr-summary-val display">${funded}</div>
+      <div class="dr-summary-lbl">Funded</div>
+    </div>
+    <div class="dr-summary-card">
+      <div class="dr-summary-val display">${withSummit}</div>
+      <div class="dr-summary-lbl">Summit Access</div>
+    </div>
+    <div class="dr-summary-card">
+      <div class="dr-summary-val display">${withDealRoom}</div>
+      <div class="dr-summary-lbl">Deal Room Entry</div>
+    </div>
+  </div>
+  <div class="dr-funder-bar">
+    ${FUNDERS.map(f => `<div class="dr-funder-stat"><span class="dr-funder-stat-name">${f}</span><span class="dr-funder-stat-count">${funderCounts[f] || 0}</span></div>`).join('')}
+  </div>`;
+}
 
 function renderCard(app: Application): string {
   const name = `${app.personal?.firstName ?? ''} ${app.personal?.surname ?? ''}`.trim() || 'Unknown';
-  const typeLbl = CATEGORY_LABELS[app.userType] || app.userType;
+  const typeLbl = (CATEGORY_LABELS as Record<string, string>)[app.userType] || app.userType;
+  const typeCls = TAG_CSS[app.userType] || '';
+  const statusLbl = (STATUS_LABELS as Record<string, string>)[app.status] || app.status;
+  const statusCls = (STATUS_CSS as Record<string, string>)[app.status] || '';
   const summitChecked = app.dealRoom?.summitAccess ? ' checked' : '';
   const dealRoomChecked = app.dealRoom?.dealRoomEntry ? ' checked' : '';
   const activeFunders = app.dealRoom?.funders ?? [];
+  const tags = (app.tags ?? []).slice(0, 3).map(t => `<span class="tag-badge">${t}</span>`).join('');
+  const value = (app.formData as Record<string, unknown>)?.estimatedValue as string || '';
+  const date = app.submittedAt ? formatDate(app.submittedAt) : '';
 
   const funderChips = FUNDERS.map(f => {
     const on = activeFunders.includes(f) ? ' on' : '';
@@ -19,19 +74,40 @@ function renderCard(app: Application): string {
 
   return `
   <div class="dr-card" data-app-id="${app._id}">
-    <div class="dr-name">${name}</div>
-    <div class="dr-type">${typeLbl}</div>
-    <div class="dr-checks">
-      <label class="dr-check-box">
-        <input type="checkbox" data-app="${app._id}" data-field="summitAccess"${summitChecked} />
-        Summit Access
-      </label>
-      <label class="dr-check-box">
-        <input type="checkbox" data-app="${app._id}" data-field="dealRoomEntry"${dealRoomChecked} />
-        Deal Room Entry
-      </label>
+    <div class="dr-card-top">
+      <div class="dr-card-info">
+        <div class="dr-card-name" data-id="${app._id}">${name}</div>
+        <div class="dr-card-meta">
+          <span class="dr-card-ref">${app.refNumber}</span>
+          <span class="tag ${typeCls}">${typeLbl}</span>
+          <span class="tag ${statusCls}">${statusLbl}</span>
+        </div>
+      </div>
     </div>
-    <div class="dr-funders">${funderChips}</div>
+    <div class="dr-card-details">
+      ${app.personal?.email ? `<div class="dr-detail"><span class="dr-detail-key">Email</span><span class="dr-detail-val">${app.personal.email}</span></div>` : ''}
+      ${app.personal?.companyName ? `<div class="dr-detail"><span class="dr-detail-key">Company</span><span class="dr-detail-val">${app.personal.companyName}</span></div>` : ''}
+      ${value ? `<div class="dr-detail"><span class="dr-detail-key">Value</span><span class="dr-detail-val">${value}</span></div>` : ''}
+      ${date ? `<div class="dr-detail"><span class="dr-detail-key">Submitted</span><span class="dr-detail-val">${date}</span></div>` : ''}
+    </div>
+    ${tags ? `<div class="dr-card-tags">${tags}</div>` : ''}
+    <div class="dr-card-controls">
+      <div class="dr-card-section-lbl">Access</div>
+      <div class="dr-checks">
+        <label class="dr-check-label">
+          <input type="checkbox" class="dr-checkbox" data-app="${app._id}" data-field="summitAccess"${summitChecked} />
+          <span class="dr-check-custom"></span>
+          Summit Access
+        </label>
+        <label class="dr-check-label">
+          <input type="checkbox" class="dr-checkbox" data-app="${app._id}" data-field="dealRoomEntry"${dealRoomChecked} />
+          <span class="dr-check-custom"></span>
+          Deal Room Entry
+        </label>
+      </div>
+      <div class="dr-card-section-lbl">Assign Funders</div>
+      <div class="dr-funders">${funderChips}</div>
+    </div>
   </div>`;
 }
 
@@ -39,30 +115,37 @@ async function loadDealRoom(): Promise<void> {
   const container = document.getElementById('dr-content');
   if (!container) return;
 
-  const res = await api.getApplications({ status: 'shortlisted' });
-  const res2 = await api.getApplications({ status: 'invited' });
+  const [res, res2, res3] = await Promise.all([
+    api.getApplications({ status: 'shortlisted' }),
+    api.getApplications({ status: 'invited' }),
+    api.getApplications({ status: 'funded' }),
+  ]);
 
   const apps: Application[] = [];
   if (res.success) apps.push(...res.data);
   if (res2.success) apps.push(...res2.data);
+  if (res3.success) apps.push(...res3.data);
 
-  if (!res.success && !res2.success) {
+  if (!res.success && !res2.success && !res3.success) {
     container.innerHTML = '<p class="empty-state">Failed to load deal room data.</p>';
     return;
   }
 
   if (!apps.length) {
-    container.innerHTML = '<p class="empty-state">No shortlisted or invited applications yet.</p>';
+    container.innerHTML = '<p class="empty-state">No shortlisted, invited, or funded applications yet.</p>';
     return;
   }
 
-  container.innerHTML = `<div class="dr-grid">${apps.map(renderCard).join('')}</div>`;
+  container.innerHTML = `
+    ${renderSummary(apps)}
+    <div class="dr-grid">${apps.map(renderCard).join('')}</div>`;
+
   bindDealRoomActions(apps);
 }
 
 function bindDealRoomActions(apps: Application[]): void {
-  // Summit access / deal room entry checkboxes
-  document.querySelectorAll<HTMLInputElement>('[data-field]').forEach(checkbox => {
+  // Checkboxes
+  document.querySelectorAll<HTMLInputElement>('.dr-checkbox').forEach(checkbox => {
     checkbox.addEventListener('change', async () => {
       const appId = checkbox.dataset.app!;
       const field = checkbox.dataset.field as 'summitAccess' | 'dealRoomEntry';
@@ -101,15 +184,27 @@ function bindDealRoomActions(apps: Application[]): void {
       }
     });
   });
+
+  // Click name → open detail modal
+  document.querySelectorAll<HTMLElement>('.dr-card-name').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.id;
+      const app = apps.find(a => a._id === id);
+      if (app) openModal(renderAppDetail(app));
+    });
+  });
 }
 
 export const dealRoomPage: Page = {
   render() {
     return `
     <div class="deal-room-page">
-      <h2 class="page-h">Deal Room</h2>
+      <div class="dr-header">
+        <h2 class="admin-main-title">Deal Room</h2>
+        <div class="dr-header-sub">Manage summit access, deal room entry, and funder assignments</div>
+      </div>
       <div id="dr-content">
-        <p>Loading...</p>
+        <p class="loading-state">Loading...</p>
       </div>
     </div>`;
   },

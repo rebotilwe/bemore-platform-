@@ -154,3 +154,29 @@
   color: var(--steel-light);
   margin-bottom: var(--sp-2);
 }
+
+/* Mobile */
+@media (max-width: 599px) {
+  .login-card {
+    padding: var(--sp-8) var(--sp-5);
+    margin: 0 var(--sp-3);
+  }
+
+  .admin-login-box {
+    padding: var(--sp-8) var(--sp-5);
+    margin: 0 var(--sp-3);
+  }
+
+  .admin-title {
+    font-size: 26px;
+  }
+
+  .admin-sub {
+    margin-bottom: var(--sp-8);
+  }
+
+  .login-back {
+    top: var(--sp-4);
+    left: var(--sp-4);
+  }
+}

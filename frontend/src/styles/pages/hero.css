@@ -276,7 +276,7 @@ nav {
 }
 
 /* Mobile */
-@media (max-width: 768px) {
+@media (max-width: 599px) {
   nav {
     padding: var(--sp-4) var(--sp-5);
   }
@@ -310,5 +310,9 @@ nav {
 
   .hero-title {
     font-size: clamp(2.5rem, 8vw, 4rem);
+  }
+
+  .stat-num {
+    font-size: clamp(1.5rem, 6vw, 2.25rem);
   }
 }

@@ -3,7 +3,7 @@ import { api } from '../../api.ts';
 import { store } from '../../store.ts';
 import { toast } from '../../components/toast.ts';
 import { CATEGORY_LABELS } from '../../constants/categories.ts';
-import { STATUS_LABELS } from '../../constants/status.ts';
+import { STATUS_LABELS, STATUS_CSS } from '../../constants/status.ts';
 import { formatDate } from '../../utils/format.ts';
 import { exportCsv } from '../../utils/csv.ts';
 import { mountAdminLayout } from './layout.ts';
@@ -25,6 +25,7 @@ const FILTER_CATEGORIES: { value: string; label: string }[] = [
 ];
 
 let currentApps: Application[] = [];
+let totalCount = 0;
 
 function renderFilterBar(): string {
   const filters = store.get('filters');
@@ -36,71 +37,98 @@ function renderFilterBar(): string {
   const statusOptions = ['all', 'new', 'reviewing', 'shortlisted', 'invited', 'funded']
     .map(s => {
       const sel = filters.status === s ? ' selected' : '';
-      const label = s === 'all' ? 'All Statuses' : STATUS_LABELS[s as ApplicationStatus] || s;
+      const label = s === 'all' ? 'All Statuses' : (STATUS_LABELS as Record<string, string>)[s] || s;
       return `<option value="${s}"${sel}>${label}</option>`;
     }).join('');
 
   return `
   <div class="tbl-ctrl">
-    <input id="leads-search" class="tbl-search" type="text" placeholder="Search name, email, ref..." value="${filters.search}" />
+    <div class="tbl-search-wrap">
+      <span class="tbl-search-icon" aria-hidden="true">&#9906;</span>
+      <input id="leads-search" class="tbl-search" type="text" placeholder="Search name, email, ref..." value="${filters.search}" />
+    </div>
     <select id="leads-status" class="tbl-select">${statusOptions}</select>
     <div class="ft-tabs">${tabs}</div>
   </div>`;
 }
 
+function renderResultCount(): string {
+  return `<div class="leads-result-count" id="leads-count">Showing <strong>${currentApps.length}</strong> of <strong>${totalCount}</strong> leads</div>`;
+}
+
 function renderCards(apps: Application[]): string {
   if (!apps.length) return '<p class="empty-state">No leads match your filters.</p>';
 
-  const rows = apps.map(app => {
+  return `<div class="leads-cards">${apps.map(app => {
     const name = `${app.personal?.firstName ?? ''} ${app.personal?.surname ?? ''}`.trim() || 'Unknown';
     const typeCls = TAG_CSS[app.userType] || '';
-    const typeLbl = CATEGORY_LABELS[app.userType] || app.userType;
+    const typeLbl = (CATEGORY_LABELS as Record<string, string>)[app.userType] || app.userType;
+    const statusLbl = (STATUS_LABELS as Record<string, string>)[app.status] || app.status;
+    const statusCls = (STATUS_CSS as Record<string, string>)[app.status] || '';
     const email = app.personal?.email ?? '';
     const company = app.personal?.companyName ?? '';
     const date = app.submittedAt ? formatDate(app.submittedAt) : '';
+    const tags = (app.tags ?? []).slice(0, 2).map(t => `<span class="tag-badge">${t}</span>`).join('');
+    const value = (app.formData as Record<string, unknown>)?.estimatedValue as string || '';
     const isShortlisted = app.status === 'shortlisted';
-    const btnLabel = isShortlisted ? '✓ Shortlisted' : 'Shortlist';
+    const btnLabel = isShortlisted ? '&#10003; Shortlisted' : 'Shortlist';
     const btnCls = isShortlisted ? 'btn-action active' : 'btn-action';
 
     return `
     <div class="lead-card" data-id="${app._id}">
-      <div class="lead-card-header">
-        <span class="lead-card-ref">${app.refNumber}</span>
-        <span class="tag ${typeCls}">${typeLbl}</span>
+      <div class="lead-card-top">
+        <div class="lead-card-header">
+          <span class="lead-card-ref">${app.refNumber}</span>
+          <div class="lead-card-badges">
+            <span class="tag ${typeCls}">${typeLbl}</span>
+            <span class="tag ${statusCls}">${statusLbl}</span>
+          </div>
+        </div>
+        <div class="lead-card-name" data-id="${app._id}">${name}</div>
+        <div class="lead-card-meta-row">
+          ${company ? `<span class="lead-card-company">${company}</span>` : ''}
+          <span class="lead-card-email">${email}</span>
+        </div>
       </div>
-      <div class="lead-card-name">${name}</div>
-      <div class="lead-card-meta">${company || email}</div>
-      <div class="lead-card-row">
+      <div class="lead-card-mid">
+        ${value ? `<div class="lead-card-value">${value}</div>` : ''}
+        ${tags ? `<div class="lead-card-tags">${tags}</div>` : ''}
+      </div>
+      <div class="lead-card-bottom">
         <span class="lead-card-date">${date}</span>
         <button class="${btnCls}" data-id="${app._id}" data-shortlisted="${isShortlisted}">${btnLabel}</button>
       </div>
     </div>`;
-  }).join('');
-
-  return `<div class="leads-cards">${rows}</div>`;
+  }).join('')}</div>`;
 }
 
 function renderTable(apps: Application[]): string {
-  if (!apps.length) return '<p class="empty-state">No leads match your filters.</p>';
+  if (!apps.length) return '';
 
   const rows = apps.map(app => {
     const name = `${app.personal?.firstName ?? ''} ${app.personal?.surname ?? ''}`.trim() || 'Unknown';
     const typeCls = TAG_CSS[app.userType] || '';
-    const typeLbl = CATEGORY_LABELS[app.userType] || app.userType;
+    const typeLbl = (CATEGORY_LABELS as Record<string, string>)[app.userType] || app.userType;
+    const statusLbl = (STATUS_LABELS as Record<string, string>)[app.status] || app.status;
+    const statusCls = (STATUS_CSS as Record<string, string>)[app.status] || '';
     const email = app.personal?.email ?? '';
     const company = app.personal?.companyName ?? '';
     const date = app.submittedAt ? formatDate(app.submittedAt) : '';
+    const tags = (app.tags ?? []).slice(0, 2).map(t => `<span class="tag-badge">${t}</span>`).join(' ');
+    const value = (app.formData as Record<string, unknown>)?.estimatedValue as string || '';
     const isShortlisted = app.status === 'shortlisted';
     const btnLabel = isShortlisted ? 'Remove' : 'Shortlist';
     const btnCls = isShortlisted ? 'btn-action active' : 'btn-action';
 
-    return `<tr>
-      <td>${app.refNumber}</td>
-      <td>${name}</td>
+    return `<tr class="leads-tbl-row" data-id="${app._id}">
+      <td><span class="nc" data-id="${app._id}">${name}</span><div class="tbl-sub">${company}</div></td>
+      <td><span class="lead-card-ref">${app.refNumber}</span></td>
       <td><span class="tag ${typeCls}">${typeLbl}</span></td>
-      <td>${email}</td>
-      <td>${company}</td>
-      <td>${date}</td>
+      <td class="tbl-email">${email}</td>
+      <td>${value}</td>
+      <td>${tags}</td>
+      <td><span class="tag ${statusCls}">${statusLbl}</span></td>
+      <td class="tbl-date">${date}</td>
       <td><button class="${btnCls}" data-id="${app._id}" data-shortlisted="${isShortlisted}">${btnLabel}</button></td>
     </tr>`;
   }).join('');
@@ -110,7 +138,7 @@ function renderTable(apps: Application[]): string {
     <div class="tbl-wrap">
       <table class="dtbl">
         <thead>
-          <tr><th>Ref</th><th>Name</th><th>Type</th><th>Email</th><th>Company</th><th>Date</th><th>Action</th></tr>
+          <tr><th>Name</th><th>Ref</th><th>Type</th><th>Email</th><th>Value</th><th>Tags</th><th>Status</th><th>Date</th><th>Action</th></tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
@@ -135,7 +163,9 @@ async function loadLeads(): Promise<void> {
   }
 
   currentApps = res.data;
-  container.innerHTML = renderCards(currentApps) + renderTable(currentApps);
+  totalCount = res.pagination?.total ?? res.data.length;
+
+  container.innerHTML = renderResultCount() + renderCards(currentApps) + renderTable(currentApps);
   bindTableActions();
   bindDetailModal();
 }
@@ -149,30 +179,38 @@ function bindTableActions(): void {
       const isShortlisted = target.dataset.shortlisted === 'true';
       const newStatus = isShortlisted ? 'new' : 'shortlisted';
 
+      target.disabled = true;
+      target.textContent = '...';
+
       const res = await api.updateApplication(id, { status: newStatus as ApplicationStatus });
       if (res.success) {
         toast(`Application ${newStatus === 'shortlisted' ? 'shortlisted' : 'removed from shortlist'}`);
         loadLeads();
+      } else {
+        target.disabled = false;
+        target.textContent = isShortlisted ? 'Remove' : 'Shortlist';
       }
     });
   });
 }
 
 function bindDetailModal(): void {
-  // Click on card name or table row name to open detail
-  document.querySelectorAll('.lead-card').forEach(card => {
-    card.querySelector('.lead-card-name')?.addEventListener('click', () => {
-      const id = (card as HTMLElement).dataset.id;
+  // Mobile cards — click name
+  document.querySelectorAll<HTMLElement>('.lead-card .lead-card-name').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = el.dataset.id;
       const app = currentApps.find(a => a._id === id);
       if (app) openModal(renderAppDetail(app));
     });
   });
-  document.querySelectorAll('.dtbl .nc').forEach(cell => {
+
+  // Desktop table — click name
+  document.querySelectorAll<HTMLElement>('.dtbl .nc').forEach(cell => {
     cell.addEventListener('click', (e) => {
       e.stopPropagation();
-      const row = (cell as HTMLElement).closest('tr');
-      const refNumber = row?.querySelector('td')?.textContent?.trim();
-      const app = currentApps.find(a => a.refNumber === refNumber);
+      const id = cell.dataset.id;
+      const app = currentApps.find(a => a._id === id);
       if (app) openModal(renderAppDetail(app));
     });
   });
@@ -183,7 +221,10 @@ export const leadsPage: Page = {
     return `
     <div class="leads-page">
       <div class="leads-header">
-        <h2 class="admin-main-title">All Leads</h2>
+        <div>
+          <h2 class="admin-main-title">All Leads</h2>
+          <p class="leads-header-sub">Manage, filter, and shortlist applications.</p>
+        </div>
         <button id="leads-export" class="export-btn">Export CSV</button>
       </div>
       ${renderFilterBar()}
@@ -196,7 +237,6 @@ export const leadsPage: Page = {
   mount() {
     mountAdminLayout();
 
-    // Category filter tabs
     document.querySelectorAll('.ft').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const target = e.currentTarget as HTMLButtonElement;
@@ -209,7 +249,6 @@ export const leadsPage: Page = {
       });
     });
 
-    // Status dropdown
     document.getElementById('leads-status')?.addEventListener('change', (e) => {
       const val = (e.target as HTMLSelectElement).value;
       const filters = { ...store.get('filters'), status: val };
@@ -217,7 +256,6 @@ export const leadsPage: Page = {
       loadLeads();
     });
 
-    // Search input
     let searchTimer: ReturnType<typeof setTimeout>;
     document.getElementById('leads-search')?.addEventListener('input', (e) => {
       clearTimeout(searchTimer);
@@ -229,7 +267,6 @@ export const leadsPage: Page = {
       }, 300);
     });
 
-    // Export CSV
     document.getElementById('leads-export')?.addEventListener('click', () => {
       if (currentApps.length) {
         exportCsv(currentApps, `bemore-leads-${new Date().toISOString().split('T')[0]}.csv`);
