@@ -12,6 +12,7 @@ import { dashboardPage } from './pages/admin/dashboard.ts';
 import { leadsPage } from './pages/admin/leads.ts';
 import { reportsPage } from './pages/admin/reports.ts';
 import { dealRoomPage } from './pages/admin/deal-room.ts';
+import { analyticsPage } from './pages/admin/analytics.ts';
 import { renderNav, mountNav } from './components/nav.ts';
 import { renderAdminLayout, mountAdminLayout } from './pages/admin/layout.ts';
 
@@ -24,6 +25,7 @@ const routes: RouteConfig[] = [
   { path: '/admin/login',     page: () => loginPage,     layout: 'public' },
   { path: '/admin/dashboard', page: () => dashboardPage, layout: 'admin', guard: authGuard },
   { path: '/admin/leads',     page: () => leadsPage,     layout: 'admin', guard: authGuard },
+  { path: '/admin/analytics',  page: () => analyticsPage,  layout: 'admin', guard: authGuard },
   { path: '/admin/reports',   page: () => reportsPage,   layout: 'admin', guard: authGuard },
   { path: '/admin/deal-room', page: () => dealRoomPage,  layout: 'admin', guard: authGuard },
 ];

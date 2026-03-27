@@ -1,6 +1,7 @@
 import type {
   ApiResponse, PaginatedResponse, StatsData, LoginResponse, ReportData,
   Application, SubmitPayload, UpdatePayload, FilterParams, ReportName,
+  AnalyticsDashboard, FunnelData, TrendData, TagAnalytics, DemographicsData, DealRoomAnalytics,
 } from './types/index.ts';
 import { store, localStore } from './store.ts';
 import { autoTag } from './utils/auto-tag.ts';
@@ -153,6 +154,26 @@ export const api = {
     apps.forEach(a => a.tags?.forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; }));
     const byTag = Object.entries(tagCounts).map(([_id, count]) => ({ _id, count }));
     return { success: true, data: { total: apps.length, byType, byStatus, byTag, recentApps: apps.slice(0, 8) } };
+  },
+
+  // ── Analytics ──
+  async getAnalyticsDashboard(range = '30d'): Promise<ApiResponse<AnalyticsDashboard>> {
+    return request('GET', `/analytics/dashboard?range=${range}`);
+  },
+  async getAnalyticsFunnel(): Promise<ApiResponse<FunnelData>> {
+    return request('GET', '/analytics/funnel');
+  },
+  async getAnalyticsTrends(granularity = 'day', range = '30d'): Promise<ApiResponse<TrendData>> {
+    return request('GET', `/analytics/trends?granularity=${granularity}&range=${range}`);
+  },
+  async getAnalyticsTags(): Promise<ApiResponse<TagAnalytics>> {
+    return request('GET', '/analytics/tags');
+  },
+  async getAnalyticsDemographics(): Promise<ApiResponse<DemographicsData>> {
+    return request('GET', '/analytics/demographics');
+  },
+  async getAnalyticsDealRoom(): Promise<ApiResponse<DealRoomAnalytics>> {
+    return request('GET', '/analytics/deal-room');
   },
 
   async getReport(name: ReportName): Promise<ApiResponse<ReportData>> {

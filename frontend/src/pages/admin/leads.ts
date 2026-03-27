@@ -7,6 +7,7 @@ import { STATUS_LABELS } from '../../constants/status.ts';
 import { formatDate } from '../../utils/format.ts';
 import { exportCsv } from '../../utils/csv.ts';
 import { mountAdminLayout } from './layout.ts';
+import { renderAppDetail, openModal } from '../../components/app-detail-modal.ts';
 
 const TAG_CSS: Record<string, string> = {
   developer: 'tag-developer', landowner: 'tag-landowner', student: 'tag-student',
@@ -136,6 +137,7 @@ async function loadLeads(): Promise<void> {
   currentApps = res.data;
   container.innerHTML = renderCards(currentApps) + renderTable(currentApps);
   bindTableActions();
+  bindDetailModal();
 }
 
 function bindTableActions(): void {
@@ -152,6 +154,26 @@ function bindTableActions(): void {
         toast(`Application ${newStatus === 'shortlisted' ? 'shortlisted' : 'removed from shortlist'}`);
         loadLeads();
       }
+    });
+  });
+}
+
+function bindDetailModal(): void {
+  // Click on card name or table row name to open detail
+  document.querySelectorAll('.lead-card').forEach(card => {
+    card.querySelector('.lead-card-name')?.addEventListener('click', () => {
+      const id = (card as HTMLElement).dataset.id;
+      const app = currentApps.find(a => a._id === id);
+      if (app) openModal(renderAppDetail(app));
+    });
+  });
+  document.querySelectorAll('.dtbl .nc').forEach(cell => {
+    cell.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const row = (cell as HTMLElement).closest('tr');
+      const refNumber = row?.querySelector('td')?.textContent?.trim();
+      const app = currentApps.find(a => a.refNumber === refNumber);
+      if (app) openModal(renderAppDetail(app));
     });
   });
 }
