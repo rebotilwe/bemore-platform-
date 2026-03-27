@@ -5,7 +5,6 @@ export function renderNav(_currentPath: string): string {
       <div class="nav-actions">
         <a class="nav-link" href="#/gateway">Apply Now</a>
         <span class="nav-link">Summit Agenda</span>
-        <a class="btn-nav" href="#/admin/login">Admin</a>
       </div>
     </nav>`;
 }
