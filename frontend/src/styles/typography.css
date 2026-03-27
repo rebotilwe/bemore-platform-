@@ -1,0 +1,12 @@
+/* ═══════════════════════════════════════════════════
+   TYPOGRAPHY — Dark luxury editorial
+   ═══════════════════════════════════════════════════ */
+
+.serif,
+.display {
+  font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+}
+
+.mono {
+  font-family: 'DM Mono', 'SF Mono', Consolas, monospace;
+}

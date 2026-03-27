@@ -1,0 +1,126 @@
+/* ═══════════════════════════════════════════════════
+   PROGRESS — Dark luxury editorial
+   ═══════════════════════════════════════════════════ */
+
+/* Multi-step progress bar */
+.prog-steps {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  width: 100%;
+}
+
+.ps {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  flex-shrink: 0;
+}
+
+.ps-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 500;
+  flex-shrink: 0;
+  transition: all var(--dur-med) var(--ease-std);
+  background: var(--ink-soft);
+  border: 1.5px solid var(--ink-mid);
+  color: var(--steel);
+}
+
+.ps-dot.done {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--ink);
+}
+
+.ps-dot.active {
+  background: none;
+  border: 2px solid var(--gold);
+  color: var(--gold);
+}
+
+.ps-dot.idle {
+  background: var(--ink-soft);
+  border: 1.5px solid var(--ink-mid);
+  color: var(--steel);
+}
+
+.ps-lbl {
+  display: none;
+}
+
+.ps-lbl.active {
+  color: var(--gold);
+}
+
+.ps-lbl.done {
+  color: var(--gold-light);
+}
+
+.prog-line {
+  flex: 1;
+  min-width: 4px;
+  height: 1px;
+  background: var(--ink-mid);
+  margin: 0 2px;
+}
+
+.prog-line.done {
+  background: var(--gold);
+}
+
+/* SM 600px+ — show labels, bigger dots */
+@media (min-width: 600px) {
+  .ps-dot {
+    width: 32px;
+    height: 32px;
+    font-size: var(--fs-label-sm);
+  }
+
+  .ps-lbl {
+    display: block;
+    font-size: var(--fs-overline);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--steel);
+    white-space: nowrap;
+  }
+
+  .ps {
+    gap: var(--sp-2);
+  }
+
+  .prog-line {
+    margin: 0 var(--sp-2);
+    min-width: 20px;
+  }
+}
+
+/* MD 905px+ — more space */
+@media (min-width: 905px) {
+  .ps {
+    gap: var(--sp-3);
+  }
+
+  .prog-line {
+    margin: 0 var(--sp-4);
+    min-width: 40px;
+  }
+
+  .ps-lbl {
+    letter-spacing: 0.12em;
+  }
+}
+
+/* XL 1240px+ — generous spacing */
+@media (min-width: 1240px) {
+  .prog-line {
+    min-width: 60px;
+  }
+}

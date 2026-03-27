@@ -1,0 +1,17 @@
+Here's the complete BeMore SME Access Initiative portal — a single-file, fully functional app covering every screen from start to finish.
+What's included:
+Public Flow
+
+Hero/Landing — Full-screen dark luxury design with the ACCESS CAPITAL / UNLOCK SCALE headline, funder logos (DBSA, NHFC, NEF, SAIF), stats, and CTAs
+Gateway Screen — 4 animated profile cards (Developer / Landowner / Operator / Professional) with hover effects and sequential numbering
+4 Dynamic Forms — Each conditionally loaded based on profile selection, with shared personal fields + custom fields per type (dropdowns, radio toggles, checkbox multi-selects), progress bar, validation, and SSL/reCAPTCHA messaging
+Success Screen — Auto-generated reference number, summit date details, confirmation state
+
+Admin System (login: admin / bemore2026)
+
+Dashboard — KPI stat cards, recent applications table with type tags and status badges
+All Leads — Filterable table by category, shortlist toggling per applicant, one-click CSV export
+Reports — 4 pre-built segmentation reports (Funding Threshold, Land Readiness, Student Housing, Merit Selection)
+Deal Room — Per-applicant engagement tracking: summit access checkboxes, deal room entry, and DBSA/NHFC/NEF/SAIF funder tagging
+
+Design direction: Dark luxury editorial — Cormorant Garamond serif for authority, DM Sans for readability, gold on near-black palette reflecting institutional finance credibility aligned with the South African property development market.

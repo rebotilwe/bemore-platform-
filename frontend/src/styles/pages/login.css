@@ -1,0 +1,156 @@
+/* ═══════════════════════════════════════════════════
+   LOGIN — Dark luxury editorial
+   ═══════════════════════════════════════════════════ */
+
+.login-view {
+  background: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-back {
+  position: absolute;
+  top: var(--sp-5);
+  left: var(--sp-5);
+  z-index: 3;
+  color: var(--steel-light);
+}
+
+.login-back:hover {
+  color: var(--gold);
+}
+
+.login-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  filter: blur(100px);
+  background: radial-gradient(circle, rgba(201,168,76,0.06), transparent 70%);
+  pointer-events: none;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 56px 48px;
+  margin: 0 var(--sp-5);
+  background: var(--ink-soft);
+  border: 1px solid rgba(249,245,238,0.08);
+  border-top: 2px solid var(--gold);
+  border-radius: var(--r-lg);
+  position: relative;
+  z-index: 2;
+}
+
+.login-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-8);
+  padding-bottom: var(--sp-6);
+  border-bottom: 1px solid rgba(201,168,76,0.12);
+}
+
+.login-logo-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: var(--fs-headline-md);
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.login-logo-tag {
+  font-size: var(--fs-overline);
+  letter-spacing: 0.15em;
+  color: var(--steel);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.login-h {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: var(--fs-headline-lg);
+  font-weight: 500;
+  margin-bottom: var(--sp-1);
+  color: var(--cream);
+}
+
+.login-sub {
+  font-size: var(--fs-body-sm);
+  color: var(--steel);
+  margin-bottom: var(--sp-8);
+}
+
+.login-err {
+  font-size: var(--fs-label-md);
+  color: var(--red);
+  text-align: center;
+  margin-top: var(--sp-3);
+  display: none;
+}
+
+.login-err.show {
+  display: block;
+}
+
+.login-hint {
+  font-size: var(--fs-label-sm);
+  color: var(--steel);
+  text-align: center;
+  margin-top: var(--sp-5);
+  font-family: 'DM Mono', monospace;
+}
+
+/* Admin login box */
+.admin-login-box {
+  width: 100%;
+  max-width: 400px;
+  padding: 56px 48px;
+  background: var(--ink-soft);
+  border: 1px solid rgba(249,245,238,0.08);
+  border-radius: var(--r-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-login-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
+}
+
+.admin-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px;
+  font-weight: 500;
+  color: var(--cream);
+  margin-bottom: 6px;
+}
+
+.admin-sub {
+  font-size: var(--fs-body-sm);
+  color: var(--steel);
+  margin-bottom: 40px;
+}
+
+.admin-field {
+  margin-bottom: var(--sp-5);
+}
+
+.admin-field label {
+  display: block;
+  font-size: var(--fs-label-md);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--steel-light);
+  margin-bottom: var(--sp-2);
+}

@@ -1,0 +1,30 @@
+# ─── MongoDB ───────────────────────────────────────────────
+# Get your free Atlas connection string at: https://cloud.mongodb.com
+# Create cluster → Connect → Drivers → Copy connection string
+MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/bemore?retryWrites=true&w=majority
+
+# ─── JWT Auth ────────────────────────────────────────────────
+# Generate a strong secret: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+JWT_SECRET=replace_with_strong_random_secret_min_64_chars
+JWT_EXPIRES_IN=8h
+
+# ─── Admin Credentials ───────────────────────────────────────
+ADMIN_EMAIL=admin@bemore.co.za
+ADMIN_PASSWORD=BeMore@2026!
+
+# ─── Email (Optional for MVP - uses Nodemailer) ──────────────
+# Use Gmail App Password or SendGrid SMTP
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your@gmail.com
+SMTP_PASS=your_app_password
+EMAIL_FROM=noreply@bemore.co.za
+
+# ─── Server ──────────────────────────────────────────────────
+PORT=5000
+NODE_ENV=development
+FRONTEND_URL=http://localhost:3000
+
+# ─── Rate Limiting ───────────────────────────────────────────
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX=100

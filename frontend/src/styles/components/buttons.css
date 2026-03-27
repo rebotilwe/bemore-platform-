@@ -1,0 +1,275 @@
+/* ═══════════════════════════════════════════════════
+   BUTTONS — Dark luxury editorial
+   ═══════════════════════════════════════════════════ */
+
+/* Primary CTA */
+.btn-primary {
+  position: relative;
+  min-height: var(--touch-min);
+  padding: var(--sp-4) var(--sp-10);
+  background: var(--gold);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  font-size: var(--fs-label-md);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: all var(--dur-med) var(--ease-std);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.btn-primary:hover {
+  background: var(--gold-light);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(201,168,76,0.3);
+}
+
+.btn-primary:hover::after {
+  opacity: 1;
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+
+.btn-primary.full {
+  width: 100%;
+}
+
+/* Secondary / outline */
+.btn-secondary {
+  min-height: var(--touch-min);
+  padding: var(--sp-4) var(--sp-8);
+  background: transparent;
+  border: 1px solid rgba(249,245,238,0.2);
+  color: var(--cream);
+  font-family: 'DM Sans', sans-serif;
+  font-size: var(--fs-label-md);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: all var(--dur-short) var(--ease-std);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-secondary:hover {
+  border-color: var(--cream);
+  background: rgba(249,245,238,0.05);
+}
+
+/* Ghost */
+.btn-ghost {
+  min-height: var(--touch-min);
+  padding: var(--sp-4) var(--sp-8);
+  background: transparent;
+  border: none;
+  color: var(--cream);
+  font-family: 'DM Sans', sans-serif;
+  font-size: var(--fs-label-md);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: all var(--dur-short) var(--ease-std);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-ghost:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* Nav button */
+.btn-nav {
+  padding: 10px 24px;
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-family: 'DM Sans', sans-serif;
+  font-size: var(--fs-label-sm);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: all var(--dur-short) var(--ease-std);
+}
+
+.btn-nav:hover {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+/* Submit button */
+.btn-submit {
+  padding: 18px 56px;
+  background: var(--gold);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  font-size: var(--fs-label-md);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: all var(--dur-short) var(--ease-std);
+}
+
+.btn-submit:hover {
+  background: var(--gold-light);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(201,168,76,0.3);
+}
+
+/* Small action button */
+.btn-action {
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-sm);
+  background: transparent;
+  border: 1px solid rgba(201,168,76,0.3);
+  color: var(--gold);
+  font-size: var(--fs-label-sm);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: all var(--dur-short);
+  cursor: pointer;
+}
+
+.btn-action:hover {
+  background: rgba(201,168,76,0.1);
+  border-color: var(--gold);
+}
+
+.btn-action.active {
+  background: var(--gold);
+  color: var(--ink);
+  border-color: var(--gold);
+}
+
+/* Login button */
+.btn-login {
+  width: 100%;
+  padding: 16px;
+  background: var(--gold);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  font-size: var(--fs-label-md);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: all var(--dur-short) var(--ease-std);
+  margin-top: var(--sp-2);
+}
+
+.btn-login:hover {
+  background: var(--gold-light);
+}
+
+/* Logout button */
+.btn-logout {
+  padding: 8px 20px;
+  background: transparent;
+  border: 1px solid rgba(249,245,238,0.15);
+  color: var(--steel);
+  font-family: 'DM Sans', sans-serif;
+  font-size: var(--fs-label-sm);
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: all var(--dur-short) var(--ease-std);
+}
+
+.btn-logout:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* Export button */
+.export-btn {
+  margin-left: auto;
+  padding: 10px 24px;
+  background: transparent;
+  border: 1px solid rgba(201,168,76,0.4);
+  color: var(--gold);
+  font-family: 'DM Sans', sans-serif;
+  font-size: var(--fs-label-sm);
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: all var(--dur-short) var(--ease-std);
+}
+
+.export-btn:hover {
+  background: rgba(201,168,76,0.1);
+}
+
+/* Run report button */
+.run-report-btn {
+  margin-top: var(--sp-5);
+  padding: 10px 20px;
+  width: 100%;
+  background: transparent;
+  border: 1px solid rgba(201,168,76,0.3);
+  color: var(--gold);
+  font-family: 'DM Sans', sans-serif;
+  font-size: var(--fs-label-sm);
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  transition: all var(--dur-short) var(--ease-std);
+}
+
+.run-report-btn:hover {
+  background: rgba(201,168,76,0.08);
+}
+
+/* Spinner */
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

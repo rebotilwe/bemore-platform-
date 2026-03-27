@@ -1,0 +1,287 @@
+/* ═══════════════════════════════════════════════════
+   CARDS — Dark luxury editorial
+   ═══════════════════════════════════════════════════ */
+
+/* Gateway cards */
+.gc {
+  padding: var(--sp-10) var(--sp-9);
+  background: var(--ink-soft);
+  border: 1px solid rgba(249,245,238,0.08);
+  border-radius: var(--r-lg);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--dur-long) var(--ease-std);
+  -webkit-tap-highlight-color: transparent;
+  display: flex;
+  flex-direction: column;
+  min-height: var(--touch-min);
+}
+
+.gc::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(to right, var(--gold), var(--gold-light));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--dur-long) var(--ease-std);
+}
+
+.gc:hover {
+  border-color: rgba(201,168,76,0.4);
+  box-shadow: var(--shadow-lg);
+}
+
+.gc:hover::before {
+  transform: scaleX(1);
+}
+
+.gc:hover .gc-arrow {
+  transform: translateX(6px);
+  color: var(--gold);
+}
+
+.gc:active {
+  transform: scale(0.98);
+}
+
+.gc:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.gc-num {
+  font-family: 'DM Mono', monospace;
+  font-size: var(--fs-overline);
+  letter-spacing: 0.16em;
+  color: var(--gold);
+  opacity: 0.7;
+  margin-bottom: var(--sp-4);
+}
+
+.gc-ico {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-md);
+  background: rgba(201,168,76,0.1);
+  border: 1px solid rgba(201,168,76,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin-bottom: var(--sp-3);
+}
+
+.gc-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: var(--fs-title-lg);
+  font-weight: 600;
+  color: var(--cream);
+  margin-bottom: var(--sp-2);
+  line-height: var(--lh-heading);
+}
+
+.gc-desc {
+  font-size: var(--fs-label-lg);
+  color: var(--steel-light);
+  line-height: var(--lh-body);
+  margin-bottom: var(--sp-3);
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.gc-arrow {
+  font-size: 16px;
+  color: var(--steel);
+  transition: all var(--dur-long) var(--ease-std);
+  display: inline-block;
+}
+
+/* ── SM 600px+ — more room ── */
+@media (min-width: 600px) {
+  .gc {
+    padding: var(--sp-10) var(--sp-9);
+  }
+
+  .gc-ico {
+    width: 44px;
+    height: 44px;
+  }
+
+  .gc-title {
+    font-size: var(--fs-headline-sm);
+  }
+
+  .gc-desc {
+    font-size: var(--fs-body-sm);
+    -webkit-line-clamp: unset;
+  }
+}
+
+/* ═══ Stat cards ═══ */
+.stat-card {
+  padding: var(--sp-6) var(--sp-5);
+  background: var(--ink-soft);
+  border: 1px solid rgba(249,245,238,0.08);
+  border-radius: var(--r-lg);
+  position: relative;
+}
+
+.stat-card-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: var(--r-lg) 0 0 var(--r-lg);
+  background: var(--gold);
+}
+
+.stat-card-label {
+  font-size: var(--fs-overline);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--steel);
+  margin-bottom: var(--sp-2);
+}
+
+.stat-card-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: var(--fs-display-sm);
+  font-weight: 600;
+  color: var(--cream);
+  line-height: 1;
+}
+
+.stat-card-sub {
+  font-size: var(--fs-label-sm);
+  color: var(--steel);
+  margin-top: var(--sp-2);
+}
+
+@media (min-width: 600px) {
+  .stat-card {
+    padding: var(--sp-7) var(--sp-6);
+  }
+
+  .stat-card-value {
+    font-size: var(--fs-display-md);
+  }
+}
+
+/* ═══ Report cards ═══ */
+.report-card {
+  padding: var(--sp-7);
+  background: var(--ink-soft);
+  border: 1px solid rgba(249,245,238,0.08);
+  border-radius: var(--r-lg);
+}
+
+.report-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--sp-4);
+}
+
+.report-card-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: var(--fs-headline-sm);
+  color: var(--cream);
+}
+
+.report-card-count {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: var(--fs-display-sm);
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.report-card-desc {
+  font-size: var(--fs-body-sm);
+  color: var(--steel);
+  line-height: var(--lh-body);
+}
+
+/* ═══ Deal cards ═══ */
+.deal-card {
+  padding: var(--sp-6);
+  background: var(--ink-soft);
+  border: 1px solid rgba(249,245,238,0.08);
+  border-radius: var(--r-lg);
+}
+
+.deal-card-name {
+  font-size: var(--fs-body-md);
+  font-weight: 500;
+  color: var(--cream);
+  margin-bottom: var(--sp-1);
+}
+
+.deal-card-type {
+  font-size: var(--fs-label-sm);
+  color: var(--steel);
+  margin-bottom: var(--sp-4);
+}
+
+.deal-card-checks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.deal-check {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-body-sm);
+  color: var(--steel-light);
+}
+
+.check-box {
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid rgba(249,245,238,0.15);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--dur-short) var(--ease-std);
+  flex-shrink: 0;
+}
+
+.check-box.checked {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.funder-tags {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-top: var(--sp-3);
+}
+
+.funder-tag {
+  padding: 4px 10px;
+  font-size: var(--fs-label-sm);
+  border: 1px solid rgba(201,168,76,0.3);
+  color: var(--gold);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: all var(--dur-short) var(--ease-std);
+}
+
+.funder-tag.active {
+  background: rgba(201,168,76,0.15);
+}

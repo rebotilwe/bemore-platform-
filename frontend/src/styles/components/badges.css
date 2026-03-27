@@ -1,0 +1,112 @@
+/* ═══════════════════════════════════════════════════
+   BADGES — Dark luxury editorial
+   ═══════════════════════════════════════════════════ */
+
+/* Tag & status badges */
+.tag {
+  padding: 3px 10px;
+  border-radius: var(--r-full);
+  font-size: var(--fs-overline);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.tag-developer {
+  background: rgba(201,168,76,0.15);
+  color: var(--gold);
+}
+
+.tag-landowner {
+  background: rgba(76,184,122,0.15);
+  color: var(--green);
+}
+
+.tag-student {
+  background: rgba(76,130,201,0.15);
+  color: #7ab8e8;
+}
+
+.tag-professional {
+  background: rgba(201,100,76,0.15);
+  color: #e8a47a;
+}
+
+.tag-investor {
+  background: rgba(201,168,76,0.18);
+  color: var(--gold-light);
+}
+
+.tag-aspiring {
+  background: rgba(249,245,238,0.06);
+  color: var(--steel-light);
+}
+
+.tag-default {
+  background: rgba(249,245,238,0.06);
+  color: var(--steel-light);
+}
+
+/* Status badges */
+.st-new {
+  background: rgba(249,245,238,0.06);
+  color: var(--steel);
+}
+
+.st-rev {
+  background: rgba(201,168,76,0.12);
+  color: var(--gold);
+}
+
+.st-shl,
+.tag-shortlist {
+  background: rgba(201,168,76,0.20);
+  color: var(--gold);
+  border: 1px solid rgba(201,168,76,0.3);
+}
+
+.st-inv,
+.tag-invited {
+  background: rgba(76,184,122,0.20);
+  color: var(--green);
+  border: 1px solid rgba(76,184,122,0.3);
+}
+
+.st-fun {
+  background: rgba(76,184,122,0.30);
+  color: #66bb6a;
+  border: 1px solid rgba(76,184,122,0.4);
+}
+
+/* Funder chips */
+.funder-chip {
+  padding: var(--sp-3);
+  text-align: center;
+  background: rgba(201,168,76,0.06);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-label-lg);
+  font-weight: 600;
+  color: var(--gold-light);
+  letter-spacing: 0.08em;
+  transition: all var(--dur-short) var(--ease-std);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.funder-chip:hover {
+  background: rgba(201,168,76,0.15);
+}
+
+.funder-chip:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.funder-chip.on {
+  background: var(--gold);
+  color: var(--ink);
+  border-color: var(--gold);
+}

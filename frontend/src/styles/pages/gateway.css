@@ -1,0 +1,75 @@
+/* ═══════════════════════════════════════════════════
+   GATEWAY — Dark luxury editorial
+   ═══════════════════════════════════════════════════ */
+
+.gateway {
+  background: var(--ink);
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.gw-head {
+  text-align: center;
+  padding: calc(56px + var(--sp-6)) var(--sp-4) var(--sp-5);
+  padding-left: max(var(--sp-4), var(--safe-left));
+  padding-right: max(var(--sp-4), var(--safe-right));
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.gw-step {
+  font-size: var(--fs-overline);
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: var(--sp-3);
+}
+
+.gw-h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(2rem, 5vw, 4rem);
+  font-weight: 500;
+  line-height: var(--lh-heading);
+  color: var(--cream);
+  margin-bottom: var(--sp-4);
+}
+
+.gw-sub {
+  font-size: var(--fs-body-md);
+  color: var(--steel-light);
+  line-height: var(--lh-relaxed);
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.gw-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-4);
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 var(--sp-4) 100px;
+  padding-left: max(var(--sp-4), var(--safe-left));
+  padding-right: max(var(--sp-4), var(--safe-right));
+}
+
+/* Gateway card overrides (base styles in cards.css) */
+
+/* ── SM 600px+ — 2 columns ── */
+@media (min-width: 600px) {
+  .gw-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-5);
+  }
+
+  .gw-head {
+    padding: calc(56px + var(--sp-10)) var(--sp-5) var(--sp-8);
+  }
+}
+
+/* ── MD 905px+ — 3 columns ── */
+@media (min-width: 905px) {
+  .gw-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}

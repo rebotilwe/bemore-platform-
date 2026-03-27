@@ -1,0 +1,304 @@
+/* ═══════════════════════════════════════════════════
+   FORM — Dark luxury editorial
+   ═══════════════════════════════════════════════════ */
+
+/* Multi-Step Form View */
+.form-view {
+  background: var(--ink);
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-bottom: calc(var(--sp-24) + var(--safe-bottom));
+}
+
+.form-bar {
+  margin: 0 auto;
+  padding: calc(56px + var(--sp-4)) var(--sp-4) var(--sp-4);
+  padding-left: max(var(--sp-4), var(--safe-left));
+  padding-right: max(var(--sp-4), var(--safe-right));
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.form-back {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-body-sm);
+  color: var(--steel);
+  cursor: pointer;
+  transition: all var(--dur-short) var(--ease-std);
+  background: none;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: 0.05em;
+}
+
+.form-back:hover {
+  color: var(--gold);
+}
+
+.form-prog {
+  margin: 0 auto;
+  padding: 0 var(--sp-4) var(--sp-6);
+  padding-left: max(var(--sp-4), var(--safe-left));
+  padding-right: max(var(--sp-4), var(--safe-right));
+}
+
+.form-body {
+  margin: 0 auto;
+  padding: 0 var(--sp-4);
+  padding-left: max(var(--sp-4), var(--safe-left));
+  padding-right: max(var(--sp-4), var(--safe-right));
+}
+
+.form-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(2rem, 4vw, 2.625rem);
+  font-weight: 500;
+  color: var(--cream);
+  margin-bottom: var(--sp-2);
+  line-height: var(--lh-heading);
+}
+
+.form-sub {
+  font-size: var(--fs-body-md);
+  color: var(--steel-light);
+  line-height: var(--lh-body);
+  margin-bottom: var(--sp-12);
+}
+
+.form-step {
+  display: none;
+}
+
+.form-step.active {
+  display: block;
+  animation: fadeUp var(--dur-long) var(--ease-std) both;
+}
+
+.form-step-lbl {
+  font-family: 'DM Mono', monospace;
+  font-size: var(--fs-overline);
+  letter-spacing: 0.10em;
+  color: var(--steel);
+}
+
+/* Sticky footer */
+.form-foot {
+  margin: var(--sp-6) auto 0;
+  padding: var(--sp-4) var(--sp-4) calc(var(--sp-4) + var(--safe-bottom));
+  padding-left: max(var(--sp-4), var(--safe-left));
+  padding-right: max(var(--sp-4), var(--safe-right));
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--sp-3);
+  position: sticky;
+  bottom: 0;
+  background: linear-gradient(to top, var(--ink) 70%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 200;
+}
+
+.form-note {
+  font-size: var(--fs-label-sm);
+  color: var(--steel);
+  text-align: center;
+}
+
+.form-note strong {
+  color: var(--gold-light);
+}
+
+.form-btns {
+  display: flex;
+  gap: var(--sp-3);
+  align-items: center;
+  width: 100%;
+}
+
+.form-btns .btn-primary,
+.form-btns .btn-secondary {
+  flex: 1;
+}
+
+/* Legal */
+.legal-box {
+  background: var(--ink-soft);
+  border: 1px solid rgba(201,168,76,0.08);
+  border-radius: var(--r-lg);
+  padding: var(--sp-4);
+  margin-bottom: var(--sp-4);
+  max-height: 220px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.legal-box h4 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: var(--fs-title-md);
+  color: var(--gold);
+  margin-bottom: var(--sp-3);
+}
+
+.legal-box p,
+.legal-box li {
+  font-size: var(--fs-label-lg);
+  color: var(--steel-light);
+  line-height: var(--lh-relaxed);
+}
+
+.legal-box ol,
+.legal-box ul {
+  padding-left: var(--sp-5);
+}
+
+.legal-box ol li {
+  margin-bottom: var(--sp-2);
+}
+
+.legal-box strong {
+  color: var(--cream);
+}
+
+.consent-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  min-height: var(--touch-min);
+  background: var(--ink-soft);
+  border: 1.5px solid rgba(249,245,238,0.1);
+  border-radius: var(--r-md);
+  margin-bottom: var(--sp-3);
+  cursor: pointer;
+  transition: all var(--dur-short) var(--ease-std);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.consent-row:hover {
+  border-color: rgba(201,168,76,0.3);
+}
+
+.consent-row.sel {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.06);
+}
+
+.consent-check {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-sm);
+  border: 2px solid var(--steel);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--dur-short) var(--ease-std);
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.consent-row.sel .consent-check {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--ink);
+}
+
+.consent-text {
+  font-size: var(--fs-label-lg);
+  color: var(--steel-light);
+  line-height: var(--lh-body);
+}
+
+.consent-text strong {
+  color: var(--cream);
+}
+
+/* SM 600px+ */
+@media (min-width: 600px) {
+  .form-foot {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .form-btns {
+    width: auto;
+    margin-left: auto;
+  }
+
+  .form-btns .btn-primary,
+  .form-btns .btn-secondary {
+    flex: none;
+  }
+
+  .form-sub {
+    margin-bottom: var(--sp-8);
+  }
+
+  .legal-box {
+    padding: var(--sp-5);
+    max-height: 260px;
+  }
+
+  .legal-box h4 {
+    font-size: var(--fs-title-lg);
+  }
+}
+
+/* MD 905px+ */
+@media (min-width: 905px) {
+  .form-bar {
+    padding-top: calc(64px + var(--sp-8));
+    max-width: var(--container-xl);
+    padding-left: var(--sp-12);
+    padding-right: var(--sp-12);
+  }
+
+  .form-prog {
+    max-width: var(--container-xl);
+    padding-left: var(--sp-12);
+    padding-right: var(--sp-12);
+  }
+
+  .form-body {
+    max-width: var(--container-lg);
+    padding-left: var(--sp-12);
+    padding-right: var(--sp-12);
+  }
+
+  .form-foot {
+    max-width: var(--container-lg);
+    padding-left: var(--sp-12);
+    padding-right: var(--sp-12);
+    position: relative;
+    background: none;
+    backdrop-filter: none;
+  }
+
+  .form-view {
+    padding-bottom: var(--sp-16);
+  }
+}
+
+/* XL 1240px+ — use full width */
+@media (min-width: 1240px) {
+  .form-bar {
+    max-width: var(--container-2xl);
+  }
+
+  .form-prog {
+    max-width: var(--container-2xl);
+  }
+
+  .form-body {
+    max-width: var(--container-xl);
+  }
+
+  .form-foot {
+    max-width: var(--container-xl);
+  }
+}

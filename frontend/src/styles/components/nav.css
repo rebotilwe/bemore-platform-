@@ -1,0 +1,57 @@
+/* Navigation — 56dp mobile (MD3), 64dp desktop */
+.site-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 300;
+  padding: 0 var(--sp-3); height: 56px;
+  padding-left: max(var(--sp-3), var(--safe-left));
+  padding-right: max(var(--sp-3), var(--safe-right));
+  display: flex; align-items: center; justify-content: space-between;
+  transition: all var(--dur-med) var(--ease-std);
+}
+.site-nav.solid {
+  background: rgba(28,39,51,0.97);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(245,168,0,0.10);
+}
+
+.nav-logo { display: flex; align-items: center; gap: var(--sp-2); cursor: pointer; -webkit-tap-highlight-color: transparent }
+.nav-wordmark { display: flex; flex-direction: column; line-height: 1 }
+.nav-wordmark-main {
+  font-family: 'Playfair Display', serif;
+  font-size: var(--fs-title-lg); font-weight: 700;
+  color: var(--gold); letter-spacing: 0.04em;
+}
+.nav-wordmark-sub {
+  font-size: var(--fs-overline); letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--on-surface-med); margin-top: 1px; display: none;
+}
+
+.nav-r { display: flex; gap: var(--sp-2); align-items: center }
+
+.nbtn {
+  min-height: 40px; padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-sm); font-family: 'DM Sans', sans-serif;
+  font-size: var(--fs-label-sm); font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;
+  transition: all var(--dur-short) var(--ease-std); border: 1px solid transparent;
+  -webkit-tap-highlight-color: transparent;
+  display: inline-flex; align-items: center; justify-content: center;
+  text-decoration: none;
+}
+.nbtn-o { background: none; border-color: rgba(245,168,0,0.18); color: var(--on-surface-med); display: none }
+.nbtn-o:hover { border-color: var(--gold); color: var(--gold) }
+.nbtn-a { background: var(--gold); color: var(--surface-1); font-weight: 600 }
+.nbtn-a:hover { background: var(--gold-light); transform: translateY(-1px); box-shadow: var(--shadow-glow) }
+
+/* SM 600px+ — show subtitle + outline button, bigger touch */
+@media (min-width: 600px) {
+  .site-nav { padding: 0 var(--sp-4) }
+  .nav-wordmark-sub { display: block }
+  .nav-wordmark-main { font-size: var(--fs-headline-sm) }
+  .nbtn-o { display: inline-flex }
+  .nbtn { min-height: var(--touch-min); padding: var(--sp-3) var(--sp-5); font-size: var(--fs-label-md) }
+}
+
+/* MD 905px+ */
+@media (min-width: 905px) { .site-nav { padding: 0 var(--sp-6); height: 64px } }
+
+/* LG 1240px+ */
+@media (min-width: 1240px) { .site-nav { padding: 0 var(--sp-12) } }

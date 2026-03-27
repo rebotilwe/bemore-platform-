@@ -1,0 +1,118 @@
+/* ═══════════════════════════════════════════════
+   BEMORE DESIGN TOKENS
+   Dark luxury editorial — gold on ink palette
+   ═══════════════════════════════════════════════ */
+:root {
+  /* Brand — Dark Luxury Editorial */
+  --ink:        #0a0a0f;
+  --ink-soft:   #1a1a24;
+  --ink-mid:    #2c2c3a;
+  --gold:       #c9a84c;
+  --gold-light: #e8c97a;
+  --gold-pale:  #f5e8c0;
+  --cream:      #f9f5ee;
+  --cream-dark: #f0e9d8;
+  --steel:      #8a8a9a;
+  --steel-light: #b4b4c4;
+  --white:      #ffffff;
+
+  /* Semantic */
+  --red:        #c94c4c;
+  --green:      #4cb87a;
+  --error:      #c94c4c;
+  --success:    #4cb87a;
+
+  /* Surfaces (alias to ink palette) */
+  --surface-0:   var(--ink);
+  --surface-1:   var(--ink-soft);
+  --surface-2:   var(--ink-mid);
+  --surface-3:   var(--ink-mid);
+  --surface-4:   #3a3a4a;
+  --surface-5:   #48485a;
+
+  /* On-surface (text) */
+  --on-surface:       var(--cream);
+  --on-surface-high:  var(--cream);
+  --on-surface-med:   var(--steel-light);
+  --on-surface-low:   var(--steel);
+  --on-surface-mute:   var(--steel);
+
+  /* Typography scale */
+  --fs-display-lg:  clamp(3.25rem, 6vw, 5.5rem);
+  --fs-display-md:  clamp(2.5rem, 5vw, 4rem);
+  --fs-display-sm:  clamp(2rem, 4vw, 3rem);
+  --fs-headline-lg: clamp(1.75rem, 3vw, 2.5rem);
+  --fs-headline-md:  1.5rem;
+  --fs-headline-sm:  1.25rem;
+  --fs-title-lg:    1.25rem;
+  --fs-title-md:    1.125rem;
+  --fs-body-lg:     1rem;
+  --fs-body-md:     0.9375rem;
+  --fs-body-sm:     0.875rem;
+  --fs-label-lg:    0.8125rem;
+  --fs-label-md:    0.75rem;
+  --fs-label-sm:    0.6875rem;
+  --fs-overline:    0.625rem;
+
+  /* Line heights */
+  --lh-tight:   1.1;
+  --lh-heading: 1.2;
+  --lh-snug:    1.35;
+  --lh-body:    1.6;
+  --lh-relaxed: 1.75;
+
+  /* Radii */
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+  --r-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm:  0 2px 12px rgba(0,0,0,0.2);
+  --shadow-md:  0 4px 32px rgba(0,0,0,0.35);
+  --shadow-lg:  0 8px 48px rgba(0,0,0,0.45);
+  --shadow-xl:  0 16px 64px rgba(0,0,0,0.5);
+  --shadow-glow: 0 4px 24px rgba(201,168,76,0.25);
+
+  /* Motion */
+  --ease-std:    cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-dec:    cubic-bezier(0, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-short: 150ms;
+  --dur-med: 250ms;
+  --dur-long: 350ms;
+
+  /* Touch */
+  --touch-min: 48px;
+
+  /* Spacing */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 28px;
+  --sp-8: 32px;
+  --sp-9: 36px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-14: 56px;
+  --sp-16: 64px;
+  --sp-20: 80px;
+  --sp-24: 96px;
+
+  /* Safe areas */
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-right:  env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left, 0px);
+
+  /* Containers */
+  --container-sm: 540px;
+  --container-md: 720px;
+  --container-lg: 960px;
+  --container-xl: 1140px;
+  --container-2xl: 1320px;
+}

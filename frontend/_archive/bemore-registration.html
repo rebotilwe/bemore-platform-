@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5">
+<meta name="theme-color" content="#1C2733" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F5A800" media="(prefers-color-scheme: light)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BeMore">
+<meta name="application-name" content="BeMore Deal Accelerator">
+<meta name="description" content="BeMore Deal Accelerator — Student Accommodation Summit 2026. Register to connect with institutional funding partners DBSA, NHFC, NEF, SAIF.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<meta name="msapplication-TileColor" content="#1C2733">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+<title>BeMore Group | Deal Accelerator Registration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════
+   BEMORE DESIGN SYSTEM — Enterprise / Mobile-First / PWA
+   Typography: Material Design 3 + Apple HIG hybrid
+   Spacing: 8px baseline grid
+   Touch: 48dp minimum (MD3) / 44pt minimum (Apple HIG)
+   ═══════════════════════════════════════════════════════ */
+
+/* ─── DESIGN TOKENS ─── */
+:root {
+  /* Brand Palette — extracted from logo */
+  --amber:       #F5A800;
+  --amber-hi:    #FFB929;
+  --amber-lo:    rgba(245,168,0,0.10);
+  --amber-line:  rgba(245,168,0,0.22);
+  --orange:      #D94F1E;
+  --orange-hi:   #F06030;
+  --orange-lo:   rgba(217,79,30,0.10);
+
+  /* Surface palette — logo background */
+  --surface-0:   #141D27;
+  --surface-1:   #1C2733;
+  --surface-2:   #222E3C;
+  --surface-3:   #273244;
+  --surface-4:   #2F3D50;
+  --surface-5:   #384959;
+
+  /* Text — WCAG 2.1 AA compliant on dark surfaces */
+  --on-surface:       #FFFFFF;
+  --on-surface-high:  rgba(255,255,255,0.95);
+  --on-surface-med:   rgba(255,255,255,0.72);
+  --on-surface-low:   rgba(255,255,255,0.50);
+  --on-surface-mute:  rgba(255,255,255,0.38);
+
+  /* Semantic */
+  --error:       #F44336;
+  --error-bg:    rgba(244,67,54,0.08);
+  --success:     #4CAF50;
+  --success-bg:  rgba(76,175,80,0.08);
+  --info:        #5588CC;
+
+  /* Spacing — 8px baseline grid (Material Design 3) */
+  --sp-1: 4px;   --sp-2: 8px;   --sp-3: 12px;
+  --sp-4: 16px;  --sp-5: 20px;  --sp-6: 24px;
+  --sp-7: 28px;  --sp-8: 32px;  --sp-9: 36px;
+  --sp-10: 40px; --sp-12: 48px; --sp-14: 56px;
+  --sp-16: 64px; --sp-20: 80px; --sp-24: 96px;
+
+  /* Typography scale — Material Design 3 adapted */
+  --fs-display-lg:  clamp(2.75rem, 5vw + 1rem, 5.5rem);  /* 44–88px */
+  --fs-display-md:  clamp(2.25rem, 4vw + 0.5rem, 3.75rem); /* 36–60px */
+  --fs-display-sm:  clamp(1.75rem, 3vw + 0.25rem, 2.375rem); /* 28–38px */
+  --fs-headline-lg: clamp(1.5rem, 2vw + 0.5rem, 2rem);   /* 24–32px */
+  --fs-headline-md: 1.375rem;  /* 22px */
+  --fs-headline-sm: 1.25rem;   /* 20px */
+  --fs-title-lg:    1.125rem;  /* 18px */
+  --fs-title-md:    1rem;      /* 16px — base */
+  --fs-body-lg:     1rem;      /* 16px */
+  --fs-body-md:     0.9375rem; /* 15px */
+  --fs-body-sm:     0.875rem;  /* 14px */
+  --fs-label-lg:    0.8125rem; /* 13px */
+  --fs-label-md:    0.75rem;   /* 12px */
+  --fs-label-sm:    0.6875rem; /* 11px */
+  --fs-overline:    0.625rem;  /* 10px */
+
+  /* Line heights — optimal readability */
+  --lh-tight:   1.1;
+  --lh-heading: 1.2;
+  --lh-snug:    1.35;
+  --lh-body:    1.6;
+  --lh-relaxed: 1.75;
+
+  /* Border radius — rounded corners scale */
+  --r-sm:  4px;
+  --r-md:  8px;
+  --r-lg:  12px;
+  --r-xl:  16px;
+  --r-2xl: 20px;
+  --r-full: 9999px;
+
+  /* Elevation / Shadows */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.24), 0 1px 2px rgba(0,0,0,0.18);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.28), 0 2px 4px rgba(0,0,0,0.16);
+  --shadow-lg:  0 8px 28px rgba(0,0,0,0.32), 0 4px 8px rgba(0,0,0,0.18);
+  --shadow-xl:  0 16px 48px rgba(0,0,0,0.36), 0 8px 16px rgba(0,0,0,0.20);
+  --shadow-glow: 0 4px 20px rgba(245,168,0,0.20);
+
+  /* Animation */
+  --ease-std: cubic-bezier(0.4, 0.0, 0.2, 1);   /* Material standard */
+  --ease-dec: cubic-bezier(0.0, 0.0, 0.2, 1);   /* Material decelerate */
+  --ease-acc: cubic-bezier(0.4, 0.0, 1, 1);     /* Material accelerate */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-short: 150ms;
+  --dur-med:   250ms;
+  --dur-long:  350ms;
+
+  /* Touch target — 48dp minimum (Material Design 3) */
+  --touch-min: 48px;
+  /* Apple HIG minimum is 44pt, we use 48 to satisfy both */
+
+  /* Safe areas for notched devices */
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-right:  env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left, 0px);
+
+  /* Container widths */
+  --container-sm:  540px;
+  --container-md:  720px;
+  --container-lg:  960px;
+  --container-xl:  1140px;
+  --container-2xl: 1320px;
+}
+
+/* ─── RESET & BASE ─── */
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0 }
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+  font-size: 16px; /* Root — prevents iOS zoom on input focus */
+}
+body {
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background: var(--surface-1);
+  color: var(--on-surface);
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
+  overflow-x: hidden;
+  line-height: var(--lh-body);
+  font-size: var(--fs-body-md);
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+}
+
+/* System font stacks */
+.serif  { font-family: 'Playfair Display', Georgia, 'Times New Roman', serif }
+.mono   { font-family: 'DM Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace }
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html { scroll-behavior: auto }
+}
+
+/* Focus visible — keyboard only, not mouse */
+:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+:focus:not(:focus-visible) { outline: none }
+
+/* Selection */
+::selection { background: rgba(245,168,0,0.30); color: var(--on-surface) }
+
+/* ─── VIEWS ─── */
+.view { display: none; min-height: 100vh; min-height: 100dvh }
+.view.active { display: block; animation: viewIn var(--dur-long) var(--ease-dec) both }
+@keyframes viewIn { from { opacity: 0; transform: translateY(var(--sp-2)) } to { opacity: 1; transform: none } }
+
+/* ─── NAV — 56dp mobile (MD3), 64dp desktop ─── */
+#nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 300;
+  padding: 0 var(--sp-4); height: 56px;
+  padding-left: max(var(--sp-4), var(--safe-left));
+  padding-right: max(var(--sp-4), var(--safe-right));
+  display: flex; align-items: center; justify-content: space-between;
+  transition: all var(--dur-med) var(--ease-std);
+}
+#nav.solid {
+  background: rgba(28,39,51,0.97);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(245,168,0,0.10);
+}
+.nav-logo { display: flex; align-items: center; gap: var(--sp-3); cursor: pointer; -webkit-tap-highlight-color: transparent }
+.nav-wordmark { display: flex; flex-direction: column; line-height: 1 }
+.nav-wordmark-main { font-family: 'Playfair Display', serif; font-size: var(--fs-headline-sm); font-weight: 700; color: var(--amber); letter-spacing: 0.04em }
+.nav-wordmark-sub { font-size: var(--fs-overline); letter-spacing: 0.18em; text-transform: uppercase; color: var(--on-surface-med); margin-top: 2px }
+.nav-r { display: flex; gap: var(--sp-2); align-items: center }
+.nbtn {
+  min-height: var(--touch-min); padding: var(--sp-3) var(--sp-5);
+  border-radius: var(--r-sm); cursor: pointer;
+  font-family: 'DM Sans', sans-serif; font-size: var(--fs-label-md);
+  font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+  transition: all var(--dur-short) var(--ease-std);
+  border: 1px solid transparent;
+  -webkit-tap-highlight-color: transparent;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.nbtn-o { background: none; border-color: rgba(245,168,0,0.18); color: var(--on-surface-med) }
+.nbtn-o:hover { border-color: var(--amber); color: var(--amber) }
+.nbtn-a { background: var(--amber); color: var(--surface-1); font-weight: 600 }
+.nbtn-a:hover { background: var(--amber-hi); transform: translateY(-1px); box-shadow: var(--shadow-glow) }
+/* Hide outline button on small screens */
+.nbtn-o { display: none }
+
+/* ─── HERO — Mobile-first ─── */
+#view-hero { background: var(--surface-1); overflow: hidden; position: relative }
+.hero-bg-texture {
+  position: absolute; inset: 0; opacity: 0.03;
+  background-image: radial-gradient(circle, var(--amber) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.hero-gradient {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 30%, rgba(245,168,0,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 20% 80%, rgba(217,79,30,0.05) 0%, transparent 50%);
+}
+.hero-wrap {
+  position: relative; z-index: 2;
+  max-width: var(--container-xl); margin: 0 auto;
+  min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: calc(56px + var(--sp-8)) var(--sp-5) var(--sp-10);
+  padding-left: max(var(--sp-5), var(--safe-left));
+  padding-right: max(var(--sp-5), var(--safe-right));
+}
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4); margin-bottom: var(--sp-6);
+  border: 1px solid var(--amber-line); border-radius: var(--r-full);
+  background: var(--amber-lo);
+  font-size: var(--fs-overline); font-weight: 600; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--amber);
+  align-self: flex-start;
+}
+.edot { width: 6px; height: 6px; border-radius: 50%; background: var(--amber); animation: pulse 2.2s ease infinite }
+@keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.25 } }
+
+.hero-h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: var(--fs-display-lg); font-weight: 700;
+  line-height: var(--lh-tight); letter-spacing: -0.02em;
+}
+.h1-plain  { display: block; color: var(--on-surface); animation: fadeUp 0.6s var(--ease-dec) 0.1s both }
+.h1-amber  { display: block; color: var(--amber); font-style: italic; animation: fadeUp 0.6s var(--ease-dec) 0.2s both }
+.h1-orange { display: block; color: var(--orange-hi); animation: fadeUp 0.6s var(--ease-dec) 0.3s both }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: none } }
+
+.hero-rule {
+  width: var(--sp-14); height: 3px; margin: var(--sp-6) 0;
+  background: linear-gradient(to right, var(--amber), var(--orange));
+  border-radius: 2px; animation: fadeUp 0.6s var(--ease-dec) 0.4s both;
+}
+.hero-p {
+  font-size: var(--fs-body-lg); line-height: var(--lh-relaxed);
+  color: var(--on-surface-med); max-width: 520px;
+  margin-bottom: var(--sp-8); animation: fadeUp 0.6s var(--ease-dec) 0.45s both;
+}
+.hero-p strong { color: var(--amber) }
+
+.hero-btns { display: flex; gap: var(--sp-3); flex-wrap: wrap; animation: fadeUp 0.6s var(--ease-dec) 0.5s both }
+.btn-apply {
+  min-height: var(--touch-min); padding: var(--sp-4) var(--sp-8);
+  border-radius: var(--r-md);
+  background: linear-gradient(135deg, var(--amber), var(--orange));
+  color: var(--on-surface); font-family: 'DM Sans', sans-serif;
+  font-size: var(--fs-label-lg); font-weight: 600; letter-spacing: 0.10em;
+  text-transform: uppercase; border: none; cursor: pointer;
+  transition: all var(--dur-med) var(--ease-std);
+  box-shadow: var(--shadow-glow);
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-apply:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg), var(--shadow-glow); filter: brightness(1.06) }
+.btn-apply:active { transform: translateY(0); box-shadow: var(--shadow-sm) }
+.btn-agenda {
+  min-height: var(--touch-min); padding: var(--sp-4) var(--sp-6);
+  border-radius: var(--r-md);
+  background: none; color: var(--on-surface-med);
+  font-family: 'DM Sans', sans-serif; font-size: var(--fs-label-lg);
+  border: 1px solid rgba(255,255,255,0.15); cursor: pointer;
+  transition: all var(--dur-short) var(--ease-std);
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-agenda:hover { border-color: var(--amber); color: var(--amber) }
+
+.hero-nums {
+  display: flex; gap: var(--sp-8); margin-top: var(--sp-10);
+  padding-top: var(--sp-8);
+  border-top: 1px solid rgba(245,168,0,0.10);
+  animation: fadeUp 0.6s var(--ease-dec) 0.6s both;
+}
+.hnum { font-family: 'Playfair Display', serif; font-size: var(--fs-display-sm); font-weight: 700; color: var(--amber); line-height: 1 }
+.hlbl { font-size: var(--fs-overline); letter-spacing: 0.12em; text-transform: uppercase; color: var(--on-surface-low); margin-top: var(--sp-1) }
+
+/* Hero right panel — hidden on mobile, shown on large */
+.hero-panel { display: none }
+
+/* ─── GATEWAY ─── */
+#view-gateway { background: var(--surface-1) }
+.gw-head {
+  text-align: center;
+  padding: calc(56px + var(--sp-10)) var(--sp-5) var(--sp-8);
+  padding-left: max(var(--sp-5), var(--safe-left));
+  padding-right: max(var(--sp-5), var(--safe-right));
+  max-width: var(--container-md); margin: 0 auto;
+}
+.gw-step { font-size: var(--fs-overline); letter-spacing: 0.24em; text-transform: uppercase; color: var(--amber); margin-bottom: var(--sp-4) }
+.gw-h2 { font-family: 'Playfair Display', serif; font-size: var(--fs-display-md); font-weight: 600; line-height: var(--lh-heading); color: var(--on-surface); margin-bottom: var(--sp-4) }
+.gw-sub { font-size: var(--fs-body-sm); color: var(--on-surface-med); line-height: var(--lh-relaxed) }
+
+.gw-grid {
+  display: grid; grid-template-columns: 1fr; gap: var(--sp-3);
+  max-width: var(--container-xl); margin: 0 auto;
+  padding: 0 var(--sp-5) var(--sp-16);
+  padding-left: max(var(--sp-5), var(--safe-left));
+  padding-right: max(var(--sp-5), var(--safe-right));
+}
+.gc {
+  padding: var(--sp-6) var(--sp-5); background: var(--surface-3);
+  border: 1px solid rgba(245,168,0,0.08); border-radius: var(--r-lg);
+  cursor: pointer; position: relative; overflow: hidden;
+  transition: all var(--dur-med) var(--ease-std);
+  -webkit-tap-highlight-color: transparent;
+  display: flex; flex-direction: column;
+  /* Minimum touch target height */
+  min-height: var(--touch-min);
+}
+.gc::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(to right, var(--amber), var(--orange));
+  transform: scaleX(0); transform-origin: left;
+  transition: transform var(--dur-med) var(--ease-std);
+}
+.gc:hover { border-color: var(--amber-line); box-shadow: var(--shadow-lg) }
+.gc:hover::before { transform: scaleX(1) }
+.gc:hover .gc-arrow { transform: translateX(6px); color: var(--amber) }
+.gc:active { transform: scale(0.98) }
+
+.gc-num { font-family: 'DM Mono', monospace; font-size: var(--fs-overline); letter-spacing: 0.16em; color: var(--amber); opacity: 0.50; margin-bottom: var(--sp-3) }
+.gc-ico {
+  width: 44px; height: 44px; border-radius: var(--r-md);
+  background: var(--amber-lo); border: 1px solid var(--amber-line);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; margin-bottom: var(--sp-4);
+}
+.gc-title { font-family: 'Playfair Display', serif; font-size: var(--fs-headline-sm); font-weight: 600; color: var(--on-surface); margin-bottom: var(--sp-2); line-height: var(--lh-heading) }
+.gc-desc { font-size: var(--fs-body-sm); color: var(--on-surface-med); line-height: var(--lh-body); margin-bottom: var(--sp-4); flex: 1 }
+.gc-arrow { font-size: 18px; color: var(--on-surface-low); transition: all var(--dur-med) var(--ease-std); display: inline-block }
+
+/* ─── MULTI-STEP FORM ─── */
+#view-form { background: var(--surface-1); padding-bottom: calc(var(--sp-20) + var(--safe-bottom)) }
+.form-bar {
+  max-width: var(--container-md); margin: 0 auto;
+  padding: calc(56px + var(--sp-6)) var(--sp-5) var(--sp-6);
+  padding-left: max(var(--sp-5), var(--safe-left));
+  padding-right: max(var(--sp-5), var(--safe-right));
+  display: flex; justify-content: space-between; align-items: center;
+}
+.back-btn {
+  min-height: var(--touch-min); display: inline-flex; align-items: center; gap: var(--sp-2);
+  background: none; border: none; font-family: 'DM Sans', sans-serif;
+  font-size: var(--fs-label-lg); color: var(--on-surface-med);
+  cursor: pointer; transition: color var(--dur-short); padding: var(--sp-2);
+  -webkit-tap-highlight-color: transparent;
+}
+.back-btn:hover { color: var(--amber) }
+.form-step-lbl { font-family: 'DM Mono', monospace; font-size: var(--fs-overline); letter-spacing: 0.12em; color: var(--on-surface-low) }
+
+/* Progress bar */
+.form-prog {
+  max-width: var(--container-md); margin: 0 auto;
+  padding: 0 var(--sp-5) var(--sp-8);
+  padding-left: max(var(--sp-5), var(--safe-left));
+  padding-right: max(var(--sp-5), var(--safe-right));
+}
+.prog-steps { display: flex; align-items: center }
+.ps { display: flex; align-items: center; gap: var(--sp-2) }
+.ps-dot {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-label-sm); font-weight: 600; flex-shrink: 0;
+  transition: all var(--dur-med) var(--ease-std);
+}
+.ps-dot.done   { background: linear-gradient(135deg, var(--amber), var(--orange)); color: var(--on-surface) }
+.ps-dot.active  { background: none; border: 2px solid var(--amber); color: var(--amber) }
+.ps-dot.idle    { background: none; border: 1.5px solid var(--surface-4); color: var(--on-surface-mute) }
+.ps-lbl { font-size: var(--fs-overline); letter-spacing: 0.08em; text-transform: uppercase; color: var(--on-surface-mute); white-space: nowrap; display: none }
+.ps-lbl.active { color: var(--amber) }
+.ps-lbl.done { color: var(--amber-hi) }
+.prog-line { flex: 1; height: 2px; background: var(--surface-4); margin: 0 var(--sp-2); border-radius: 1px }
+.prog-line.done { background: linear-gradient(to right, var(--amber), var(--orange)) }
+
+/* Form body */
+.form-body {
+  max-width: var(--container-md); margin: 0 auto;
+  padding: 0 var(--sp-5);
+  padding-left: max(var(--sp-5), var(--safe-left));
+  padding-right: max(var(--sp-5), var(--safe-right));
+}
+.form-title {
+  font-family: 'Playfair Display', serif;
+  font-size: var(--fs-display-sm); font-weight: 600;
+  color: var(--on-surface); margin-bottom: var(--sp-2);
+  line-height: var(--lh-heading);
+}
+.form-sub { font-size: var(--fs-body-sm); color: var(--on-surface-med); line-height: var(--lh-body); margin-bottom: var(--sp-8) }
+
+/* Step panels */
+.form-step { display: none }
+.form-step.active { display: block; animation: viewIn var(--dur-long) var(--ease-dec) both }
+
+.fdiv {
+  font-size: var(--fs-overline); letter-spacing: 0.20em; text-transform: uppercase;
+  color: var(--amber); margin: var(--sp-8) 0 var(--sp-5);
+  display: flex; align-items: center; gap: var(--sp-3);
+  font-weight: 600;
+}
+.fdiv::after { content: ''; flex: 1; height: 1px; background: rgba(245,168,0,0.15) }
+.fdiv:first-child { margin-top: 0 }
+
+.frow { display: grid; grid-template-columns: 1fr; gap: var(--sp-4); margin-bottom: var(--sp-1) }
+.fg { display: flex; flex-direction: column; gap: var(--sp-2); margin-bottom: var(--sp-4) }
+.flbl {
+  font-size: var(--fs-label-md); letter-spacing: 0.10em; text-transform: uppercase;
+  color: var(--on-surface-med); font-weight: 500; line-height: var(--lh-snug);
+}
+.flbl.req::after { content: ' *'; color: var(--amber) }
+.flbl-hint {
+  color: var(--on-surface-low); font-style: italic;
+  text-transform: none; letter-spacing: 0; font-size: var(--fs-label-md);
+}
+
+/* Inputs — 16px font prevents iOS zoom, 48dp height for touch */
+.fi, .fs, .fta {
+  min-height: var(--touch-min); padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-3); border: 1.5px solid rgba(245,168,0,0.10);
+  border-radius: var(--r-md); color: var(--on-surface);
+  font-family: 'DM Sans', sans-serif; font-size: 16px; /* MUST be 16px to prevent iOS zoom */
+  outline: none; transition: all var(--dur-short) var(--ease-std);
+  width: 100%; -webkit-appearance: none; appearance: none;
+  line-height: var(--lh-snug);
+}
+.fi:focus, .fs:focus, .fta:focus {
+  border-color: var(--amber);
+  background: rgba(245,168,0,0.04);
+  box-shadow: 0 0 0 3px rgba(245,168,0,0.10);
+}
+.fi::placeholder, .fta::placeholder { color: var(--on-surface-mute) }
+.fi.err, .fta.err { border-color: var(--error); background: var(--error-bg) }
+.fta { resize: vertical; min-height: 140px; line-height: var(--lh-body); padding: var(--sp-4) }
+.fta-count { font-size: var(--fs-label-sm); color: var(--on-surface-mute); text-align: right; margin-top: var(--sp-1) }
+
+/* Select wrapper */
+.sw { position: relative }
+.sw::after { content: '▾'; position: absolute; right: var(--sp-4); top: 50%; transform: translateY(-50%); color: var(--amber); pointer-events: none; font-size: var(--fs-label-lg) }
+.fs option { background: var(--surface-3); color: var(--on-surface) }
+
+/* Radio — 48dp touch target */
+.rg { display: flex; flex-direction: column; gap: var(--sp-2) }
+.ro {
+  min-height: var(--touch-min); padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-3);
+  border: 1.5px solid rgba(245,168,0,0.10); border-radius: var(--r-md);
+  display: flex; align-items: center; gap: var(--sp-3); cursor: pointer;
+  transition: all var(--dur-short) var(--ease-std);
+  font-size: var(--fs-body-sm); color: var(--on-surface-med);
+  -webkit-tap-highlight-color: transparent;
+}
+.ro:hover { border-color: var(--amber-line) }
+.ro.sel { border-color: var(--amber); background: rgba(245,168,0,0.06); color: var(--on-surface) }
+.rdot {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid var(--on-surface-mute); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--dur-short) var(--ease-std);
+}
+.ro.sel .rdot { border-color: var(--amber); background: var(--amber) }
+.ro.sel .rdot::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--surface-1) }
+
+/* Checkbox — 48dp touch target */
+.cg { display: grid; grid-template-columns: 1fr; gap: var(--sp-2) }
+.co {
+  min-height: var(--touch-min); padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-3);
+  border: 1.5px solid rgba(245,168,0,0.10); border-radius: var(--r-md);
+  display: flex; align-items: center; gap: var(--sp-3); cursor: pointer;
+  transition: all var(--dur-short) var(--ease-std);
+  font-size: var(--fs-body-sm); color: var(--on-surface-med);
+  -webkit-tap-highlight-color: transparent;
+}
+.co:hover { border-color: var(--amber-line) }
+.co.sel { border-color: var(--amber); background: rgba(245,168,0,0.06); color: var(--on-surface) }
+.cbox {
+  width: 20px; height: 20px; border-radius: var(--r-sm);
+  border: 2px solid var(--on-surface-mute); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--dur-short) var(--ease-std);
+  font-size: 11px; font-weight: 700;
+}
+.co.sel .cbox { background: linear-gradient(135deg, var(--amber), var(--orange)); border-color: transparent; color: var(--on-surface) }
+
+/* Form footer — sticky on mobile */
+.form-foot {
+  max-width: var(--container-md); margin: var(--sp-8) auto 0;
+  padding: var(--sp-4) var(--sp-5);
+  padding-left: max(var(--sp-5), var(--safe-left));
+  padding-right: max(var(--sp-5), var(--safe-right));
+  padding-bottom: max(var(--sp-4), var(--safe-bottom));
+  display: flex; flex-direction: column-reverse; gap: var(--sp-4);
+  position: sticky; bottom: 0;
+  background: linear-gradient(to top, var(--surface-1) 60%, transparent);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  z-index: 10;
+}
+.form-note { font-size: var(--fs-label-sm); color: var(--on-surface-mute); text-align: center }
+.form-note strong { color: var(--amber) }
+
+.form-btns { display: flex; gap: var(--sp-3); align-items: center }
+
+.btn-next, .btn-prev, .btn-submit {
+  min-height: var(--touch-min); padding: var(--sp-3) var(--sp-6);
+  border-radius: var(--r-md);
+  font-family: 'DM Sans', sans-serif;
+  font-size: var(--fs-label-lg); font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; border: none; cursor: pointer;
+  transition: all var(--dur-med) var(--ease-std);
+  -webkit-tap-highlight-color: transparent;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.btn-next {
+  flex: 1;
+  background: linear-gradient(135deg, var(--amber), var(--orange));
+  color: var(--on-surface); box-shadow: var(--shadow-glow);
+}
+.btn-next:hover { transform: translateY(-1px); box-shadow: var(--shadow-md), var(--shadow-glow); filter: brightness(1.05) }
+.btn-next:active { transform: translateY(0) }
+
+.btn-prev {
+  background: none; border: 1.5px solid rgba(245,168,0,0.18); color: var(--on-surface-med);
+  padding: var(--sp-3) var(--sp-5);
+}
+.btn-prev:hover { border-color: var(--amber); color: var(--amber) }
+
+.btn-submit {
+  flex: 1;
+  background: linear-gradient(135deg, var(--amber), var(--orange));
+  color: var(--on-surface); box-shadow: var(--shadow-glow);
+  padding: var(--sp-4) var(--sp-8);
+}
+.btn-submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: var(--shadow-md), var(--shadow-glow); filter: brightness(1.05) }
+.btn-submit:active:not(:disabled) { transform: translateY(0) }
+.btn-submit:disabled { opacity: 0.5; cursor: not-allowed }
+
+/* Legal boxes */
+.legal-box {
+  background: var(--surface-3); border: 1px solid rgba(245,168,0,0.08);
+  border-radius: var(--r-lg); padding: var(--sp-5);
+  margin-bottom: var(--sp-5); max-height: 260px; overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.legal-box h4 { font-family: 'Playfair Display', serif; font-size: var(--fs-title-lg); color: var(--amber); margin-bottom: var(--sp-4) }
+.legal-box p, .legal-box li { font-size: var(--fs-body-sm); color: var(--on-surface-med); line-height: var(--lh-relaxed) }
+.legal-box ol { padding-left: var(--sp-5) }
+.legal-box ol li { margin-bottom: var(--sp-3) }
+.legal-box strong { color: var(--on-surface-high) }
+
+/* Consent rows — 48dp touch */
+.consent-row {
+  display: flex; align-items: flex-start; gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5); min-height: var(--touch-min);
+  background: var(--surface-3);
+  border: 1.5px solid rgba(245,168,0,0.10); border-radius: var(--r-md);
+  margin-bottom: var(--sp-3); cursor: pointer;
+  transition: all var(--dur-short) var(--ease-std);
+  -webkit-tap-highlight-color: transparent;
+}
+.consent-row:hover { border-color: var(--amber-line) }
+.consent-row.sel { border-color: var(--amber); background: rgba(245,168,0,0.06) }
+.consent-check {
+  width: 24px; height: 24px; border-radius: var(--r-sm);
+  border: 2px solid var(--on-surface-mute); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--dur-short) var(--ease-std);
+  font-size: 13px; font-weight: 700; margin-top: 1px;
+}
+.consent-row.sel .consent-check { background: linear-gradient(135deg, var(--amber), var(--orange)); border-color: transparent; color: var(--on-surface) }
+.consent-text { font-size: var(--fs-body-sm); color: var(--on-surface-med); line-height: var(--lh-body) }
+.consent-text strong { color: var(--on-surface-high) }
+
+/* ─── SUCCESS ─── */
+#view-success { background: var(--surface-1); display: flex; align-items: center; justify-content: center }
+.success-wrap {
+  text-align: center; max-width: var(--container-sm);
+  padding: var(--sp-8) var(--sp-5);
+  padding-left: max(var(--sp-5), var(--safe-left));
+  padding-right: max(var(--sp-5), var(--safe-right));
+}
+.success-ico {
+  width: 72px; height: 72px; border-radius: 50%; margin: 0 auto var(--sp-6);
+  background: linear-gradient(135deg, rgba(245,168,0,0.12), rgba(217,79,30,0.08));
+  border: 2px solid var(--amber);
+  display: flex; align-items: center; justify-content: center; font-size: 28px;
+  animation: pop 0.6s var(--ease-spring) both;
+}
+@keyframes pop { from { transform: scale(0); opacity: 0 } to { transform: scale(1); opacity: 1 } }
+.success-h { font-family: 'Playfair Display', serif; font-size: var(--fs-display-sm); font-weight: 600; color: var(--on-surface); margin-bottom: var(--sp-4) }
+.success-p { font-size: var(--fs-body-md); color: var(--on-surface-med); line-height: var(--lh-relaxed); margin-bottom: var(--sp-8) }
+.ref-box { padding: var(--sp-5); background: var(--surface-3); border: 1px solid var(--amber-line); border-top: 2px solid var(--amber); border-radius: var(--r-md); margin-bottom: var(--sp-6) }
+.ref-lbl { font-size: var(--fs-overline); letter-spacing: 0.18em; text-transform: uppercase; color: var(--on-surface-low) }
+.ref-num { font-family: 'DM Mono', monospace; font-size: var(--fs-headline-md); color: var(--amber); margin-top: var(--sp-1) }
+.summit-box { padding: var(--sp-5); background: rgba(245,168,0,0.04); border: 1px dashed var(--amber-line); border-radius: var(--r-md); margin-bottom: var(--sp-6) }
+.summit-box h4 { font-family: 'Playfair Display', serif; font-size: var(--fs-headline-sm); color: var(--amber); margin-bottom: var(--sp-2) }
+.summit-box p { font-size: var(--fs-label-lg); color: var(--on-surface-med) }
+.summit-box .accent { color: var(--orange-hi); font-size: var(--fs-label-md); margin-top: var(--sp-2); display: block }
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed; bottom: calc(var(--sp-20) + var(--safe-bottom)); left: 50%;
+  transform: translateX(-50%) translateY(var(--sp-20));
+  background: var(--surface-3); border: 1px solid var(--amber-line);
+  border-radius: var(--r-md); padding: var(--sp-4) var(--sp-6);
+  font-size: var(--fs-label-lg); color: var(--amber); z-index: 999;
+  opacity: 0; transition: all var(--dur-long) var(--ease-std);
+  pointer-events: none; max-width: calc(100vw - var(--sp-8));
+  text-align: center; box-shadow: var(--shadow-lg);
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1 }
+
+/* Spinner */
+.spinner {
+  display: inline-block; width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.3); border-top-color: var(--on-surface);
+  border-radius: 50%; animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg) } }
+
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS — Mobile-First
+   ───────────────────────────────────────────────────────
+   Base:    0–599px    (Mobile portrait — phones)
+   SM:      600px+     (Mobile landscape / small tablet)
+   MD:      905px+     (Tablet — Material Design breakpoint)
+   LG:      1240px+    (Desktop)
+   XL:      1440px+    (Large desktop)
+   ═══════════════════════════════════════════════════════ */
+
+/* SM — 600px+ */
+@media (min-width: 600px) {
+  .ps-lbl { display: block }
+  .frow { grid-template-columns: 1fr 1fr }
+  .cg { grid-template-columns: 1fr 1fr }
+  .rg { flex-direction: row }
+  .ro { flex: 1 }
+  .gw-grid { grid-template-columns: 1fr 1fr; gap: var(--sp-4) }
+  .form-foot { flex-direction: row; justify-content: space-between; align-items: center }
+  .btn-next, .btn-submit { flex: none }
+  .form-btns { margin-left: auto }
+  .nbtn-o { display: inline-flex }
+}
+
+/* MD — 905px+ (Material Design tablet breakpoint) */
+@media (min-width: 905px) {
+  #nav { padding: 0 var(--sp-6); height: 64px }
+  .hero-wrap {
+    padding: calc(64px + var(--sp-12)) var(--sp-8) var(--sp-12);
+    display: grid; grid-template-columns: 1fr 420px; align-items: center; gap: var(--sp-16);
+  }
+  .hero-panel {
+    display: block;
+    background: var(--surface-3);
+    border: 1px solid rgba(245,168,0,0.12);
+    border-top: 2px solid var(--amber);
+    border-radius: var(--r-xl); padding: var(--sp-8);
+    position: relative; overflow: hidden;
+    animation: fadeUp 0.6s var(--ease-dec) 0.35s both;
+  }
+  .hero-panel::after { content: ''; position: absolute; bottom: 0; right: 0; width: 120px; height: 120px; background: radial-gradient(circle at bottom right, rgba(217,79,30,0.06), transparent 70%); pointer-events: none }
+
+  .gw-head { padding-top: calc(64px + var(--sp-14)) }
+  .gw-grid { grid-template-columns: 1fr 1fr 1fr; gap: var(--sp-4) }
+
+  .form-bar { padding-top: calc(64px + var(--sp-8)) }
+  .form-bar, .form-prog, .form-body, .form-foot { padding-left: var(--sp-8); padding-right: var(--sp-8) }
+
+  .form-foot { position: relative; background: none; backdrop-filter: none }
+
+  .prog-line { margin: 0 var(--sp-3) }
+  .ps { gap: var(--sp-3) }
+}
+
+/* LG — 1240px+ */
+@media (min-width: 1240px) {
+  #nav { padding: 0 var(--sp-12) }
+  .hero-wrap { padding-left: var(--sp-12); padding-right: var(--sp-12); gap: var(--sp-20) }
+  .hero-panel { padding: var(--sp-9) }
+  .gw-head { padding-left: var(--sp-8); padding-right: var(--sp-8) }
+  .gw-grid { padding-left: var(--sp-8); padding-right: var(--sp-8) }
+}
+
+/* XL — 1440px+ */
+@media (min-width: 1440px) {
+  .hero-wrap { max-width: var(--container-2xl) }
+}
+
+/* ─── PRINT ─── */
+@media print {
+  #nav, .form-foot, .hero-bg-texture, .hero-gradient { display: none }
+  body { background: white; color: black }
+  .view { display: block !important; min-height: auto }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════ NAV ══════ -->
+<nav id="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-logo" onclick="go('hero')" role="button" tabindex="0" aria-label="BeMore Home">
+    <div class="nav-wordmark">
+      <div class="nav-wordmark-main">BeMore</div>
+      <div class="nav-wordmark-sub">Group of Companies</div>
+    </div>
+  </div>
+  <div class="nav-r">
+    <button class="nbtn nbtn-o" onclick="go('hero')">Home</button>
+    <button class="nbtn nbtn-a" onclick="go('gateway')">Apply Now</button>
+  </div>
+</nav>
+
+<!-- ══════ HERO ══════ -->
+<div id="view-hero" class="view active" role="main">
+  <div class="hero-bg-texture" aria-hidden="true"></div>
+  <div class="hero-gradient" aria-hidden="true"></div>
+  <div class="hero-wrap">
+    <div>
+      <div class="hero-eyebrow"><div class="edot" aria-hidden="true"></div>Deal Accelerator — Summit 2026</div>
+      <h1 class="hero-h1">
+        <span class="h1-plain">Access</span>
+        <span class="h1-amber">Capital.</span>
+        <span class="h1-orange">Unlock Scale.</span>
+      </h1>
+      <div class="hero-rule" aria-hidden="true"></div>
+      <p class="hero-p">
+        The <strong>BeMore Deal Accelerator</strong> connects emerging property developers, landowners, student accommodation operators, and built environment professionals with institutional funding partners — <strong>DBSA, NHFC, NEF, SAIF</strong>.<br><br>
+        Limited access. Strictly merit-based selection.
+      </p>
+      <div class="hero-btns">
+        <button class="btn-apply" onclick="go('gateway')">Register Now</button>
+        <button class="btn-agenda">Summit Agenda</button>
+      </div>
+      <div class="hero-nums">
+        <div><div class="hnum">30–31</div><div class="hlbl">Mar 2026 Summit</div></div>
+        <div><div class="hnum">4</div><div class="hlbl">Institutional Funders</div></div>
+        <div><div class="hnum">R20M+</div><div class="hlbl">Deal Room Access</div></div>
+      </div>
+    </div>
+    <div class="hero-panel">
+      <div class="panel-logo-wrap">
+        <div>
+          <div class="panel-logo-name">BeMore Group</div>
+          <div class="panel-logo-tagline">SME Access Initiative</div>
+        </div>
+      </div>
+      <div class="panel-section-lbl">Institutional Funding Partners</div>
+      <div class="funders">
+        <div class="fchip">DBSA</div>
+        <div class="fchip">NHFC</div>
+        <div class="fchip">NEF</div>
+        <div class="fchip">SAIF</div>
+      </div>
+      <div class="merit-box">
+        <strong>Developer Catalyst Programme</strong>
+        <span>Mentorship &middot; Deal Preparation &middot; Funder Exposure</span>
+      </div>
+      <div class="summit-pill">
+        <strong>Sandton</strong> &middot; 30–31 March 2026 &middot; <span style="color:var(--amber)">Register Now</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ GATEWAY — Profile Selection ══════ -->
+<div id="view-gateway" class="view" role="main" aria-label="Profile selection">
+  <div class="gw-head">
+    <div class="gw-step">Step 1 — Profile Selection</div>
+    <h2 class="gw-h2">Which best describes you?</h2>
+    <p class="gw-sub">Select your profile to reveal your tailored application. Your selection determines which funding pathways are matched to you.</p>
+  </div>
+  <div class="gw-grid" role="list">
+    <div class="gc" onclick="pickProfile('developer')" role="listitem" tabindex="0" aria-label="Property Developer">
+      <div class="gc-num">01 / 06</div><div class="gc-ico" aria-hidden="true">🏗️</div>
+      <div class="gc-title">Property Developer</div>
+      <p class="gc-desc">Access capital at any stage — concept to construction-ready. We match you with funders aligned to your project type and scale.</p>
+      <span class="gc-arrow" aria-hidden="true">→</span>
+    </div>
+    <div class="gc" onclick="pickProfile('landowner')" role="listitem" tabindex="0" aria-label="Land Owner">
+      <div class="gc-num">02 / 06</div><div class="gc-ico" aria-hidden="true">🌍</div>
+      <div class="gc-title">Land Owner</div>
+      <p class="gc-desc">You hold the asset. We unlock it — funding partnerships, institutional joint ventures, and development matching.</p>
+      <span class="gc-arrow" aria-hidden="true">→</span>
+    </div>
+    <div class="gc" onclick="pickProfile('investor')" role="listitem" tabindex="0" aria-label="Investor">
+      <div class="gc-num">03 / 06</div><div class="gc-ico" aria-hidden="true">💰</div>
+      <div class="gc-title">Investor</div>
+      <p class="gc-desc">Deploy capital into vetted student accommodation developments. Access deal flow, co-investment opportunities, and institutional-grade projects.</p>
+      <span class="gc-arrow" aria-hidden="true">→</span>
+    </div>
+    <div class="gc" onclick="pickProfile('student')" role="listitem" tabindex="0" aria-label="Student Accommodation Operator">
+      <div class="gc-num">04 / 06</div><div class="gc-ico" aria-hidden="true">🎓</div>
+      <div class="gc-title">Student Accommodation Operator</div>
+      <p class="gc-desc">Scale your portfolio with institutional backing from DBSA and NHFC. High-occupancy operators get priority access.</p>
+      <span class="gc-arrow" aria-hidden="true">→</span>
+    </div>
+    <div class="gc" onclick="pickProfile('professional')" role="listitem" tabindex="0" aria-label="Built Environment Professional">
+      <div class="gc-num">05 / 06</div><div class="gc-ico" aria-hidden="true">📐</div>
+      <div class="gc-title">Built Environment Professional</div>
+      <p class="gc-desc">Architects, engineers, QS and PMs — find equity partnerships and turnkey development opportunities at scale.</p>
+      <span class="gc-arrow" aria-hidden="true">→</span>
+    </div>
+    <div class="gc" onclick="pickProfile('aspiring')" role="listitem" tabindex="0" aria-label="Aspiring Developer">
+      <div class="gc-num">06 / 06</div><div class="gc-ico" aria-hidden="true">🚀</div>
+      <div class="gc-title">Aspiring Developer</div>
+      <p class="gc-desc">New to property development? Get mentorship, deal preparation support, and exposure to funding institutions through the Catalyst Programme.</p>
+      <span class="gc-arrow" aria-hidden="true">→</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ MULTI-STEP FORM ══════ -->
+<div id="view-form" class="view" role="main" aria-label="Application form">
+  <div class="form-bar">
+    <button class="back-btn" id="form-back-btn" onclick="formBack()" aria-label="Go back">← Back</button>
+    <span class="form-step-lbl mono" id="form-step-lbl" aria-live="polite">STEP 2 OF 6</span>
+  </div>
+  <div class="form-prog" role="progressbar" aria-valuemin="1" aria-valuemax="6" aria-valuenow="2">
+    <div class="prog-steps" id="prog-steps">
+      <div class="ps"><div class="ps-dot done" id="pd-1">✓</div><div class="ps-lbl done" id="pl-1">Profile</div></div>
+      <div class="prog-line done" id="pline-1"></div>
+      <div class="ps"><div class="ps-dot active" id="pd-2">2</div><div class="ps-lbl active" id="pl-2">Info</div></div>
+      <div class="prog-line" id="pline-2"></div>
+      <div class="ps"><div class="ps-dot idle" id="pd-3">3</div><div class="ps-lbl" id="pl-3">Readiness</div></div>
+      <div class="prog-line" id="pline-3"></div>
+      <div class="ps"><div class="ps-dot idle" id="pd-4">4</div><div class="ps-lbl" id="pl-4">Funding</div></div>
+      <div class="prog-line" id="pline-4"></div>
+      <div class="ps"><div class="ps-dot idle" id="pd-5">5</div><div class="ps-lbl" id="pl-5">Project</div></div>
+      <div class="prog-line" id="pline-5"></div>
+      <div class="ps"><div class="ps-dot idle" id="pd-6">6</div><div class="ps-lbl" id="pl-6">Confirm</div></div>
+    </div>
+  </div>
+  <div class="form-body">
+    <h2 class="form-title" id="form-title">Basic Information</h2>
+    <p class="form-sub" id="form-sub">Let's start with your contact details.</p>
+
+    <!-- ── STEP 1: Basic Information ── -->
+    <div class="form-step active" id="step-1">
+      <div class="fdiv">Personal Details</div>
+      <div class="frow">
+        <div class="fg"><label class="flbl req" for="f-fn">First Name</label><input class="fi" id="f-fn" placeholder="Your first name" autocomplete="given-name" inputmode="text"></div>
+        <div class="fg"><label class="flbl req" for="f-sn">Surname</label><input class="fi" id="f-sn" placeholder="Your surname" autocomplete="family-name" inputmode="text"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="flbl req" for="f-em">Email Address</label><input class="fi" id="f-em" type="email" placeholder="your@email.com" autocomplete="email" inputmode="email"></div>
+        <div class="fg"><label class="flbl req" for="f-ph">Phone Number</label><input class="fi" id="f-ph" type="tel" placeholder="082 000 0000" autocomplete="tel" inputmode="tel"></div>
+      </div>
+      <div class="fg"><label class="flbl" for="f-co">Company / Entity Name <span class="flbl-hint">(if applicable)</span></label><input class="fi" id="f-co" placeholder="Optional" autocomplete="organization"></div>
+    </div>
+
+    <!-- ── STEP 2: Development Readiness + Category-Specific ── -->
+    <div class="form-step" id="step-2">
+      <div class="fdiv">Development Readiness</div>
+      <div class="fg">
+        <label class="flbl req">Do you currently have land?</label>
+        <div class="rg" id="r-land" role="radiogroup" aria-label="Land status">
+          <div class="ro" onclick="pickRadio('r-land',this)" role="radio" tabindex="0" aria-checked="false"><div class="rdot" aria-hidden="true"></div>Land Secured</div>
+          <div class="ro" onclick="pickRadio('r-land',this)" role="radio" tabindex="0" aria-checked="false"><div class="rdot" aria-hidden="true"></div>Land under negotiation</div>
+          <div class="ro" onclick="pickRadio('r-land',this)" role="radio" tabindex="0" aria-checked="false"><div class="rdot" aria-hidden="true"></div>No land yet</div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <label class="flbl req" for="s-stage">What stage is your project?</label>
+          <div class="sw"><select class="fs" id="s-stage"><option value="">Select stage</option><option>Concept</option><option>Feasibility completed</option><option>Design Stage</option><option>Funding Stage</option><option>Construction Stage</option></select></div>
+        </div>
+        <div class="fg">
+          <label class="flbl req" for="s-value">Estimated project value (R)</label>
+          <div class="sw"><select class="fs" id="s-value"><option value="">Select range</option><option>Less than R5m</option><option>R5m – R20m</option><option>R20m – R100m</option><option>R100m+</option></select></div>
+        </div>
+      </div>
+
+      <!-- Category-specific: Developer -->
+      <div id="form-developer" class="cat-fields" style="display:none">
+        <div class="fdiv">Development Profile</div>
+        <div class="frow">
+          <div class="fg"><label class="flbl req" for="a-exp">Years of Experience</label><div class="sw"><select class="fs" id="a-exp"><option value="">Select range</option><option>0–2 years</option><option>3–5 years</option><option>6–10 years</option><option>10+ years</option></select></div></div>
+          <div class="fg"><label class="flbl req">Development Type</label>
+            <div class="cg" id="a-dtype" role="group" aria-label="Development types">
+              <div class="co" onclick="toggleCb(this)" role="checkbox" tabindex="0" aria-checked="false"><div class="cbox" aria-hidden="true"></div>Residential</div>
+              <div class="co" onclick="toggleCb(this)" role="checkbox" tabindex="0" aria-checked="false"><div class="cbox" aria-hidden="true"></div>Commercial</div>
+              <div class="co" onclick="toggleCb(this)" role="checkbox" tabindex="0" aria-checked="false"><div class="cbox" aria-hidden="true"></div>Student Housing</div>
+              <div class="co" onclick="toggleCb(this)" role="checkbox" tabindex="0" aria-checked="false"><div class="cbox" aria-hidden="true"></div>Mixed-Use</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Category-specific: Landowner -->
+      <div id="form-landowner" class="cat-fields" style="display:none">
+        <div class="fdiv">Land Profile</div>
+        <div class="frow">
+          <div class="fg"><label class="flbl req" for="b-size">Land Size</label><div class="sw"><select class="fs" id="b-size"><option value="">Select size</option><option>Less than 1,000 sqm</option><option>1,000 – 5,000 sqm</option><option>Greater than 5,000 sqm</option></select></div></div>
+          <div class="fg"><label class="flbl req" for="b-zone">Zoning Status</label><div class="sw"><select class="fs" id="b-zone"><option value="">Select zoning</option><option>Residential</option><option>Commercial</option><option>Mixed-Use</option><option>Unzoned</option><option>Awaiting Rezoning</option></select></div></div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="flbl req">Is Land Serviced?</label><div class="rg" id="b-serv" role="radiogroup"><div class="ro" onclick="pickRadio('b-serv',this)" role="radio" tabindex="0"><div class="rdot" aria-hidden="true"></div>Yes (Water/Elec/Sewage)</div><div class="ro" onclick="pickRadio('b-serv',this)" role="radio" tabindex="0"><div class="rdot" aria-hidden="true"></div>No</div></div></div>
+          <div class="fg"><label class="flbl req" for="b-own">Ownership Structure</label><div class="sw"><select class="fs" id="b-own"><option value="">Select structure</option><option>Sole Owner</option><option>Partnership</option><option>Trust</option><option>Company</option></select></div></div>
+        </div>
+      </div>
+
+      <!-- Category-specific: Investor -->
+      <div id="form-investor" class="cat-fields" style="display:none">
+        <div class="fdiv">Investment Profile</div>
+        <div class="frow">
+          <div class="fg"><label class="flbl req">Investment Focus</label>
+            <div class="cg" id="inv-focus" role="group" aria-label="Investment focus areas">
+              <div class="co" onclick="toggleCb(this)" role="checkbox" tabindex="0"><div class="cbox" aria-hidden="true"></div>Student Accommodation</div>
+              <div class="co" onclick="toggleCb(this)" role="checkbox" tabindex="0"><div class="cbox" aria-hidden="true"></div>Residential</div>
+              <div class="co" onclick="toggleCb(this)" role="checkbox" tabindex="0"><div class="cbox" aria-hidden="true"></div>Commercial</div>
+              <div class="co" onclick="toggleCb(this)" role="checkbox" tabindex="0"><div class="cbox" aria-hidden="true"></div>Mixed-Use</div>
+            </div>
+          </div>
+          <div class="fg"><label class="flbl req" for="inv-ticket">Investment Ticket Size</label><div class="sw"><select class="fs" id="inv-ticket"><option value="">Select range</option><option>Less than R5m</option><option>R5m – R20m</option><option>R20m – R100m</option><option>R100m+</option></select></div></div>
+        </div>
+      </div>
+
+      <!-- Category-specific: Student Accommodation -->
+      <div id="form-student" class="cat-fields" style="display:none">
+        <div class="fdiv">Accommodation Profile</div>
+        <div class="frow">
+          <div class="fg"><label class="flbl req" for="c-beds">Current Bed Count</label><div class="sw"><select class="fs" id="c-beds"><option value="">Select range</option><option>Less than 50 beds</option><option>50 – 200 beds</option><option>200 – 500 beds</option><option>500+ beds</option></select></div></div>
+          <div class="fg"><label class="flbl req" for="c-occ">Occupancy Rate</label><div class="sw"><select class="fs" id="c-occ"><option value="">Select rate</option><option>Less than 60%</option><option>60% – 80%</option><option>80% – 95%</option><option>95%+</option></select></div></div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="flbl req">University Partnership</label><div class="rg" id="c-uni" role="radiogroup"><div class="ro" onclick="pickRadio('c-uni',this)" role="radio" tabindex="0"><div class="rdot" aria-hidden="true"></div>Yes (Formal Agreement)</div><div class="ro" onclick="pickRadio('c-uni',this)" role="radio" tabindex="0"><div class="rdot" aria-hidden="true"></div>No</div></div></div>
+          <div class="fg"><label class="flbl req" for="c-asset">Asset Type</label><div class="sw"><select class="fs" id="c-asset"><option value="">Select type</option><option>Converted Residential</option><option>Purpose-Built</option><option>Pending Acquisition</option></select></div></div>
+        </div>
+      </div>
+
+      <!-- Category-specific: Professional -->
+      <div id="form-professional" class="cat-fields" style="display:none">
+        <div class="fdiv">Professional Profile</div>
+        <div class="frow">
+          <div class="fg"><label class="flbl req" for="d-prof">Profession</label><div class="sw"><select class="fs" id="d-prof"><option value="">Select profession</option><option>Architect</option><option>Civil Engineer</option><option>Quantity Surveyor</option><option>Project Manager</option><option>Other</option></select></div></div>
+          <div class="fg"><label class="flbl req" for="d-reg">Registration Status</label><div class="sw"><select class="fs" id="d-reg"><option value="">Select status</option><option>SACAP Registered</option><option>ECSA Registered</option><option>Unregistered</option></select></div></div>
+        </div>
+        <div class="fg"><label class="flbl req" for="d-scale">Project Scale Handled</label><div class="sw"><select class="fs" id="d-scale"><option value="">Select scale</option><option>Less than R5m</option><option>R5m – R20m</option><option>Greater than R20m</option></select></div></div>
+      </div>
+
+      <!-- Category-specific: Aspiring Developer -->
+      <div id="form-aspiring" class="cat-fields" style="display:none">
+        <div class="fdiv">Aspiring Developer Profile</div>
+        <div class="fg"><label class="flbl req">What area of development interests you most?</label>
+          <div class="cg" id="asp-interest" role="group" aria-label="Development interests">
+            <div class="co" onclick="toggleCb(this)" role="checkbox" tabindex="0"><div class="cbox" aria-hidden="true"></div>Student Accommodation</div>
+            <div class="co" onclick="toggleCb(this)" role="checkbox" tabindex="0"><div class="cbox" aria-hidden="true"></div>Residential Housing</div>
+            <div class="co" onclick="toggleCb(this)" role="checkbox" tabindex="0"><div class="cbox" aria-hidden="true"></div>Commercial Property</div>
+            <div class="co" onclick="toggleCb(this)" role="checkbox" tabindex="0"><div class="cbox" aria-hidden="true"></div>Mixed-Use Development</div>
+          </div>
+        </div>
+        <div class="fg"><label class="flbl" for="asp-exp">Relevant experience or qualifications</label><input class="fi" id="asp-exp" placeholder="e.g. Civil Engineering degree, property management experience"></div>
+      </div>
+    </div>
+
+    <!-- ── STEP 3: Funding & Partnership ── -->
+    <div class="form-step" id="step-3">
+      <div class="fdiv">Funding & Partnership Intention</div>
+      <div class="fg">
+        <label class="flbl req">What are you seeking? <span class="flbl-hint">(select all that apply)</span></label>
+        <div class="cg" id="c-seeking" role="group" aria-label="Funding types sought">
+          <div class="co" onclick="toggleCb(this)" role="checkbox" tabindex="0" aria-checked="false"><div class="cbox" aria-hidden="true"></div>Equity Partner</div>
+          <div class="co" onclick="toggleCb(this)" role="checkbox" tabindex="0" aria-checked="false"><div class="cbox" aria-hidden="true"></div>Debt Funding</div>
+          <div class="co" onclick="toggleCb(this)" role="checkbox" tabindex="0" aria-checked="false"><div class="cbox" aria-hidden="true"></div>Joint Venture Partner</div>
+          <div class="co" onclick="toggleCb(this)" role="checkbox" tabindex="0" aria-checked="false"><div class="cbox" aria-hidden="true"></div>Advisory Support</div>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="flbl req">Have you previously raised funding?</label>
+        <div class="rg" id="r-prevfund" role="radiogroup" aria-label="Previous funding history">
+          <div class="ro" onclick="pickRadio('r-prevfund',this)" role="radio" tabindex="0" aria-checked="false"><div class="rdot" aria-hidden="true"></div>Yes (Institutional)</div>
+          <div class="ro" onclick="pickRadio('r-prevfund',this)" role="radio" tabindex="0" aria-checked="false"><div class="rdot" aria-hidden="true"></div>Yes (Private)</div>
+          <div class="ro" onclick="pickRadio('r-prevfund',this)" role="radio" tabindex="0" aria-checked="false"><div class="rdot" aria-hidden="true"></div>No</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STEP 4: Project Details & Competitive Edge ── -->
+    <div class="form-step" id="step-4">
+      <div class="fdiv">Project Details</div>
+      <div class="fg">
+        <label class="flbl req" for="t-project">Briefly describe your project</label>
+        <textarea class="fta" id="t-project" placeholder="Describe your project — location, size, target market, current status, and what makes it viable. Be as specific as possible." maxlength="2000" oninput="countChars('t-project','tc-project')"></textarea>
+        <div class="fta-count"><span id="tc-project">0</span> / 2,000 characters</div>
+      </div>
+      <div class="fdiv">Competitive Edge</div>
+      <div class="fg">
+        <label class="flbl req" for="t-why">Why should BeMore choose you?</label>
+        <textarea class="fta" id="t-why" placeholder="What sets you apart? Share your track record, unique advantage, vision, or commitment that makes your project stand out." maxlength="2000" oninput="countChars('t-why','tc-why')"></textarea>
+        <div class="fta-count"><span id="tc-why">0</span> / 2,000 characters</div>
+      </div>
+    </div>
+
+    <!-- ── STEP 5: Commitment & Legal ── -->
+    <div class="form-step" id="step-5">
+      <div class="fdiv">Summit Commitment</div>
+      <div class="fg">
+        <label class="flbl req">Are you available to attend the summit physically?</label>
+        <p style="font-size:var(--fs-label-md);color:var(--on-surface-low);margin-bottom:var(--sp-3);line-height:var(--lh-body)">30–31 March 2026, Sandton. Please note tickets are non-transferable.</p>
+        <div class="rg" id="r-attend" role="radiogroup" aria-label="Summit attendance">
+          <div class="ro" onclick="pickRadio('r-attend',this)" role="radio" tabindex="0"><div class="rdot" aria-hidden="true"></div>Yes</div>
+          <div class="ro" onclick="pickRadio('r-attend',this)" role="radio" tabindex="0"><div class="rdot" aria-hidden="true"></div>No</div>
+        </div>
+      </div>
+
+      <div class="fdiv">Terms & Conditions</div>
+      <div class="legal-box" tabindex="0" aria-label="Terms and conditions text">
+        <h4>BeMore Developer Catalyst Programme</h4>
+        <ol>
+          <li><strong>Purpose:</strong> The Programme, in partnership with PBSA, is designed to identify, support, and showcase emerging property developers by providing access to mentorship, deal preparation support, and potential exposure to funding institutions. Participation <strong>does not guarantee funding, partnership, or investment</strong>.</li>
+          <li><strong>Eligibility:</strong> All information provided must be <strong>true, accurate, and complete</strong>. You must have the authority to submit the project. BeMore reserves the right to disqualify any application found to contain misleading or false information.</li>
+          <li><strong>Selection:</strong> Submission does <strong>not guarantee selection</strong>. A panel will shortlist applicants based on viability, impact, and readiness. Decisions are <strong>final and not subject to appeal</strong>.</li>
+          <li><strong>Pitch Participation:</strong> Shortlisted applicants may be invited to present their projects to funding institutions and partners (Dragon's Den format).</li>
+          <li><strong>Intellectual Property:</strong> You retain ownership of your project and IP. By participating, you grant BeMore a non-exclusive right to review, discuss, and evaluate the submission. Submissions are treated with reasonable confidentiality.</li>
+          <li><strong>No Financial Guarantee:</strong> The Programme does not constitute financial advice, investment solicitation, or a guarantee of funding or deal closure.</li>
+          <li><strong>Use of Information:</strong> Your information may be used for programme evaluation, engagement with potential funding partners, and internal analysis. No information will be sold or shared outside Programme partners without consent.</li>
+          <li><strong>Marketing:</strong> Shortlisted participants agree that their name, project name, and general description may be used for marketing and promotional purposes. Sensitive information shared only with consent.</li>
+          <li><strong>Limitation of Liability:</strong> BeMore and its partners shall not be liable for any loss arising from participation, funding decisions by third parties, or business outcomes.</li>
+          <li><strong>Right to Amend:</strong> BeMore reserves the right to modify Programme structure, timelines, criteria, or cancel/postpone if necessary.</li>
+        </ol>
+      </div>
+      <div class="consent-row" id="consent-tc" onclick="toggleConsent('consent-tc')" role="checkbox" tabindex="0" aria-checked="false" aria-label="Accept terms and conditions">
+        <div class="consent-check" aria-hidden="true"></div>
+        <div class="consent-text"><strong>I have read and agree</strong> to the Terms & Conditions of the BeMore Developer Catalyst Programme.</div>
+      </div>
+
+      <div class="fdiv" style="margin-top:var(--sp-8)">POPIA Consent</div>
+      <div class="legal-box" tabindex="0" aria-label="POPIA consent text">
+        <h4>Consent to Process Personal Information</h4>
+        <p>By submitting this application, I hereby:</p>
+        <ul style="padding-left:var(--sp-5);margin-top:var(--sp-3)">
+          <li>Consent to BeMore Group and its Programme partners collecting, processing, and storing my personal and project-related information for evaluation, communication, and engagement with funding institutions.</li>
+          <li>Understand that my information will be handled in accordance with the <strong>Protection of Personal Information Act (POPIA)</strong>.</li>
+          <li>Acknowledge that I may request access to, correction of, or deletion of my personal information at any time.</li>
+        </ul>
+      </div>
+      <div class="consent-row" id="consent-popia" onclick="toggleConsent('consent-popia')" role="checkbox" tabindex="0" aria-checked="false" aria-label="Provide POPIA consent">
+        <div class="consent-check" aria-hidden="true"></div>
+        <div class="consent-text"><strong>I consent</strong> to the processing of my personal information as described above.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Footer — sticky on mobile -->
+  <div class="form-foot">
+    <p class="form-note"><strong>🔒 Secure</strong> · SSL Encrypted · POPIA Compliant</p>
+    <div class="form-btns">
+      <button class="btn-prev" id="btn-prev" onclick="prevStep()" style="display:none" aria-label="Previous step">← Previous</button>
+      <button class="btn-next" id="btn-next" onclick="nextStep()" aria-label="Continue to next step">Continue →</button>
+      <button class="btn-submit" id="btn-submit" onclick="submitForm()" style="display:none" aria-label="Submit application">Submit Application →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ SUCCESS ══════ -->
+<div id="view-success" class="view" role="main" aria-label="Application submitted successfully">
+  <div class="success-wrap">
+    <div class="success-ico" aria-hidden="true">✓</div>
+    <h2 class="success-h">Application Received</h2>
+    <p class="success-p">Your application is now under review. Our merit-based selection process ensures only the most aligned opportunities reach the Deal Room. Expect contact within 5 business days.</p>
+    <div class="ref-box">
+      <div class="ref-lbl">Your Reference Number</div>
+      <div class="ref-num mono" id="ref-display" aria-live="polite">BM-2026-0000</div>
+    </div>
+    <div class="summit-box">
+      <h4>BeMore Summit 2026</h4>
+      <p>30–31 March 2026 · Sandton Convention Centre</p>
+      <span class="accent">★ Shortlisted applicants receive personal invitations</span>
+    </div>
+    <button class="btn-apply" onclick="go('hero')" style="width:100%">← Return to Homepage</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast" role="alert" aria-live="assertive"></div>
+
+<script>
+// ── CONFIG ──
+const API_URL = 'http://localhost:5000/api';
+let USE_API = false;
+let AUTH_TOKEN = localStorage.getItem('bm_token');
+
+const STORE = {
+  _k: 'bm_apps',
+  get()  { return JSON.parse(localStorage.getItem(this._k)||'[]') },
+  add(a) { const d=this.get(); d.unshift(a); localStorage.setItem(this._k,JSON.stringify(d)) },
+  update(id,p) { const d=this.get(); const i=d.findIndex(x=>x._id===id); if(i>-1){Object.assign(d[i],p);localStorage.setItem(this._k,JSON.stringify(d))} }
+};
+
+async function checkBackend() {
+  try { const r=await fetch(API_URL+'/health',{signal:AbortSignal.timeout(2000)}); USE_API=r.ok; }
+  catch { USE_API=false; }
+}
+async function apiCall(m,p,b) {
+  const o={method:m,headers:{'Content-Type':'application/json',...(AUTH_TOKEN?{Authorization:`Bearer ${AUTH_TOKEN}`}:{})}};
+  if(b) o.body=JSON.stringify(b);
+  return (await fetch(API_URL+p,o)).json();
+}
+
+// ── VIEWS ──
+function go(v) {
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+window.addEventListener('scroll',()=>document.getElementById('nav').classList.toggle('solid',scrollY>40));
+
+// ── Keyboard support for gateway cards and controls ──
+document.addEventListener('keydown', e => {
+  if (e.key==='Enter'||e.key===' ') {
+    const t=e.target;
+    if (t.classList.contains('gc')||t.classList.contains('ro')||t.classList.contains('co')||t.classList.contains('consent-row')) {
+      e.preventDefault(); t.click();
+    }
+  }
+});
+
+// ── GATEWAY ──
+let currentProfile='';
+const STEP_TITLES = [
+  {title:'Basic Information',     sub:'Let\'s start with your contact details.'},
+  {title:'Development Readiness', sub:'Tell us about your project status and readiness level.'},
+  {title:'Funding & Partnership', sub:'What kind of support are you looking for?'},
+  {title:'Project Details',       sub:'Describe your project and what sets you apart.'},
+  {title:'Confirmation & Consent',sub:'Review the terms and submit your application.'}
+];
+
+function pickProfile(p) {
+  currentProfile = p;
+  document.querySelectorAll('.cat-fields').forEach(el=>el.style.display='none');
+  const catForm = document.getElementById('form-'+p);
+  if (catForm) catForm.style.display='block';
+  currentStep = 1;
+  updateFormUI();
+  go('form');
+}
+
+// ── MULTI-STEP FORM ──
+let currentStep = 1;
+const TOTAL_STEPS = 5;
+
+function updateFormUI() {
+  for (let i=1;i<=TOTAL_STEPS;i++) {
+    const panel = document.getElementById('step-'+i);
+    if (panel) panel.classList.toggle('active', i===currentStep);
+  }
+  for (let i=2;i<=6;i++) {
+    const dot=document.getElementById('pd-'+i), lbl=document.getElementById('pl-'+i), line=document.getElementById('pline-'+(i-1));
+    const stepIdx=i-1;
+    if(dot){dot.className='ps-dot '+(stepIdx<currentStep?'done':stepIdx===currentStep?'active':'idle');dot.textContent=stepIdx<currentStep?'✓':i}
+    if(lbl){lbl.className='ps-lbl'+(stepIdx<=currentStep?' active':'')+(stepIdx<currentStep?' done':'')}
+    if(line){line.className='prog-line'+(stepIdx<=currentStep?' done':'')}
+  }
+  const s=STEP_TITLES[currentStep-1];
+  document.getElementById('form-title').textContent=s.title;
+  document.getElementById('form-sub').textContent=s.sub;
+  document.getElementById('form-step-lbl').textContent=`STEP ${currentStep+1} OF ${TOTAL_STEPS+1}`;
+  document.querySelector('.form-prog').setAttribute('aria-valuenow',currentStep+1);
+  document.getElementById('btn-prev').style.display=currentStep>1?'':'none';
+  document.getElementById('btn-next').style.display=currentStep<TOTAL_STEPS?'':'none';
+  document.getElementById('btn-submit').style.display=currentStep===TOTAL_STEPS?'':'none';
+  document.getElementById('form-back-btn').onclick=currentStep===1?()=>go('gateway'):()=>prevStep();
+  document.getElementById('form-back-btn').textContent=currentStep===1?'← Change Profile':'← Back';
+}
+
+function validateStep(step) {
+  let ok=true;
+  const err=id=>{const el=document.getElementById(id);if(el){el.classList.add('err');ok=false}};
+  const clr=id=>{const el=document.getElementById(id);if(el)el.classList.remove('err')};
+  const val=id=>{const el=document.getElementById(id);return el?el.value.trim():''};
+
+  if(step===1){['f-fn','f-sn','f-em','f-ph'].forEach(id=>{clr(id);if(!val(id))err(id)});if(ok&&!/\S+@\S+\.\S+/.test(val('f-em'))){err('f-em');toast('Please enter a valid email address');return false}}
+  if(step===2){if(!getRadio('r-land')){toast('Please select your land status');return false}clr('s-stage');clr('s-value');if(!val('s-stage'))err('s-stage');if(!val('s-value'))err('s-value')}
+  if(step===3){if(!getChecked('c-seeking').length){toast('Please select at least one option');return false}if(!getRadio('r-prevfund')){toast('Please select your funding history');return false}}
+  if(step===4){clr('t-project');clr('t-why');if(val('t-project').length<50){err('t-project');toast('Please describe your project (minimum 50 characters)');return false}if(val('t-why').length<50){err('t-why');toast('Please explain why BeMore should choose you (minimum 50 characters)');return false}}
+  if(step===5){if(!getRadio('r-attend')){toast('Please confirm your summit attendance');return false}if(!document.getElementById('consent-tc').classList.contains('sel')){toast('Please accept the Terms & Conditions');return false}if(!document.getElementById('consent-popia').classList.contains('sel')){toast('Please provide POPIA consent');return false}}
+  if(!ok)toast('Please complete all required fields');
+  return ok;
+}
+
+function nextStep(){if(!validateStep(currentStep))return;if(currentStep<TOTAL_STEPS){currentStep++;updateFormUI();window.scrollTo({top:0,behavior:'smooth'})}}
+function prevStep(){if(currentStep>1){currentStep--;updateFormUI();window.scrollTo({top:0,behavior:'smooth'})}}
+function formBack(){currentStep===1?go('gateway'):prevStep()}
+
+// ── FORM HELPERS ──
+function pickRadio(gid,el){
+  document.querySelectorAll('#'+gid+' .ro').forEach(r=>{r.classList.remove('sel');r.setAttribute('aria-checked','false')});
+  el.classList.add('sel');el.setAttribute('aria-checked','true');
+}
+function toggleCb(el){
+  el.classList.toggle('sel');
+  el.setAttribute('aria-checked',el.classList.contains('sel')?'true':'false');
+}
+function toggleConsent(id){
+  const el=document.getElementById(id);el.classList.toggle('sel');
+  el.setAttribute('aria-checked',el.classList.contains('sel')?'true':'false');
+}
+function getRadio(gid){const s=document.querySelector('#'+gid+' .ro.sel');return s?s.textContent.trim():''}
+function getChecked(gid){return[...document.querySelectorAll('#'+gid+' .co.sel')].map(e=>e.textContent.trim())}
+function countChars(tid,cid){document.getElementById(cid).textContent=document.getElementById(tid).value.length}
+
+// ── AUTO-TAG ──
+function autoTag(type,f){
+  const t=[];
+  if(f.estimatedValue==='R100m+')t.push('HIGH_VALUE','LARGE_CAPITAL');
+  if(f.estimatedValue==='R20m – R100m')t.push('HIGH_VALUE');
+  if(f.estimatedValue==='R5m – R20m')t.push('MID_VALUE');
+  if(f.landStatus==='Land Secured')t.push('LAND_SECURED');
+  if(f.projectStage==='Funding Stage')t.push('FUNDING_STAGE');
+  if(f.projectStage==='Construction Stage')t.push('SHOVEL_READY');
+  if(f.previousFunding?.includes('Institutional'))t.push('FUNDED_BEFORE','INSTITUTIONAL_TRACK');
+  if(f.previousFunding?.includes('Private'))t.push('FUNDED_BEFORE');
+  if(f.seeking?.includes('Equity Partner'))t.push('SEEKS_EQUITY');
+  if(f.seeking?.includes('Debt Funding'))t.push('SEEKS_DEBT');
+  if(f.landStatus==='Land Secured'&&['Funding Stage','Construction Stage'].includes(f.projectStage))t.push('PIPELINE_READY');
+  if(f.landStatus==='Land Secured'&&f.estimatedValue?.includes('R100m'))t.push('INSTITUTIONAL_GRADE');
+  if(type==='developer'){if(f.yearsExperience==='10+ years')t.push('EXPERIENCED');if(f.developmentTypes?.includes('Student Housing'))t.push('STUDENT_FOCUS')}
+  if(type==='landowner'){if(f.landSize?.includes('5,000'))t.push('LARGE_LAND');if(f.isServiced?.includes('Yes'))t.push('SERVICED');if(f.zoningStatus&&!['Unzoned','Awaiting Rezoning'].includes(f.zoningStatus))t.push('ZONED')}
+  if(type==='investor'){t.push('INVESTOR');if(f.investmentTicket?.includes('R100m'))t.push('LARGE_INVESTOR')}
+  if(type==='student'){if(f.bedCount?.includes('500+'))t.push('LARGE_OPERATOR');if(f.occupancyRate?.includes('95%+'))t.push('HIGH_OCCUPANCY');if(f.universityPartnership?.includes('Yes'))t.push('UNI_ACCREDITED');if(f.bedCount?.includes('500+')&&f.occupancyRate?.includes('95%+'))t.push('INSTITUTIONAL_GRADE')}
+  if(type==='professional'){if(f.projectScale?.includes('R20m'))t.push('LARGE_SCALE');if(f.registrationStatus?.includes('SACAP')||f.registrationStatus?.includes('ECSA'))t.push('REGISTERED')}
+  return[...new Set(t)];
+}
+
+// ── SUBMIT ──
+async function submitForm(){
+  if(!validateStep(TOTAL_STEPS))return;
+  const personal={firstName:document.getElementById('f-fn').value.trim(),surname:document.getElementById('f-sn').value.trim(),email:document.getElementById('f-em').value.trim().toLowerCase(),phone:document.getElementById('f-ph').value.trim(),companyName:document.getElementById('f-co').value.trim()};
+  const formData={landStatus:getRadio('r-land'),projectStage:document.getElementById('s-stage').value,estimatedValue:document.getElementById('s-value').value,seeking:getChecked('c-seeking'),previousFunding:getRadio('r-prevfund'),projectDescription:document.getElementById('t-project').value.trim(),whyChooseYou:document.getElementById('t-why').value.trim(),summitAttendance:getRadio('r-attend'),tcAccepted:true,popiaConsent:true};
+  if(currentProfile==='developer'){formData.yearsExperience=document.getElementById('a-exp').value;formData.developmentTypes=getChecked('a-dtype')}
+  else if(currentProfile==='landowner'){formData.landSize=document.getElementById('b-size').value;formData.zoningStatus=document.getElementById('b-zone').value;formData.isServiced=getRadio('b-serv');formData.ownershipStructure=document.getElementById('b-own').value}
+  else if(currentProfile==='investor'){formData.investmentFocus=getChecked('inv-focus');formData.investmentTicket=document.getElementById('inv-ticket').value}
+  else if(currentProfile==='student'){formData.bedCount=document.getElementById('c-beds').value;formData.occupancyRate=document.getElementById('c-occ').value;formData.universityPartnership=getRadio('c-uni');formData.assetType=document.getElementById('c-asset').value}
+  else if(currentProfile==='professional'){formData.profession=document.getElementById('d-prof').value;formData.registrationStatus=document.getElementById('d-reg').value;formData.projectScale=document.getElementById('d-scale').value}
+  else if(currentProfile==='aspiring'){formData.developmentInterests=getChecked('asp-interest');formData.relevantExperience=document.getElementById('asp-exp').value.trim()}
+
+  const btn=document.getElementById('btn-submit');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Submitting...';
+  try{
+    let refNumber;
+    if(USE_API){const r=await apiCall('POST','/applications',{userType:currentProfile,personal,formData});if(!r.success){toast(r.message||'Submission failed. Try again.');btn.disabled=false;btn.textContent='Submit Application →';return}refNumber=r.data.refNumber}
+    else{refNumber=`BM-${new Date().getFullYear()}-${String(Math.floor(Math.random()*9000)+1000)}`;STORE.add({_id:'local_'+Date.now(),refNumber,userType:currentProfile,personal,formData,tags:autoTag(currentProfile,formData),status:'new',dealRoom:{summitAccess:false,dealRoomEntry:false,funders:[]},submittedAt:new Date().toISOString()})}
+    document.getElementById('ref-display').textContent=refNumber;go('success');
+  }catch(e){
+    const refNumber=`BM-${new Date().getFullYear()}-${String(Math.floor(Math.random()*9000)+1000)}`;
+    STORE.add({_id:'local_'+Date.now(),refNumber,userType:currentProfile,personal,formData,tags:autoTag(currentProfile,formData),status:'new',dealRoom:{summitAccess:false,dealRoomEntry:false,funders:[]},submittedAt:new Date().toISOString()});
+    document.getElementById('ref-display').textContent=refNumber;go('success');
+  }
+  btn.disabled=false;btn.textContent='Submit Application →';
+}
+
+// ── TOAST ──
+let _tt;
+function toast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>e.classList.remove('show'),3200)}
+
+// ── PWA SERVICE WORKER ──
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+
+// ── INIT ──
+checkBackend().then(()=>console.log(USE_API?'✓ Connected to MongoDB':'◌ Running in localStorage demo mode'));
+</script>
+</body>
+</html>

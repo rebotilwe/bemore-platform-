@@ -1,0 +1,117 @@
+/* ═══════════════════════════════════════════════════
+   DASHBOARD — Dark luxury editorial
+   ═══════════════════════════════════════════════════ */
+
+/* Dashboard, leads, reports, deal room — all use admin layout + shared table/card styles */
+
+.report-card {
+  padding: var(--sp-7);
+  background: var(--ink-soft);
+  border: 1px solid rgba(249,245,238,0.08);
+  border-radius: var(--r-lg);
+  cursor: pointer;
+  transition: all var(--dur-long) var(--ease-std);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.report-card:hover {
+  border-color: rgba(201,168,76,0.4);
+  box-shadow: var(--shadow-md);
+}
+
+.report-card-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: var(--fs-title-lg);
+  color: var(--cream);
+  margin-bottom: var(--sp-2);
+}
+
+.report-card-desc {
+  font-size: var(--fs-body-sm);
+  color: var(--steel-light);
+  line-height: var(--lh-body);
+  margin-bottom: var(--sp-3);
+}
+
+.report-card-count {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: var(--fs-display-sm);
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.reports-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-5);
+  margin-bottom: var(--sp-10);
+}
+
+@media (min-width: 600px) {
+  .reports-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Deal room cards */
+.dr-card {
+  padding: var(--sp-6);
+  background: var(--ink-soft);
+  border: 1px solid rgba(249,245,238,0.08);
+  border-radius: var(--r-lg);
+  margin-bottom: var(--sp-4);
+}
+
+.dr-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: var(--fs-title-lg);
+  color: var(--cream);
+  margin-bottom: var(--sp-1);
+}
+
+.dr-type {
+  font-size: var(--fs-label-lg);
+  color: var(--steel);
+  margin-bottom: var(--sp-4);
+}
+
+.dr-checks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+
+.dr-check {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: var(--fs-body-sm);
+  color: var(--steel-light);
+}
+
+.dr-check-box {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-sm);
+  border: 2px solid var(--steel);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--dur-short) var(--ease-std);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dr-check-box.on {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--ink);
+}
+
+.dr-funders {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-2);
+}

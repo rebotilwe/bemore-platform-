@@ -1,0 +1,26 @@
+/* ═══════════════════════════════════════════════════
+   TOAST — Dark luxury editorial
+   ═══════════════════════════════════════════════════ */
+
+.toast {
+  position: fixed;
+  bottom: var(--sp-8);
+  right: var(--sp-8);
+  padding: var(--sp-4) var(--sp-6);
+  background: var(--ink-soft);
+  border: 1px solid rgba(201,168,76,0.3);
+  border-radius: var(--r-sm);
+  color: var(--cream);
+  font-size: var(--fs-body-sm);
+  z-index: 1000;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+  max-width: calc(100vw - var(--sp-16));
+}
+
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}

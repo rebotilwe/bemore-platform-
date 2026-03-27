@@ -1,0 +1,189 @@
+Here is a technical specification document structured for a web developer, translating the "BeMore" advert and the client’s requirements into actionable development tasks.
+
+Technical Specification: BeMore Property Development Portal
+
+1. Project Overview
+
+Project Name: BeMore Property Development & Funding Portal
+Objective: To build a lead-generation website that captures applications from property developers, landowners, and built environment professionals seeking funding or institutional partnerships. The site must utilize a decision-tree (branching logic) interface to qualify users before presenting the application form. It must include an admin backend for reporting and data segmentation.
+
+2. Target Audience
+
+Based on the "BeMore" advert, the users fall into four primary categories:
+
+Emerging Property Developers
+
+Landowners with Development Potential
+
+Student Accommodation Operators
+
+Built Environment Professionals (Architects, Engineers, Project Managers)
+
+3. User Experience & Navigation (The Decision Tree)
+
+The primary landing page should act as a "Gateway." Instead of a standard menu, users must select their profile to reveal the relevant application form.
+
+3.1. The Gateway Screen (Stage 1)
+
+Component: A set of large clickable cards or radio buttons.
+Question: “What best describes your current status?”
+
+Option	Resulting Action
+Emerging Property Developer	Branches to Form A
+Landowner with Development Potential	Branches to Form B
+Student Accommodation Operator	Branches to Form C
+Built Environment Professional	Branches to Form D
+4. Application Forms (Stage 2)
+
+Each form must capture specific data relevant to the user type to qualify them for the "SME Access Initiative." All forms share a common block for personal details but diverge in property/business specifics.
+
+4.1. Common Fields (All Forms)
+
+First Name (Text, Required)
+
+Surname (Text, Required)
+
+Email Address (Email, Required)
+
+Phone Number (Tel, Required)
+
+Company / Entity Name (Text, Optional)
+
+4.2. Form A: Emerging Property Developer
+
+Targeting those who need "Access Capital" to "Unlock Scale."
+
+Field Label	Type	Options / Logic	Required
+Current Project Stage	Dropdown	Ideation / Feasibility / Approved Plans / Construction Ready	Yes
+Years of Experience	Dropdown	0-2 years / 3-5 years / 6-10 years / 10+ years	Yes
+Funding Requirement	Dropdown	R500k – R1m / R1m – R5m / R5m – R20m / R20m+	Yes
+Previous Institutional Funding	Radio	Yes / No	Yes
+Development Type	Checkbox	Residential / Commercial / Student Housing / Mixed-Use	Yes
+4.3. Form B: Landowner with Development Potential
+
+Targeting those with land but needing funding/partners to develop.
+
+Field Label	Type	Options / Logic	Required
+Land Size	Dropdown	< 1000sqm / 1000sqm – 5000sqm / > 5000sqm	Yes
+Zoning Status	Dropdown	Residential / Commercial / Mixed-Use / Unzoned / Awaiting Rezoning	Yes
+Is Land Serviced?	Radio	Yes (Water/Electricity/Sewage on site) / No	Yes
+Ownership Structure	Dropdown	Sole Owner / Partnership / Trust / Company	Yes
+4.4. Form C: Student Accommodation Operator
+
+Targeting niche operators (as per advert: Student Accommodation).
+
+Field Label	Type	Options / Logic	Required
+Current Bed Count	Dropdown	< 50 beds / 50 – 200 beds / 200 – 500 beds / 500+ beds	Yes
+Occupancy Rate	Slider / Dropdown	< 60% / 60% – 80% / 80% – 95% / 95%+	Yes
+University Partnership	Radio	Yes (Formal agreement with Uni) / No	Yes
+Asset Type	Dropdown	Converted Residential / Purpose-Built / Pending Acquisition	Yes
+4.5. Form D: Built Environment Professional
+
+Targeting architects, engineers, etc. (Service providers).
+
+Field Label	Type	Options / Logic	Required
+Profession	Dropdown	Architect / Civil Engineer / Quantity Surveyor / Project Manager / Other	Yes
+Registration Status	Dropdown	SACAP Registered / ECSA Registered / Unregistered	Yes
+Project Scale Handled	Dropdown	< R5m / R5m – R20m / > R20m	Yes
+Looking For	Checkbox	Equity Partnership / Advisory Role / Turnkey Development Projects	Yes
+5. Administrative Backend & Reporting Section
+
+The website must have a password-protected admin area. The primary function is to view summaries and categorize answers for the Summit/Expo selection (Deal Room Engagement).
+
+5.1. Dashboard Overview
+
+Total Leads Count: Total number of applications submitted.
+
+Filter by Category: Tabs or sidebar filters for: Developers, Landowners, Operators, Professionals.
+
+Export Function: Ability to export filtered lists to CSV/Excel.
+
+5.2. Categorization & Summaries
+
+The system must allow the admin to generate reports based on "similar answers per question type."
+
+Example Reports Required:
+
+Funding Threshold Report: List all applicants who selected “R5m – R20m” or “R20m+” in the Funding Requirement field (Developers).
+
+Land Readyness Report: List all Landowners with “Zoning Status: Approved” and “Is Land Serviced: Yes” for immediate pipeline deals.
+
+Student Housing Report: List all Operators with “Bed Count: 500+” and “Occupancy Rate: 95%+” to present to institutional funders (DBSA, NHFC).
+
+Merit-Based Selection List: A toggle button to mark applicants as “Invited to Summit” or “Deal Room Shortlist.”
+
+5.3. Deal Room Engagement Tracking
+
+A specific section where admins can link applicants to the What You Get benefits from the advert:
+
+Sponsored/Discounted Summit Access (Checkbox)
+
+Entry into Deal Room Engagement (Checkbox)
+
+Exposure to Funders (Tag system: DBSA, NHFC, NEF, SAIF)
+
+6. Technical Requirements
+
+6.1. Core Functionality
+
+Database: Store all form submissions with timestamps and user-type tags.
+
+Validation: JavaScript validation to ensure no empty fields before submission.
+
+Confirmation: Auto-responder email to applicant confirming receipt (matching the "Strictly Merit-Based Selection" tone). Admin notification email on new submission.
+
+6.2. User Interface (UI) Specifications
+
+Mobile Responsive: Must function perfectly on mobile devices (as the advert includes a QR code "SCAN TO APPLY").
+
+Progress Indicator: Since forms branch, users should see a progress bar (e.g., "Step 1: Profile Selection" -> "Step 2: Application").
+
+Calls to Action (CTA):
+
+Primary CTA: "Apply Now" (Above the fold).
+
+Secondary CTA: "View Summit Agenda" (Links to event details for 30-31 MAR 2026).
+
+6.3. Hosting & Security
+
+SSL Certificate: Required for secure data capture (capturing names and financial details).
+
+Spam Protection: Implement reCAPTCHA v3 on all forms.
+
+7. Data Flow Diagram (For Developers)
+
+User Arrives: Sees Hero section with "BeMore SME Access Initiative" and "ACCESS CAPITAL. UNLOCK SCALE."
+
+Decision Tree: User clicks their profile (Developer, Landowner, etc.).
+
+Conditional Logic: The system loads the specific form fields based on the selection.
+
+Submission: Data is sanitized and stored in the database with a user_type tag.
+
+Admin Action: Admin logs in -> Views "Reporting" -> Filters by "Funding Requirement" or "Zoning Status" -> Exports list for the Deal Room.
+
+Outcome: Shortlisted users are marked and invited to the Summit (30-31 Mar 2026, Sandton).
+
+8. Developer Notes
+
+Adherence to Branding: Use the "BeMore" logo and the color scheme implied by the advert (likely bold, professional tones). Display the institutional funder logos prominently on the form page (DBSA, NHFC, NEF, SAIF) to build trust.
+
+"Limited Access" Messaging: Ensure the copy "Limited Access. Strictly Merit-Based Selection" is visible on the form pages to encourage serious applications only.
+
+Summary of Deliverables for Developer:
+
+Frontend: A responsive landing page with a 4-option decision-tree gateway.
+
+4 Dynamic Forms: Logic to show/hide fields based on the user’s initial selection.
+
+Database: Secure storage for lead data.
+
+Admin Dashboard: A report generator capable of filtering by:
+
+User Category (Developer, Landowner, Operator, Professional).
+
+Specific Field Values (e.g., Funding amount, Zoning status, Bed count).
+
+Export functionality (CSV).
+
+Email Automation: Confirmation email to lead; notification email to admin.
