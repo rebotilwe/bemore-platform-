@@ -4,8 +4,11 @@ dist/
 *.log
 .DS_Store
 Thumbs.db
+# Images (except PWA icons)
 *.png
 *.jpg
 *.jpeg
+!frontend/public/icons/*.png
+!frontend/public/favicon.ico
 .claude/
 New folder/
