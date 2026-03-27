@@ -176,6 +176,14 @@ export const api = {
     return request('GET', '/analytics/deal-room');
   },
 
+  async getAuditLog(queryString: string): Promise<PaginatedResponse<unknown>> {
+    return request('GET', `/analytics/events?${queryString}`);
+  },
+
+  async bulkUpdateStatus(ids: string[], status: string): Promise<ApiResponse<{ updated: number }>> {
+    return request('POST', '/applications/bulk-status', { ids, status });
+  },
+
   async getReport(name: ReportName): Promise<ApiResponse<ReportData>> {
     if (store.get('useApi')) return request('GET', `/reports/${name}`);
     const apps = localStore.get();

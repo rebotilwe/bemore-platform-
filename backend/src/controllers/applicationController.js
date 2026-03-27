@@ -1,6 +1,8 @@
+import Application from '../models/Application.js';
+import { APPLICATION_STATUSES } from '../constants/enums.js';
 import * as appService from '../services/applicationService.js';
 import { track } from '../services/analyticsService.js';
-import { sendSubmissionConfirmation } from '../utils/mailer.js';
+import { sendSubmissionConfirmation, sendStatusNotification } from '../utils/mailer.js';
 
 export async function submit(req, res, next) {
   try {
@@ -67,6 +69,11 @@ export async function update(req, res, next) {
       req,
     });
 
+    // Send email notification on status change
+    if (updates.status && app.personal?.email) {
+      sendStatusNotification(app.personal.email, app.refNumber, app.personal.firstName, updates.status).catch(() => {});
+    }
+
     res.json({ success: true, data: app });
   } catch (err) {
     if (err.status === 400) return res.status(400).json({ success: false, message: err.message });
@@ -108,6 +115,47 @@ export async function exportCsv(req, res, next) {
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename=bemore-applications.csv');
     res.send([headers.join(','), ...rows].join('\n'));
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ── Admin: bulk status update ──
+export async function bulkUpdateStatus(req, res, next) {
+  try {
+    const { ids, status } = req.body;
+    if (!Array.isArray(ids) || !ids.length) {
+      return res.status(400).json({ success: false, message: 'ids array required' });
+    }
+    if (!status || !APPLICATION_STATUSES.includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status' });
+    }
+    if (ids.length > 100) {
+      return res.status(400).json({ success: false, message: 'Maximum 100 items per bulk action' });
+    }
+
+    const result = await Application.updateMany(
+      { _id: { $in: ids } },
+      { $set: { status, updatedAt: new Date() } },
+    );
+
+    track('application.bulk_status', 'admin', {
+      actor: { type: 'admin', id: req.admin?.id },
+      meta: { count: result.modifiedCount, newStatus: status, ids },
+      req,
+    });
+
+    // Send email notifications for significant status changes
+    if (['shortlisted', 'invited', 'funded'].includes(status)) {
+      const apps = await Application.find({ _id: { $in: ids } }).select('personal refNumber');
+      for (const app of apps) {
+        if (app.personal?.email) {
+          sendStatusNotification(app.personal.email, app.refNumber, app.personal.firstName, status).catch(() => {});
+        }
+      }
+    }
+
+    res.json({ success: true, data: { updated: result.modifiedCount } });
   } catch (err) {
     next(err);
   }

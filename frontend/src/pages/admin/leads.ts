@@ -26,6 +26,7 @@ const FILTER_CATEGORIES: { value: string; label: string }[] = [
 
 let currentApps: Application[] = [];
 let totalCount = 0;
+let selectedIds = new Set<string>();
 
 function renderFilterBar(): string {
   const filters = store.get('filters');
@@ -54,6 +55,21 @@ function renderFilterBar(): string {
 
 function renderResultCount(): string {
   return `<div class="leads-result-count" id="leads-count">Showing <strong>${currentApps.length}</strong> of <strong>${totalCount}</strong> leads</div>`;
+}
+
+function renderBulkBar(): string {
+  const statusOpts = ['new', 'reviewing', 'shortlisted', 'invited', 'funded']
+    .map(s => `<option value="${s}">${(STATUS_LABELS as Record<string, string>)[s] || s}</option>`).join('');
+  return `
+  <div class="bulk-bar" id="bulk-bar" style="display:none">
+    <span class="bulk-count" id="bulk-count">0 selected</span>
+    <select class="bulk-status-select" id="bulk-status-select">
+      <option value="">Change Status To...</option>
+      ${statusOpts}
+    </select>
+    <button class="btn-action" id="bulk-apply">Apply</button>
+    <button class="btn-ghost bulk-clear" id="bulk-clear">Clear</button>
+  </div>`;
 }
 
 function renderCards(apps: Application[]): string {
@@ -121,6 +137,7 @@ function renderTable(apps: Application[]): string {
     const btnCls = isShortlisted ? 'btn-action active' : 'btn-action';
 
     return `<tr class="leads-tbl-row" data-id="${app._id}">
+      <td><input type="checkbox" class="bulk-check" data-id="${app._id}" /></td>
       <td><span class="nc" data-id="${app._id}">${name}</span><div class="tbl-sub">${company}</div></td>
       <td><span class="lead-card-ref">${app.refNumber}</span></td>
       <td><span class="tag ${typeCls}">${typeLbl}</span></td>
@@ -138,7 +155,7 @@ function renderTable(apps: Application[]): string {
     <div class="tbl-wrap">
       <table class="dtbl">
         <thead>
-          <tr><th>Name</th><th>Ref</th><th>Type</th><th>Email</th><th>Value</th><th>Tags</th><th>Status</th><th>Date</th><th>Action</th></tr>
+          <tr><th><input type="checkbox" id="bulk-check-all" /></th><th>Name</th><th>Ref</th><th>Type</th><th>Email</th><th>Value</th><th>Tags</th><th>Status</th><th>Date</th><th>Action</th></tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
@@ -165,9 +182,11 @@ async function loadLeads(): Promise<void> {
   currentApps = res.data;
   totalCount = res.pagination?.total ?? res.data.length;
 
-  container.innerHTML = renderResultCount() + renderCards(currentApps) + renderTable(currentApps);
+  selectedIds.clear();
+  container.innerHTML = renderBulkBar() + renderResultCount() + renderCards(currentApps) + renderTable(currentApps);
   bindTableActions();
   bindDetailModal();
+  bindBulkActions();
 }
 
 function bindTableActions(): void {
@@ -213,6 +232,68 @@ function bindDetailModal(): void {
       const app = currentApps.find(a => a._id === id);
       if (app) openModal(renderAppDetail(app), app, () => loadLeads());
     });
+  });
+}
+
+function updateBulkBar(): void {
+  const bar = document.getElementById('bulk-bar');
+  const countEl = document.getElementById('bulk-count');
+  if (!bar || !countEl) return;
+  bar.style.display = selectedIds.size > 0 ? 'flex' : 'none';
+  countEl.textContent = `${selectedIds.size} selected`;
+}
+
+function bindBulkActions(): void {
+  // Individual checkboxes
+  document.querySelectorAll<HTMLInputElement>('.bulk-check').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const id = cb.dataset.id!;
+      if (cb.checked) selectedIds.add(id); else selectedIds.delete(id);
+      updateBulkBar();
+    });
+  });
+
+  // Select all
+  document.getElementById('bulk-check-all')?.addEventListener('change', (e) => {
+    const checked = (e.target as HTMLInputElement).checked;
+    document.querySelectorAll<HTMLInputElement>('.bulk-check').forEach(cb => {
+      cb.checked = checked;
+      const id = cb.dataset.id!;
+      if (checked) selectedIds.add(id); else selectedIds.delete(id);
+    });
+    updateBulkBar();
+  });
+
+  // Apply bulk status
+  document.getElementById('bulk-apply')?.addEventListener('click', async () => {
+    const select = document.getElementById('bulk-status-select') as HTMLSelectElement;
+    const status = select.value;
+    if (!status) { toast('Select a status first'); return; }
+    if (!selectedIds.size) { toast('No leads selected'); return; }
+
+    const btn = document.getElementById('bulk-apply') as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = `Updating ${selectedIds.size}...`;
+
+    const res = await api.bulkUpdateStatus([...selectedIds], status);
+    if (res.success) {
+      toast(`${selectedIds.size} applications updated to ${(STATUS_LABELS as Record<string, string>)[status]}`);
+      selectedIds.clear();
+      loadLeads();
+    } else {
+      toast('Bulk update failed');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Apply';
+  });
+
+  // Clear selection
+  document.getElementById('bulk-clear')?.addEventListener('click', () => {
+    selectedIds.clear();
+    document.querySelectorAll<HTMLInputElement>('.bulk-check').forEach(cb => cb.checked = false);
+    const all = document.getElementById('bulk-check-all') as HTMLInputElement;
+    if (all) all.checked = false;
+    updateBulkBar();
   });
 }
 

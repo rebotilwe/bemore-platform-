@@ -403,3 +403,54 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ── Bulk action bar ── */
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: rgba(201,168,76,0.06);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: var(--r-md);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+  animation: fadeUp var(--dur-med) var(--ease-std) both;
+}
+
+.bulk-count {
+  font-family: 'DM Mono', monospace;
+  font-size: var(--fs-label-md);
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.bulk-status-select {
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--ink);
+  border: 1px solid rgba(249,245,238,0.1);
+  border-radius: var(--r-sm);
+  color: var(--cream);
+  font-family: 'DM Sans', sans-serif;
+  font-size: var(--fs-body-sm);
+  cursor: pointer;
+  outline: none;
+}
+
+.bulk-status-select:focus {
+  border-color: var(--gold);
+}
+
+.bulk-clear {
+  font-size: var(--fs-label-sm) !important;
+  padding: var(--sp-2) var(--sp-3) !important;
+  margin-left: auto;
+}
+
+/* Checkbox in table */
+.bulk-check, #bulk-check-all {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--gold);
+  cursor: pointer;
+}

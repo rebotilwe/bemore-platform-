@@ -3,7 +3,7 @@ import { body, query, param } from 'express-validator';
 import validate from '../middleware/validate.js';
 import auth from '../middleware/auth.js';
 import { PROFILE_CATEGORIES, APPLICATION_STATUSES, SORTABLE_FIELDS } from '../constants/enums.js';
-import { submit, list, getOne, update, stats, exportCsv } from '../controllers/applicationController.js';
+import { submit, list, getOne, update, stats, exportCsv, bulkUpdateStatus } from '../controllers/applicationController.js';
 
 const router = Router();
 
@@ -22,6 +22,7 @@ router.post('/',
 // ── Admin (order matters: static routes before :id) ──
 router.get('/stats', auth, stats);
 router.get('/export/csv', auth, exportCsv);
+router.post('/bulk-status', auth, bulkUpdateStatus);
 
 router.get('/',
   auth,

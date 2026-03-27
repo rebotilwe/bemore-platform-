@@ -13,6 +13,7 @@ const sidebarItems: SidebarItem[] = [
   { label: 'Analytics',  path: '/admin/analytics', icon: '&#9650;' },
   { label: 'Reports',    path: '/admin/reports', icon: '&#9670;' },
   { label: 'Deal Room',  path: '/admin/deal-room', icon: '&#9733;' },
+  { label: 'Audit Log',  path: '/admin/audit-log', icon: '&#9201;' },
 ];
 
 export function renderAdminLayout(content: string, currentPath: string): string {

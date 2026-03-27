@@ -13,6 +13,7 @@ import { leadsPage } from './pages/admin/leads.ts';
 import { reportsPage } from './pages/admin/reports.ts';
 import { dealRoomPage } from './pages/admin/deal-room.ts';
 import { analyticsPage } from './pages/admin/analytics.ts';
+import { auditLogPage } from './pages/admin/audit-log.ts';
 import { renderNav, mountNav } from './components/nav.ts';
 import { renderAdminLayout, mountAdminLayout } from './pages/admin/layout.ts';
 
@@ -28,6 +29,7 @@ const routes: RouteConfig[] = [
   { path: '/admin/analytics',  page: () => analyticsPage,  layout: 'admin', guard: authGuard },
   { path: '/admin/reports',   page: () => reportsPage,   layout: 'admin', guard: authGuard },
   { path: '/admin/deal-room', page: () => dealRoomPage,  layout: 'admin', guard: authGuard },
+  { path: '/admin/audit-log', page: () => auditLogPage,  layout: 'admin', guard: authGuard },
 ];
 
 let currentPage: Page | null = null;
