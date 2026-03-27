@@ -1,20 +1,23 @@
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
-import Admin from '../models/Admin.js';
-import { config } from '../config/index.js';
+import { authenticateAdmin } from '../services/authService.js';
+import { track } from '../services/analyticsService.js';
 
 export async function login(req, res, next) {
   try {
-    const admin = await Admin.findOne({ email: req.body.email });
-    if (!admin || !(await bcrypt.compare(req.body.password, admin.password))) {
+    const result = await authenticateAdmin(req.body.email, req.body.password);
+    if (!result) {
+      track('auth.login_failed', 'auth', {
+        meta: { email: req.body.email },
+        req,
+      });
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
-    const token = jwt.sign(
-      { id: admin._id, email: admin.email },
-      config.jwtSecret,
-      { expiresIn: config.jwtExpiresIn },
-    );
-    res.json({ success: true, data: { token, expiresIn: config.jwtExpiresIn } });
+
+    track('auth.login', 'auth', {
+      actor: { type: 'admin', email: req.body.email },
+      req,
+    });
+
+    res.json({ success: true, data: result });
   } catch (err) {
     next(err);
   }
