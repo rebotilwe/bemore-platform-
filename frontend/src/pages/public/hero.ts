@@ -25,7 +25,7 @@ export const heroPage: Page = {
           </p>
           <div class="hero-actions fade-up stagger-3">
             <a class="btn-primary" href="#/gateway">Apply Now →</a>
-            <button class="btn-ghost">View Summit Agenda</button>
+            <a class="btn-ghost" href="#/about">Learn More</a>
           </div>
           <div class="hero-stats fade-up stagger-4">
             <div class="stat-item">

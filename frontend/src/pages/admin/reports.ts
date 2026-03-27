@@ -188,7 +188,7 @@ function bindResults(): void {
     el.addEventListener('click', () => {
       const id = (el as HTMLElement).dataset.id;
       const app = reportApps.find(a => a._id === id);
-      if (app) openModal(renderAppDetail(app));
+      if (app) openModal(renderAppDetail(app), app);
     });
   });
 }

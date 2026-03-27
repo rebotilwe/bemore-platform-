@@ -111,6 +111,33 @@ function renderCard(app: Application): string {
   </div>`;
 }
 
+let allDealRoomApps: Application[] = [];
+
+function filterAndRender(search: string): void {
+  const container = document.getElementById('dr-content');
+  if (!container) return;
+  const q = search.toLowerCase();
+  const filtered = q
+    ? allDealRoomApps.filter(a =>
+        a.personal?.firstName?.toLowerCase().includes(q) ||
+        a.personal?.surname?.toLowerCase().includes(q) ||
+        a.personal?.email?.toLowerCase().includes(q) ||
+        a.refNumber?.toLowerCase().includes(q) ||
+        a.personal?.companyName?.toLowerCase().includes(q)
+      )
+    : allDealRoomApps;
+
+  if (!filtered.length) {
+    container.innerHTML = `${renderSummary(allDealRoomApps)}<p class="empty-state">No results match "${search}".</p>`;
+    return;
+  }
+
+  container.innerHTML = `
+    ${renderSummary(allDealRoomApps)}
+    <div class="dr-grid">${filtered.map(renderCard).join('')}</div>`;
+  bindDealRoomActions(filtered);
+}
+
 async function loadDealRoom(): Promise<void> {
   const container = document.getElementById('dr-content');
   if (!container) return;
@@ -135,6 +162,8 @@ async function loadDealRoom(): Promise<void> {
     container.innerHTML = '<p class="empty-state">No shortlisted, invited, or funded applications yet.</p>';
     return;
   }
+
+  allDealRoomApps = apps;
 
   container.innerHTML = `
     ${renderSummary(apps)}
@@ -190,7 +219,7 @@ function bindDealRoomActions(apps: Application[]): void {
     el.addEventListener('click', () => {
       const id = el.dataset.id;
       const app = apps.find(a => a._id === id);
-      if (app) openModal(renderAppDetail(app));
+      if (app) openModal(renderAppDetail(app), app, () => loadDealRoom());
     });
   });
 }
@@ -203,6 +232,10 @@ export const dealRoomPage: Page = {
         <h2 class="admin-main-title">Deal Room</h2>
         <div class="dr-header-sub">Manage summit access, deal room entry, and funder assignments</div>
       </div>
+      <div class="dr-search-wrap">
+        <span class="tbl-search-icon" aria-hidden="true">&#9906;</span>
+        <input id="dr-search" class="tbl-search" type="text" placeholder="Search deal room by name, email, ref..." />
+      </div>
       <div id="dr-content">
         <p class="loading-state">Loading...</p>
       </div>
@@ -212,5 +245,13 @@ export const dealRoomPage: Page = {
   mount() {
     mountAdminLayout();
     loadDealRoom();
+
+    let drSearchTimer: ReturnType<typeof setTimeout>;
+    document.getElementById('dr-search')?.addEventListener('input', (e) => {
+      clearTimeout(drSearchTimer);
+      drSearchTimer = setTimeout(() => {
+        filterAndRender((e.target as HTMLInputElement).value.trim());
+      }, 250);
+    });
   },
 };

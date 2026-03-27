@@ -1,7 +1,10 @@
-import type { Application } from '../types/index.ts';
+import type { Application, ApplicationStatus } from '../types/index.ts';
 import { CATEGORY_LABELS } from '../constants/categories.ts';
 import { STATUS_LABELS, STATUS_CSS } from '../constants/status.ts';
+import { APPLICATION_STATUSES } from '../constants/status.ts';
 import { formatDate } from '../utils/format.ts';
+import { api } from '../api.ts';
+import { toast } from './toast.ts';
 
 function row(key: string, value: string | undefined | null): string {
   if (!value) return '';
@@ -25,7 +28,6 @@ function sectionLabel(label: string): string {
 
 function renderProfileFields(type: string, fd: Record<string, unknown>): string {
   let html = '';
-
   if (type === 'developer') {
     html += sectionLabel('Developer Profile');
     html += row('Years Experience', fd.yearsExperience as string);
@@ -56,7 +58,6 @@ function renderProfileFields(type: string, fd: Record<string, unknown>): string 
     html += listRow('Development Interests', fd.developmentInterests as string[]);
     html += row('Relevant Experience', fd.relevantExperience as string);
   }
-
   return html;
 }
 
@@ -69,19 +70,44 @@ export function renderAppDetail(app: Application): string {
   const funders = (app.dealRoom?.funders ?? []).map(f => `<span class="tag-badge">${f}</span>`).join(' ');
   const fd = (app.formData as Record<string, unknown>) ?? {};
 
+  // Status options
+  const statusOptions = APPLICATION_STATUSES.map(s => {
+    const sel = app.status === s ? ' selected' : '';
+    const lbl = (STATUS_LABELS as Record<string, string>)[s] || s;
+    return `<option value="${s}"${sel}>${lbl}</option>`;
+  }).join('');
+
   return `
-    <div class="modal-card">
+    <div class="modal-card" data-app-id="${app._id}">
       <div class="modal-header">
         <div>
           <div class="modal-title">${name}</div>
           <div class="modal-sub-row">
             <span class="lead-card-ref">${app.refNumber}</span>
-            <span class="tag ${statusCls}">${statusLbl}</span>
+            <span class="tag ${statusCls}" id="modal-status-badge">${statusLbl}</span>
           </div>
         </div>
         <button class="modal-close" id="modal-close-btn" aria-label="Close">&times;</button>
       </div>
       <div class="modal-body">
+
+        <!-- ══ ADMIN ACTIONS ══ -->
+        <div class="modal-actions">
+          <div class="modal-action-row">
+            <div class="modal-action-group">
+              <label class="modal-action-lbl" for="modal-status">Status</label>
+              <select class="modal-action-select" id="modal-status">${statusOptions}</select>
+            </div>
+            <button class="btn-action" id="modal-save-status">Update Status</button>
+          </div>
+          <div class="modal-action-row">
+            <div class="modal-action-group" style="flex:1">
+              <label class="modal-action-lbl" for="modal-notes">Admin Notes</label>
+              <textarea class="modal-action-textarea" id="modal-notes" rows="3" placeholder="Add notes about this application...">${app.adminNotes || ''}</textarea>
+            </div>
+            <button class="btn-action" id="modal-save-notes">Save Notes</button>
+          </div>
+        </div>
 
         ${sectionLabel('Personal Details')}
         <div class="detail-grid">
@@ -122,9 +148,8 @@ export function renderAppDetail(app: Application): string {
         ${sectionLabel('Intelligence Tags')}
         ${tags ? `<div class="detail-tags-wrap">${tags}</div>` : '<p class="detail-empty">No tags assigned.</p>'}
 
-        ${sectionLabel('Application Status')}
+        ${sectionLabel('Application Timeline')}
         <div class="detail-grid">
-          ${row('Status', statusLbl)}
           ${row('Submitted', app.submittedAt ? formatDate(app.submittedAt) : '')}
           ${row('Last Updated', app.updatedAt ? formatDate(app.updatedAt) : 'N/A')}
         </div>
@@ -136,16 +161,11 @@ export function renderAppDetail(app: Application): string {
         </div>
         ${funders ? `<div class="detail-row"><div class="detail-key">Assigned Funders</div><div class="detail-val">${funders}</div></div>` : ''}
 
-        ${app.adminNotes ? `
-          ${sectionLabel('Admin Notes')}
-          ${fullRow('Notes', app.adminNotes)}
-        ` : ''}
-
       </div>
     </div>`;
 }
 
-export function openModal(html: string): void {
+export function openModal(html: string, app?: Application, onUpdate?: (updated: Application) => void): void {
   const overlay = document.getElementById('modal-overlay');
   if (!overlay) return;
   overlay.innerHTML = html;
@@ -157,14 +177,64 @@ export function openModal(html: string): void {
     overlay.classList.remove('open');
     overlay.setAttribute('aria-hidden', 'true');
     overlay.innerHTML = '';
+    document.removeEventListener('keydown', escHandler);
   };
   closeBtn?.addEventListener('click', close);
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) close();
   });
-  // ESC key
   const escHandler = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escHandler); }
+    if (e.key === 'Escape') close();
   };
   document.addEventListener('keydown', escHandler);
+
+  // ── Status change ──
+  if (app) {
+    document.getElementById('modal-save-status')?.addEventListener('click', async () => {
+      const select = document.getElementById('modal-status') as HTMLSelectElement;
+      const newStatus = select.value as ApplicationStatus;
+      if (newStatus === app.status) return;
+
+      const btn = document.getElementById('modal-save-status') as HTMLButtonElement;
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      const res = await api.updateApplication(app._id, { status: newStatus });
+      if (res.success && res.data) {
+        app.status = newStatus;
+        const badge = document.getElementById('modal-status-badge');
+        if (badge) {
+          badge.textContent = (STATUS_LABELS as Record<string, string>)[newStatus] || newStatus;
+          badge.className = `tag ${(STATUS_CSS as Record<string, string>)[newStatus] || ''}`;
+        }
+        toast(`Status updated to ${(STATUS_LABELS as Record<string, string>)[newStatus]}`);
+        if (onUpdate) onUpdate(res.data);
+      } else {
+        toast('Failed to update status');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Update Status';
+    });
+
+    // ── Save admin notes ──
+    document.getElementById('modal-save-notes')?.addEventListener('click', async () => {
+      const textarea = document.getElementById('modal-notes') as HTMLTextAreaElement;
+      const notes = textarea.value.trim();
+
+      const btn = document.getElementById('modal-save-notes') as HTMLButtonElement;
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      const res = await api.updateApplication(app._id, { adminNotes: notes });
+      if (res.success && res.data) {
+        app.adminNotes = notes;
+        toast('Notes saved');
+        if (onUpdate) onUpdate(res.data);
+      } else {
+        toast('Failed to save notes');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Save Notes';
+    });
+  }
 }

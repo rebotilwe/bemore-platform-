@@ -11,3 +11,4 @@ export const STATUS_CSS: Record<ApplicationStatus, string> = {
 };
 
 export const STATUS_ORDER: ApplicationStatus[] = ['new', 'reviewing', 'shortlisted', 'invited', 'funded'];
+export const APPLICATION_STATUSES: ApplicationStatus[] = ['new', 'reviewing', 'shortlisted', 'invited', 'funded'];

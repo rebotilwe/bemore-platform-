@@ -268,7 +268,7 @@ async function loadDashboard(): Promise<void> {
       const id = el.dataset.id;
       if (!id) return;
       const app = stats.recentApps.find(a => a._id === id);
-      if (app) openModal(renderAppDetail(app));
+      if (app) openModal(renderAppDetail(app), app, () => loadDashboard());
     });
   });
 
@@ -278,7 +278,7 @@ async function loadDashboard(): Promise<void> {
       e.stopPropagation();
       const id = cell.dataset.id;
       const app = stats.recentApps.find(a => a._id === id);
-      if (app) openModal(renderAppDetail(app));
+      if (app) openModal(renderAppDetail(app), app, () => loadDashboard());
     });
   });
 }

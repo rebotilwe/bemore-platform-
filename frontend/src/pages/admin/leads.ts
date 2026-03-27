@@ -201,7 +201,7 @@ function bindDetailModal(): void {
       e.stopPropagation();
       const id = el.dataset.id;
       const app = currentApps.find(a => a._id === id);
-      if (app) openModal(renderAppDetail(app));
+      if (app) openModal(renderAppDetail(app), app, () => loadLeads());
     });
   });
 
@@ -211,7 +211,7 @@ function bindDetailModal(): void {
       e.stopPropagation();
       const id = cell.dataset.id;
       const app = currentApps.find(a => a._id === id);
-      if (app) openModal(renderAppDetail(app));
+      if (app) openModal(renderAppDetail(app), app, () => loadLeads());
     });
   });
 }
@@ -267,13 +267,20 @@ export const leadsPage: Page = {
       }, 300);
     });
 
-    document.getElementById('leads-export')?.addEventListener('click', () => {
-      if (currentApps.length) {
-        exportCsv(currentApps, `bemore-leads-${new Date().toISOString().split('T')[0]}.csv`);
-        toast('CSV exported');
+    document.getElementById('leads-export')?.addEventListener('click', async () => {
+      const btn = document.getElementById('leads-export') as HTMLButtonElement;
+      btn.disabled = true;
+      btn.textContent = 'Exporting...';
+      // Fetch ALL records (not just current page)
+      const allRes = await api.getApplications({ limit: 10000 });
+      if (allRes.success && allRes.data.length) {
+        exportCsv(allRes.data, `bemore-leads-${new Date().toISOString().split('T')[0]}.csv`);
+        toast(`Exported ${allRes.data.length} leads`);
       } else {
         toast('No data to export');
       }
+      btn.disabled = false;
+      btn.textContent = 'Export CSV';
     });
 
     loadLeads();
