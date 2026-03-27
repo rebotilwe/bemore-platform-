@@ -282,7 +282,7 @@ nav {
   }
 
   .nav-link {
-    display: none;
+    /* visible via mobile menu */
   }
 
   .hero-inner {

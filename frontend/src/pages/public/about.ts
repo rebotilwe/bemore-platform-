@@ -1,0 +1,384 @@
+import type { Page } from '../../types/index.ts';
+
+export const aboutPage: Page = {
+  render() {
+    return `
+    <section class="about">
+
+      <!-- ── Hero Banner ── -->
+      <div class="about-hero">
+        <div class="about-hero-bg" aria-hidden="true"></div>
+        <div class="about-hero-inner">
+          <div class="about-badge fade-in">About BeMore Group</div>
+          <h1 class="about-hero-title display fade-up stagger-1">
+            Social Infrastructure<br><span class="accent">Equity Partnership</span>
+          </h1>
+          <p class="about-hero-sub fade-up stagger-2">
+            A purpose-built R1.6 billion blended equity and debt vehicle focused on scaling
+            student accommodation and social infrastructure across South Africa.
+          </p>
+        </div>
+      </div>
+
+      <!-- ── Sub-nav ── -->
+      <div class="about-nav">
+        <div class="about-nav-inner">
+          <a class="about-nav-link active" href="#about-overview">Overview</a>
+          <a class="about-nav-link" href="#about-group">Group Structure</a>
+          <a class="about-nav-link" href="#about-vision">Vision & Mission</a>
+          <a class="about-nav-link" href="#about-empowerment">Empowerment</a>
+          <a class="about-nav-link" href="#about-impact">Impact</a>
+          <a class="about-nav-link" href="#about-metrics">Performance</a>
+          <a class="about-nav-link" href="#about-opportunity">Opportunity</a>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           1. OVERVIEW
+           ══════════════════════════════════════════ -->
+      <div class="about-section" id="about-overview">
+        <div class="about-container">
+          <div class="about-section-label">01 — Executive Summary</div>
+          <h2 class="about-section-title display">Who We Are</h2>
+          <div class="about-two-col">
+            <div class="about-prose">
+              <p>
+                The BeMore Social Infrastructure Equity is a purpose-built <strong>R1.6 billion</strong>
+                blended equity and debt vehicle focused on scaling <strong>student accommodation</strong>
+                and <strong>social infrastructure</strong> across South Africa.
+              </p>
+              <p>
+                BeMore Group seeks <strong>R400 million equity investment from DBSA</strong> as a
+                cornerstone Limited Partner (LP) to catalyse this impact-focused platform. The vehicle
+                targets over <strong>10,000 student beds</strong> and key health infrastructure assets,
+                including the <strong>Baobab Private Hospital</strong>, aligning with national priorities
+                and SDG targets.
+              </p>
+              <p>
+                BeMore is a Property Development Company which has successfully operated in the
+                affordable rental housing and student accommodation sectors in South Africa for
+                over a decade.
+              </p>
+            </div>
+            <div class="about-highlights">
+              <div class="about-highlight-card">
+                <div class="about-highlight-value display">R1.6B</div>
+                <div class="about-highlight-label">Pipeline Value</div>
+              </div>
+              <div class="about-highlight-card">
+                <div class="about-highlight-value display">R400M</div>
+                <div class="about-highlight-label">DBSA Equity Sought</div>
+              </div>
+              <div class="about-highlight-card">
+                <div class="about-highlight-value display">10,000+</div>
+                <div class="about-highlight-label">Student Beds Target</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           2. GROUP STRUCTURE
+           ══════════════════════════════════════════ -->
+      <div class="about-section about-section-dark" id="about-group">
+        <div class="about-container">
+          <div class="about-section-label">02 — Group Structure</div>
+          <h2 class="about-section-title display">BeMore Group (HoldCo)</h2>
+          <p class="about-section-sub">
+            An integrated ecosystem of subsidiaries delivering end-to-end social infrastructure solutions.
+          </p>
+          <div class="about-group-grid">
+            <div class="about-group-card" style="--card-accent: #c9a84c">
+              <div class="about-group-num">01</div>
+              <h3 class="about-group-name">BeMore Properties</h3>
+              <p class="about-group-desc">
+                Focuses on innovative property development projects across student accommodation
+                and affordable housing sectors.
+              </p>
+            </div>
+            <div class="about-group-card" style="--card-accent: #4cb87a">
+              <div class="about-group-num">02</div>
+              <h3 class="about-group-name">Format Property Group</h3>
+              <p class="about-group-desc">
+                Manages properties and assets with PPNG transactions, ensuring operational
+                excellence across the portfolio.
+              </p>
+            </div>
+            <div class="about-group-card" style="--card-accent: #7ab8e8">
+              <div class="about-group-num">03</div>
+              <h3 class="about-group-name">Mano Architects</h3>
+              <p class="about-group-desc">
+                Provides professional architecture and planning services, delivering designs
+                that balance function, sustainability, and community impact.
+              </p>
+            </div>
+            <div class="about-group-card" style="--card-accent: #e8a47a">
+              <div class="about-group-num">04</div>
+              <h3 class="about-group-name">BeMore Social Infrastructure Equity</h3>
+              <p class="about-group-desc">
+                The institutional platform for social infrastructure investments, offering
+                blended finance vehicles to catalyse impact at scale.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           3. VISION & MISSION
+           ══════════════════════════════════════════ -->
+      <div class="about-section" id="about-vision">
+        <div class="about-container">
+          <div class="about-section-label">03 — Envisioning 2035</div>
+          <h2 class="about-section-title display">Vision & Mission</h2>
+          <div class="about-vision-grid">
+            <div class="about-vision-card about-vision-primary">
+              <div class="about-vision-icon">&#9733;</div>
+              <h3>Vision</h3>
+              <p class="about-vision-quote">"Inspiring people to be more!!"</p>
+            </div>
+            <div class="about-vision-card">
+              <div class="about-vision-icon">&#9654;</div>
+              <h3>Mission</h3>
+              <ul>
+                <li>By creating value</li>
+                <li>Proclaiming new standards</li>
+                <li>Innovative, Competitive, and Attractive Public Company</li>
+              </ul>
+            </div>
+            <div class="about-vision-card">
+              <div class="about-vision-icon">&#9678;</div>
+              <h3>Objective</h3>
+              <p>
+                Create an enabling platform where people can express themselves and enterprise
+                portfolios in line with the BeMore ethos, with a <strong>R100bn diverse portfolio by 2035</strong>.
+              </p>
+            </div>
+            <div class="about-vision-card">
+              <div class="about-vision-icon">&#9830;</div>
+              <h3>Values</h3>
+              <div class="about-values-grid">
+                <span class="about-value-tag">Integrity</span>
+                <span class="about-value-tag">Innovation</span>
+                <span class="about-value-tag">Collaboration</span>
+                <span class="about-value-tag">Excellence</span>
+                <span class="about-value-tag">Sustainability</span>
+                <span class="about-value-tag">Empowerment</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           4. EMPOWERMENT STRATEGY
+           ══════════════════════════════════════════ -->
+      <div class="about-section about-section-dark" id="about-empowerment">
+        <div class="about-container">
+          <div class="about-section-label">04 — HDI Inclusion Model</div>
+          <h2 class="about-section-title display">Empowerment Strategy</h2>
+          <p class="about-section-sub">
+            Through our associate model and incubation platform, the partnership builds a pipeline
+            of empowered, capable HDI participants across the property development value chain.
+          </p>
+          <div class="about-ladder">
+            <div class="about-ladder-step">
+              <div class="about-ladder-num">1</div>
+              <div class="about-ladder-content">
+                <h4>Incubate HDIs</h4>
+                <p>Begin skill incubation and empowering 3 HDI individuals from inception.</p>
+              </div>
+            </div>
+            <div class="about-ladder-step">
+              <div class="about-ladder-num">2</div>
+              <div class="about-ladder-content">
+                <h4>Onboard</h4>
+                <p>Add 3 new HDI associates per year over 5 years, totalling 18 HDIs.</p>
+              </div>
+            </div>
+            <div class="about-ladder-step">
+              <div class="about-ladder-num">3</div>
+              <div class="about-ladder-content">
+                <h4>Provide Support</h4>
+                <p>Offer technical support, project mentorship, and shared capacity to scale.</p>
+              </div>
+            </div>
+            <div class="about-ladder-step">
+              <div class="about-ladder-num">4</div>
+              <div class="about-ladder-content">
+                <h4>Transfer Skills</h4>
+                <p>Transfer skills in property development, project management, and financial capability through mentorship.</p>
+              </div>
+            </div>
+            <div class="about-ladder-step">
+              <div class="about-ladder-num">5</div>
+              <div class="about-ladder-content">
+                <h4>Equity Participation</h4>
+                <p>Offer equity-linked participation, shared co-investment, and shared returns.</p>
+              </div>
+            </div>
+            <div class="about-ladder-step">
+              <div class="about-ladder-num">6</div>
+              <div class="about-ladder-content">
+                <h4>Women & Land Ownership</h4>
+                <p>Empower a minimum 40% ownership by community women, entrenching long-term wealth creation.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           5. IMPACT TO DATE
+           ══════════════════════════════════════════ -->
+      <div class="about-section" id="about-impact">
+        <div class="about-container">
+          <div class="about-section-label">05 — Track Record</div>
+          <h2 class="about-section-title display">Impact to Date</h2>
+          <p class="about-section-sub">Completed projects and mentee impact metrics (2013 — 2023).</p>
+          <div class="about-impact-grid">
+            <div class="about-impact-card">
+              <div class="about-impact-value display">9</div>
+              <div class="about-impact-label">Projects Completed</div>
+              <div class="about-impact-sub">Finished between 2013 and 2023</div>
+            </div>
+            <div class="about-impact-card">
+              <div class="about-impact-value display">1</div>
+              <div class="about-impact-label">In Construction</div>
+              <div class="about-impact-sub">Scheduled for completion in 2024</div>
+            </div>
+            <div class="about-impact-card about-impact-featured">
+              <div class="about-impact-value display">2,184</div>
+              <div class="about-impact-label">Student Beds</div>
+              <div class="about-impact-sub">Total beds delivered to date</div>
+            </div>
+            <div class="about-impact-card">
+              <div class="about-impact-value display">7</div>
+              <div class="about-impact-label">Women-Led Projects</div>
+              <div class="about-impact-sub">Out of 18 total projects</div>
+            </div>
+            <div class="about-impact-card">
+              <div class="about-impact-value display">R0.77B</div>
+              <div class="about-impact-label">Business Value</div>
+              <div class="about-impact-sub">Financial value of projects in billions</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           6. CURRENT PERFORMANCE
+           ══════════════════════════════════════════ -->
+      <div class="about-section about-section-dark" id="about-metrics">
+        <div class="about-container">
+          <div class="about-section-label">06 — Current Portfolio</div>
+          <h2 class="about-section-title display">Performance Metrics</h2>
+          <div class="about-metrics-grid">
+            <div class="about-metric">
+              <div class="about-metric-ring" style="--ring-color: #c9a84c">
+                <span class="about-metric-value display">1,472</span>
+              </div>
+              <div class="about-metric-title">Accredited Beds</div>
+              <div class="about-metric-desc">NSFAS accredited beds available for students</div>
+            </div>
+            <div class="about-metric">
+              <div class="about-metric-ring" style="--ring-color: #e8a47a">
+                <span class="about-metric-value display">R0.5B</span>
+              </div>
+              <div class="about-metric-title">Market Value</div>
+              <div class="about-metric-desc">Approximate market value in current currency units</div>
+            </div>
+            <div class="about-metric">
+              <div class="about-metric-ring" style="--ring-color: #4cb87a">
+                <span class="about-metric-value display">95%+</span>
+              </div>
+              <div class="about-metric-title">Occupancy Rate</div>
+              <div class="about-metric-desc">Average occupancy indicating high demand</div>
+            </div>
+            <div class="about-metric">
+              <div class="about-metric-ring" style="--ring-color: #7ab8e8">
+                <span class="about-metric-value display">50%</span>
+              </div>
+              <div class="about-metric-title">Gearing</div>
+              <div class="about-metric-desc">Balanced and sustainable financial structure</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════
+           7. STRATEGIC OPPORTUNITY
+           ══════════════════════════════════════════ -->
+      <div class="about-section" id="about-opportunity">
+        <div class="about-container">
+          <div class="about-section-label">07 — Strategic Rationale</div>
+          <h2 class="about-section-title display">The Opportunity</h2>
+          <div class="about-two-col">
+            <div class="about-prose">
+              <p>South Africa's social infrastructure faces three concurrent imperatives:</p>
+              <div class="about-imperatives">
+                <div class="about-imperative">
+                  <div class="about-imperative-num">1</div>
+                  <p>A massive shortfall in student accommodation (estimated <strong>500,000+ beds</strong>).</p>
+                </div>
+                <div class="about-imperative">
+                  <div class="about-imperative-num">2</div>
+                  <p>A backlog in decentralised health infrastructure.</p>
+                </div>
+                <div class="about-imperative">
+                  <div class="about-imperative-num">3</div>
+                  <p>A critical need to empower <strong>black-owned, HDI-led</strong> platforms to lead infrastructure delivery.</p>
+                </div>
+              </div>
+            </div>
+            <div class="about-response">
+              <h3>BeMore seeks to respond by:</h3>
+              <ul>
+                <li>
+                  Scaling a validated development model which has delivered to date
+                  <strong>1,500+ accredited student beds</strong> through mentorship and empowerment
+                  of at least HDI, in addition to our own 1,472 accredited student beds.
+                </li>
+                <li>
+                  Deploying capital across a <strong>R1.6 billion pipeline</strong> of income-generating
+                  and shovel-ready assets.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CTA ── -->
+      <div class="about-cta">
+        <div class="about-container">
+          <h2 class="about-cta-title display">Ready to Partner?</h2>
+          <p class="about-cta-sub">
+            Join the BeMore SME Access Initiative and connect with institutional funding partners.
+          </p>
+          <a class="btn-primary" href="#/gateway">Apply Now →</a>
+        </div>
+      </div>
+
+    </section>`;
+  },
+
+  mount() {
+    // Smooth scroll for sub-nav links
+    document.querySelectorAll<HTMLAnchorElement>('.about-nav-link').forEach(link => {
+      link.addEventListener('click', (e) => {
+        const href = link.getAttribute('href');
+        if (href?.startsWith('#about-')) {
+          e.preventDefault();
+          const target = document.getElementById(href.slice(1));
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+          document.querySelectorAll('.about-nav-link').forEach(l => l.classList.remove('active'));
+          link.classList.add('active');
+        }
+      });
+    });
+  },
+};

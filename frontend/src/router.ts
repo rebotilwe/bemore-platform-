@@ -6,18 +6,20 @@ import { heroPage } from './pages/public/hero.ts';
 import { gatewayPage } from './pages/public/gateway.ts';
 import { formPage } from './pages/public/form.ts';
 import { successPage } from './pages/public/success.ts';
+import { aboutPage } from './pages/public/about.ts';
 import { loginPage } from './pages/admin/login.ts';
 import { dashboardPage } from './pages/admin/dashboard.ts';
 import { leadsPage } from './pages/admin/leads.ts';
 import { reportsPage } from './pages/admin/reports.ts';
 import { dealRoomPage } from './pages/admin/deal-room.ts';
-import { renderNav } from './components/nav.ts';
+import { renderNav, mountNav } from './components/nav.ts';
 import { renderAdminLayout, mountAdminLayout } from './pages/admin/layout.ts';
 
 const routes: RouteConfig[] = [
   { path: '/',                page: () => heroPage,      layout: 'public' },
   { path: '/gateway',         page: () => gatewayPage,   layout: 'public' },
   { path: '/register',        page: () => formPage,      layout: 'public' },
+  { path: '/about',            page: () => aboutPage,     layout: 'public' },
   { path: '/success',         page: () => successPage,   layout: 'public' },
   { path: '/admin/login',     page: () => loginPage,     layout: 'public' },
   { path: '/admin/dashboard', page: () => dashboardPage, layout: 'admin', guard: authGuard },
@@ -66,6 +68,7 @@ function render(): void {
   } else {
     const showNav = path !== '/admin/login';
     app.innerHTML = (showNav ? renderNav(path) : '') + `<main>${page.render()}</main>`;
+    if (showNav) mountNav();
   }
 
   // Mount page event listeners
