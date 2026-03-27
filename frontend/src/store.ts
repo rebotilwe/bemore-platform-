@@ -7,6 +7,7 @@ export interface AppState {
   currentStep: number;
   token: string | null;
   isAuthenticated: boolean;
+  adminEmail: string | null;
   stats: StatsData | null;
   applications: Application[];
   currentApplication: Application | null;
@@ -30,6 +31,7 @@ class Store {
       currentStep: 1,
       token: localStorage.getItem('bm_token'),
       isAuthenticated: !!localStorage.getItem('bm_token'),
+      adminEmail: null,
       stats: null,
       applications: [],
       currentApplication: null,

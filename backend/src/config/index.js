@@ -9,7 +9,9 @@ export const config = Object.freeze({
     max: Number(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
   },
   cors: {
-    origin: process.env.CORS_ORIGIN || '*',
+    origin: process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+      : '*',
   },
   mail: {
     host: process.env.SMTP_HOST || '',

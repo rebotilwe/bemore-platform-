@@ -20,7 +20,6 @@ const applicationSchema = new mongoose.Schema({
     summitAccess: { type: Boolean, default: false },
     dealRoomEntry: { type: Boolean, default: false },
     funders: [{ type: String, enum: FUNDER_NAMES }],
-    notes: String,
   },
   adminNotes: String,
   submittedAt: { type: Date, default: Date.now },

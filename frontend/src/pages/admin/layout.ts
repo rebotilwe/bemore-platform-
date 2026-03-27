@@ -1,4 +1,5 @@
 import { logout } from '../../auth.ts';
+import { store } from '../../store.ts';
 
 interface SidebarItem {
   label: string;
@@ -29,7 +30,7 @@ export function renderAdminLayout(content: string, currentPath: string): string 
       <span class="admin-brand-text display">BE<span>MORE</span></span>
     </div>
     <div class="admin-r">
-      <span class="admin-user">Admin</span>
+      <span class="admin-user">${store.get('adminEmail') || 'Admin'}</span>
       <button class="btn-logout" id="admin-logout-btn">Logout</button>
     </div>
   </nav>

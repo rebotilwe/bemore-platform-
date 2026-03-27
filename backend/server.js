@@ -8,6 +8,12 @@ import { seedAdmin } from './src/models/Admin.js';
 const app = createApp();
 
 async function start() {
+  // Fail fast if JWT secret not set in production
+  if (config.nodeEnv === 'production' && config.jwtSecret === 'dev-secret-change-me') {
+    console.error('FATAL: JWT_SECRET must be set in production. Exiting.');
+    process.exit(1);
+  }
+
   await connectDb();
   await seedAdmin();
 
