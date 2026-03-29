@@ -71,13 +71,22 @@ function buildQuery(params: FilterParams): string {
 export const api = {
   async checkBackend(): Promise<boolean> {
     try {
-      const r = await fetch(`${API_URL}/health`, {
-        signal: AbortSignal.timeout(3000),
-        cache: 'no-store', // bypass service worker cache
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+      const r = await fetch(`${API_URL}/health?_t=${Date.now()}`, {
+        signal: controller.signal,
+        cache: 'no-store',
+        headers: { 'Accept': 'application/json' },
       });
+      clearTimeout(timer);
       if (!r.ok) return false;
-      const data = await r.json();
-      return data.success === true;
+      const text = await r.text();
+      try {
+        const data = JSON.parse(text);
+        return data.success === true;
+      } catch {
+        return false; // Got HTML instead of JSON
+      }
     } catch {
       return false;
     }
