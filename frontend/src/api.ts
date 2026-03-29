@@ -71,8 +71,13 @@ function buildQuery(params: FilterParams): string {
 export const api = {
   async checkBackend(): Promise<boolean> {
     try {
-      const r = await fetch(`${API_URL}/health`, { signal: AbortSignal.timeout(2000) });
-      return r.ok;
+      const r = await fetch(`${API_URL}/health`, {
+        signal: AbortSignal.timeout(3000),
+        cache: 'no-store', // bypass service worker cache
+      });
+      if (!r.ok) return false;
+      const data = await r.json();
+      return data.success === true;
     } catch {
       return false;
     }

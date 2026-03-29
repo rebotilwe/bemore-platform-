@@ -1,5 +1,5 @@
 // BeMore Deal Accelerator — Service Worker (Production)
-const CACHE_NAME = 'bemore-v6';
+const CACHE_NAME = 'bemore-v7';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
