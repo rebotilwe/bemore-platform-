@@ -1,6 +1,6 @@
 export type ProfileCategory = 'developer' | 'landowner' | 'investor' | 'student' | 'professional' | 'aspiring';
 export type ApplicationStatus = 'new' | 'reviewing' | 'shortlisted' | 'invited' | 'funded';
-export type FunderName = 'DBSA' | 'NHFC' | 'NEF' | 'SAIF';
+export type FunderName = 'PBSA';
 export type ReportName = 'high-value-developers' | 'pipeline-ready-land' | 'institutional-grade-housing' | 'deal-room-shortlist';
 
 export interface Personal {
@@ -18,6 +18,15 @@ export interface DealRoom {
   notes?: string;
 }
 
+export type Classification = 'hot' | 'warm' | 'cold' | 'unclassified';
+
+export interface FollowUp {
+  required: boolean;
+  dueDate?: string;
+  notes?: string;
+  completedAt?: string;
+}
+
 export interface Application {
   _id: string;
   refNumber: string;
@@ -27,6 +36,9 @@ export interface Application {
   tags: string[];
   status: ApplicationStatus;
   dealRoom: DealRoom;
+  engagementSource?: string;
+  classification?: Classification;
+  followUp?: FollowUp;
   adminNotes?: string;
   submittedAt: string;
   updatedAt?: string;
@@ -41,6 +53,8 @@ export interface SubmitPayload {
 export interface UpdatePayload {
   status?: ApplicationStatus;
   dealRoom?: Partial<DealRoom>;
+  classification?: Classification;
+  followUp?: Partial<FollowUp>;
   adminNotes?: string;
 }
 

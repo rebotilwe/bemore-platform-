@@ -48,7 +48,7 @@ export const aboutPage: Page = {
                 and <strong>social infrastructure</strong> across South Africa.
               </p>
               <p>
-                BeMore Group seeks <strong>R400 million equity investment from DBSA</strong> as a
+                BeMore Group seeks <strong>R400 million institutional equity investment</strong> as a
                 cornerstone Limited Partner (LP) to catalyse this impact-focused platform. The vehicle
                 targets over <strong>10,000 student beds</strong> and key health infrastructure assets,
                 including the <strong>Baobab Private Hospital</strong>, aligning with national priorities
@@ -67,7 +67,7 @@ export const aboutPage: Page = {
               </div>
               <div class="about-highlight-card">
                 <div class="about-highlight-value display">R400M</div>
-                <div class="about-highlight-label">DBSA Equity Sought</div>
+                <div class="about-highlight-label">Institutional Equity Sought</div>
               </div>
               <div class="about-highlight-card">
                 <div class="about-highlight-value display">10,000+</div>

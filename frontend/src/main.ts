@@ -3,6 +3,9 @@ import { router } from './router.ts';
 import { api } from './api.ts';
 import { store } from './store.ts';
 import { verifySession } from './auth.ts';
+import { ErrorBoundary } from './components/error-boundary.ts';
+
+new ErrorBoundary('app');
 
 async function init(): Promise<void> {
   // Check backend availability
@@ -14,6 +17,13 @@ async function init(): Promise<void> {
   if (store.get('token')) {
     const valid = await verifySession();
     if (!valid) console.log('◌ Session expired — logged out');
+  }
+
+  // Capture engagement source from URL params (e.g., ?src=qr)
+  const urlParams = new URLSearchParams(window.location.search);
+  const source = urlParams.get('src') || urlParams.get('utm_source');
+  if (source) {
+    sessionStorage.setItem('bm_source', source);
   }
 
   // Initialize router

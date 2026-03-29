@@ -297,3 +297,78 @@
     font-size: var(--fs-headline-lg);
   }
 }
+
+/* ═══════════════════════════════════════════════════
+   CONFIRM DIALOG — Reusable confirmation modal
+   ═══════════════════════════════════════════════════ */
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.confirm-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--ink-dark, #141419);
+  border: 1px solid var(--steel-dark, #2a2a35);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 400px;
+  width: 90%;
+  z-index: 1001;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.confirm-dialog-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--gold, #c9a84c);
+  margin-bottom: 0.5rem;
+}
+
+.confirm-dialog-message {
+  color: var(--steel-light, #c0c0c0);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.confirm-dialog-actions .btn-danger {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: opacity 0.2s;
+}
+
+.confirm-dialog-actions .btn-danger:hover {
+  opacity: 0.9;
+}
+
+.confirm-dialog-actions .btn-warning {
+  background: #ffc107;
+  color: #1a1a1a;
+  border: none;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: opacity 0.2s;
+}
+
+.confirm-dialog-actions .btn-warning:hover {
+  opacity: 0.9;
+}

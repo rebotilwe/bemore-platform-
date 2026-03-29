@@ -230,14 +230,14 @@ export const dealRoomPage: Page = {
     <div class="deal-room-page">
       <div class="dr-header">
         <h2 class="admin-main-title">Deal Room</h2>
-        <div class="dr-header-sub">Manage summit access, deal room entry, and funder assignments</div>
+        <div class="dr-header-sub">Manage summit access, deal room entry, and funding partner assignments</div>
       </div>
       <div class="dr-search-wrap">
         <span class="tbl-search-icon" aria-hidden="true">&#9906;</span>
         <input id="dr-search" class="tbl-search" type="text" placeholder="Search deal room by name, email, ref..." />
       </div>
       <div id="dr-content">
-        <p class="loading-state">Loading...</p>
+        <div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div>
       </div>
     </div>`;
   },

@@ -7,6 +7,8 @@ import { exportCsv } from '../../utils/csv.ts';
 import { toast } from '../../components/toast.ts';
 import { mountAdminLayout } from './layout.ts';
 import { renderAppDetail, openModal } from '../../components/app-detail-modal.ts';
+import { renderEmptyState, EMPTY_STATES } from '../../components/empty-state.ts';
+import { setButtonLoading } from '../../components/loading-button.ts';
 
 const TAG_CSS: Record<string, string> = {
   developer: 'tag-developer', landowner: 'tag-landowner', student: 'tag-student',
@@ -46,7 +48,7 @@ const REPORTS: ReportMeta[] = [
   {
     name: 'deal-room-shortlist',
     title: 'Deal Room Shortlist',
-    description: 'All shortlisted and invited applicants ready for deal room access and funder matching.',
+    description: 'All shortlisted and invited applicants ready for deal room access and funding partner alignment.',
     icon: '&#9733;',
     color: '#e8a47a',
   },
@@ -82,6 +84,7 @@ function renderResults(meta: ReportMeta, apps: Application[]): string {
         </div>
         <button class="btn-ghost rpt-back" id="rpt-back">← All Reports</button>
       </div>
+      ${renderEmptyState(EMPTY_STATES.report)}
     </div>`;
   }
 
@@ -176,10 +179,15 @@ function bindResults(): void {
   });
 
   document.getElementById('rpt-export')?.addEventListener('click', () => {
+    const btn = document.getElementById('rpt-export') as HTMLButtonElement;
     if (reportApps.length) {
+      setButtonLoading(btn, true, 'Exporting...');
       const meta = REPORTS.find(r => r.name === activeReport);
-      exportCsv(reportApps, `bemore-${activeReport}-${new Date().toISOString().split('T')[0]}.csv`);
-      toast(`${meta?.title ?? 'Report'} exported`);
+      setTimeout(() => {
+        exportCsv(reportApps, `bemore-${activeReport}-${new Date().toISOString().split('T')[0]}.csv`);
+        toast(`${meta?.title ?? 'Report'} exported`);
+        setButtonLoading(btn, false);
+      }, 300);
     }
   });
 
@@ -199,7 +207,7 @@ export const reportsPage: Page = {
     <div class="reports-page">
       <div class="rpt-page-header">
         <h2 class="admin-main-title">Reports</h2>
-        <p class="rpt-page-sub">Pre-built intelligence reports for deal screening and funder matching.</p>
+        <p class="rpt-page-sub">Pre-built intelligence reports for deal screening and funding partner alignment.</p>
       </div>
       ${renderReportCards()}
       <div id="report-output"></div>
@@ -220,7 +228,7 @@ export const reportsPage: Page = {
         document.querySelectorAll('.rpt-card').forEach(c => c.classList.remove('active'));
         card.classList.add('active');
 
-        output.innerHTML = '<p class="loading-state">Running report...</p>';
+        output.innerHTML = '<p class="loading-state"><span class="spinner"></span> Running report...</p>';
 
         const meta = REPORTS.find(r => r.name === name)!;
         const res = await api.getReport(name);

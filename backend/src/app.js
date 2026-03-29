@@ -5,6 +5,7 @@ import { config } from './config/index.js';
 import routes from './routes/index.js';
 import errorHandler from './middleware/errorHandler.js';
 import requestLogger from './middleware/requestLogger.js';
+import logger from './utils/logger.js';
 
 export function createApp() {
   const app = express();
@@ -16,7 +17,13 @@ export function createApp() {
 
   app.use('/api', routes);
 
+  app.use((req, res) => {
+    res.status(404).json({ success: false, error: 'Not Found', path: req.originalUrl });
+  });
+
   app.use(errorHandler);
+
+  logger.info('Express app created');
 
   return app;
 }

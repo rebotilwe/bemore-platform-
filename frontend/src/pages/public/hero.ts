@@ -21,7 +21,7 @@ export const heroPage: Page = {
           <p class="hero-sub fade-up stagger-2">
             The BeMore SME Access Initiative connects emerging property developers, landowners,
             student accommodation operators, and built environment professionals with institutional funding
-            partners — DBSA, NHFC, NEF, SAIF. Limited access. Strictly merit-based selection.
+            partners including PBSA. Limited access. Strictly merit-based selection.
           </p>
           <div class="hero-actions fade-up stagger-3">
             <a class="btn-primary" href="#/gateway">Apply Now →</a>
@@ -33,8 +33,8 @@ export const heroPage: Page = {
               <div class="stat-label">Mar 2026 Summit</div>
             </div>
             <div class="stat-item">
-              <div class="stat-num display">4</div>
-              <div class="stat-label">Institutional Funders</div>
+              <div class="stat-num display">PBSA</div>
+              <div class="stat-label">Lead Funding Partner</div>
             </div>
             <div class="stat-item">
               <div class="stat-num display">R20M+</div>
@@ -46,12 +46,10 @@ export const heroPage: Page = {
           <div class="summit-banner">Sandton · Mar 30–31</div>
           <div class="hero-card">
             <h3 class="hero-card-title display">Institutional Funding Partners</h3>
-            <div class="funders-label">Exposure to verified funders</div>
-            <div class="funders-grid">
-              <div class="funder-pill">DBSA</div>
-              <div class="funder-pill">NHFC</div>
-              <div class="funder-pill">NEF</div>
-              <div class="funder-pill">SAIF</div>
+            <div class="funders-label">Lead institutional funding partner</div>
+            <div class="funders-grid funders-grid--single">
+              <div class="funder-pill funder-pill--featured">PBSA</div>
+              <div class="funder-pill">Institutional Partners</div>
             </div>
             <div class="merit-box">
               <p>Limited Access</p>

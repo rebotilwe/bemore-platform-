@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════
-   AUDIT LOG — Dark luxury editorial
+   AUDIT LOG — Dark luxury editorial (Enhanced)
    ═══════════════════════════════════════════════════ */
 
 .audit-header .admin-main-title {
@@ -14,63 +14,149 @@
   margin-top: var(--sp-1);
 }
 
+/* Controls row */
+.audit-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin: var(--sp-5) 0;
+}
+
+.audit-search-wrap {
+  position: relative;
+}
+
+.audit-search-wrap .tbl-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--steel);
+  font-size: 16px;
+  pointer-events: none;
+}
+
+.audit-search-wrap .tbl-search {
+  padding-left: 36px;
+  width: 100%;
+}
+
 .audit-filters {
   display: flex;
   gap: var(--sp-2);
-  margin: var(--sp-5) 0;
   overflow-x: auto;
   padding-bottom: 4px;
 }
 
-/* Timeline */
-.audit-timeline {
-  position: relative;
-  padding-left: var(--sp-4);
+/* Stats bar */
+.audit-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  background: var(--ink-soft);
+  border: 1px solid rgba(249,245,238,0.06);
+  border-radius: var(--r-lg);
+  margin-bottom: var(--sp-5);
+  align-items: center;
 }
 
-.audit-timeline::before {
-  content: '';
-  position: absolute;
-  left: 5px;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: rgba(249,245,238,0.06);
+.audit-stat {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.audit-stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.audit-stat-label {
+  font-size: var(--fs-body-xs);
+  color: var(--steel);
+  text-transform: capitalize;
+}
+
+.audit-stat-count {
+  font-family: 'DM Mono', monospace;
+  font-size: var(--fs-body-xs);
+  font-weight: 600;
+  color: var(--cream);
+}
+
+.audit-filter-note {
+  font-size: var(--fs-body-xs);
+  color: var(--steel);
+  font-style: italic;
+  margin-bottom: var(--sp-3);
+}
+
+/* Timeline */
+.audit-timeline {
+  display: flex;
+  flex-direction: column;
 }
 
 .audit-row {
   display: flex;
   gap: var(--sp-3);
-  padding: var(--sp-3) 0;
-  position: relative;
-  border-bottom: 1px solid rgba(249,245,238,0.03);
+  padding: var(--sp-4);
+  border-bottom: 1px solid rgba(249,245,238,0.04);
+  transition: background var(--dur-short);
+  border-radius: var(--r-sm);
 }
 
-.audit-time {
-  width: 90px;
+.audit-row:hover {
+  background: rgba(249,245,238,0.02);
+}
+
+/* Time column */
+.audit-time-col {
+  width: 72px;
   flex-shrink: 0;
-  font-family: 'DM Mono', monospace;
-  font-size: var(--fs-label-sm);
-  color: var(--steel);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   padding-top: 2px;
 }
 
-.audit-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  margin-top: 5px;
-  position: relative;
-  z-index: 1;
+.audit-time-rel {
+  font-size: var(--fs-body-xs);
+  font-weight: 500;
+  color: var(--steel-light);
 }
 
+.audit-time-abs {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--steel);
+}
+
+/* Icon column */
+.audit-icon-col {
+  flex-shrink: 0;
+}
+
+.audit-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+/* Body */
 .audit-body {
   flex: 1;
   min-width: 0;
 }
 
-.audit-event {
+.audit-event-row {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
@@ -78,16 +164,19 @@
   margin-bottom: var(--sp-1);
 }
 
-.audit-event-name {
+.audit-event-label {
   font-size: var(--fs-body-sm);
-  font-weight: 500;
+  font-weight: 600;
   color: var(--cream);
 }
 
-.audit-cat {
-  font-family: 'DM Mono', monospace;
-  font-size: var(--fs-overline);
-  letter-spacing: 0.04em;
+.audit-cat-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
 }
 
 .audit-ref {
@@ -99,24 +188,84 @@
   border-radius: var(--r-sm);
 }
 
-.audit-actor {
-  font-size: var(--fs-label-sm);
-  color: var(--steel);
-}
-
-.audit-meta {
+/* Actor */
+.audit-actor-row {
   display: flex;
+  align-items: center;
   gap: var(--sp-2);
   flex-wrap: wrap;
-  margin-top: var(--sp-1);
+  margin-bottom: var(--sp-1);
 }
 
-.audit-meta-item {
-  font-size: var(--fs-overline);
-  color: var(--steel);
-  background: rgba(249,245,238,0.04);
-  padding: 1px 6px;
+.audit-actor-badge {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 6px;
   border-radius: var(--r-sm);
+}
+
+.audit-actor-badge.admin {
+  background: rgba(122,184,232,0.12);
+  color: #7ab8e8;
+}
+
+.audit-actor-badge.applicant {
+  background: rgba(201,168,76,0.12);
+  color: var(--gold);
+}
+
+.audit-actor-badge.system {
+  background: rgba(138,138,154,0.12);
+  color: var(--steel);
+}
+
+.audit-actor-email {
+  font-size: var(--fs-body-xs);
+  color: var(--steel);
+}
+
+.audit-ip {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--steel);
+  opacity: 0.6;
+}
+
+/* Meta details */
+.audit-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  background: rgba(249,245,238,0.02);
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(249,245,238,0.04);
+}
+
+.audit-detail {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-1);
+}
+
+.audit-detail-key {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--steel);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.audit-detail-val {
+  font-size: var(--fs-body-xs);
+  color: var(--steel-light);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Pagination */
@@ -141,16 +290,38 @@
 
 /* Mobile */
 @media (max-width: 599px) {
-  .audit-time {
-    width: 70px;
-    font-size: var(--fs-overline);
+  .audit-time-col {
+    width: 56px;
   }
 
-  .audit-timeline {
-    padding-left: 0;
-  }
-
-  .audit-timeline::before {
+  .audit-time-abs {
     display: none;
+  }
+
+  .audit-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+
+  .audit-row {
+    padding: var(--sp-3) var(--sp-2);
+  }
+
+  .audit-ip {
+    display: none;
+  }
+}
+
+/* Desktop */
+@media (min-width: 600px) {
+  .audit-controls {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .audit-search-wrap {
+    flex: 1;
+    max-width: 360px;
   }
 }

@@ -44,6 +44,12 @@ function saveCurrentStepData(): void {
     if (row.id) saved[`__consent_${row.id}`] = row.classList.contains('sel');
   });
   store.set('formData', saved);
+  // Flash save indicator
+  const indicator = document.getElementById('save-indicator');
+  if (indicator) {
+    indicator.classList.add('saved');
+    setTimeout(() => indicator.classList.remove('saved'), 1500);
+  }
 }
 
 function restoreStepData(): void {
@@ -308,6 +314,7 @@ async function handleSubmit(): Promise<void> {
   const saved = (store.get('formData') ?? {}) as Record<string, unknown>;
   const get = (key: string) => ((saved[`__input_${key}`] as string) ?? '').trim();
   const formData = collectAllFormData();
+  formData.engagementSource = sessionStorage.getItem('bm_source') || 'direct';
 
   const result = await api.submit({
     userType: store.get('selectedProfile')!,
@@ -326,9 +333,13 @@ async function handleSubmit(): Promise<void> {
     store.set('currentStep', 1);
     navigate('/success');
   } else {
-    toast(result.message || 'Submission failed');
+    const msg = result.message || 'Submission failed';
+    const isNetwork = msg.toLowerCase().includes('network');
+    toast(isNetwork
+      ? 'No internet connection. Your data is saved — please try again when online.'
+      : msg);
     btn.disabled = false;
-    btn.textContent = 'Submit Application →';
+    btn.textContent = 'Retry Submission →';
   }
 }
 
@@ -366,7 +377,7 @@ export const formPage: Page = {
         <div class="form-step active">${renderStepContent()}</div>
       </div>
       <div class="form-foot">
-        <p class="form-note"><strong>🔒 Secure</strong> · SSL Encrypted · POPIA Compliant</p>
+        <p class="form-note"><strong>🔒 Secure</strong> · SSL Encrypted · POPIA Compliant · <span id="save-indicator" class="save-indicator">Progress auto-saved</span></p>
         <div class="form-btns">
           ${step > 1 ? '<button class="btn-secondary" id="btn-prev">← Previous</button>' : ''}
           ${!isLast ? '<button class="btn-primary" id="btn-next">Continue →</button>' : ''}
@@ -383,6 +394,10 @@ export const formPage: Page = {
       else goToStep(getStep() - 1);
     });
     mountCurrentStep();
+
+    // Auto-save every 30 seconds
+    const autoSaveInterval = setInterval(() => saveCurrentStepData(), 30000);
+    cleanupFns.push(() => clearInterval(autoSaveInterval));
   },
   unmount() {
     saveCurrentStepData();

@@ -15,6 +15,7 @@
 @import './components/sidebar.css';
 @import './components/progress.css';
 @import './components/toast.css';
+@import './components/empty-state.css';
 
 /* Pages */
 @import './pages/hero.css';
@@ -26,3 +27,8 @@
 @import './pages/analytics.css';
 @import './pages/audit.css';
 @import './pages/dashboard.css';
+@import './pages/qr-generator.css';
+@import './pages/mentee-meter.css';
+@import './pages/landing.css';
+@import './pages/status.css';
+@import './pages/guide.css';

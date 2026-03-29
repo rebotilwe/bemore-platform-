@@ -1,14 +1,56 @@
+# Dependencies
 node_modules/
+.pnp
+.pnp.js
+
+# Build
 dist/
+build/
+.next/
+out/
+
+# Environment
 .env
-*.log
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
 .DS_Store
 Thumbs.db
+
+# Testing
+coverage/
+*.lcov
+
+# Logs
+*.log
+logs/
+
+# Database
+*.sqlite
+*.sqlite3
+
+# Secrets (NEVER commit)
+*.pem
+*.key
+*.p12
+*.jks
+credentials.json
+service-account.json
+
+# Project-specific
+.claude/
+New folder/
+
 # Images (except PWA icons)
 *.png
 *.jpg
 *.jpeg
 !frontend/public/icons/*.png
 !frontend/public/favicon.ico
-.claude/
-New folder/

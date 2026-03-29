@@ -5,6 +5,7 @@ import { STATUS_LABELS, STATUS_CSS } from '../../constants/status.ts';
 import { formatDate } from '../../utils/format.ts';
 import { mountAdminLayout } from './layout.ts';
 import { renderAppDetail, openModal } from '../../components/app-detail-modal.ts';
+import { renderEmptyState, EMPTY_STATES } from '../../components/empty-state.ts';
 
 const TAG_CSS: Record<string, string> = {
   developer: 'tag-developer', landowner: 'tag-landowner', student: 'tag-student',
@@ -125,6 +126,68 @@ function renderTopTags(stats: StatsData): string {
   </div>`;
 }
 
+const SOURCE_ICONS: Record<string, string> = {
+  qr: '&#9635;', direct: '&#9654;', 'qr-brochure': '&#9783;', 'qr-banner': '&#9646;',
+  'qr-badge': '&#9733;', 'qr-flyer': '&#9998;', referral: '&#9734;',
+};
+
+const CLASSIFICATION_CSS: Record<string, string> = {
+  hot: 'tag-classification-hot', warm: 'tag-classification-warm',
+  cold: 'tag-classification-cold', unclassified: '',
+};
+
+function renderSourceBreakdown(stats: StatsData): string {
+  const sources = [...(stats.bySource ?? [])].sort((a, b) => b.count - a.count);
+  const total = stats.total || 1;
+
+  return `
+  <div class="dash-card">
+    <div class="dash-card-header">
+      <h3 class="dash-card-title">Engagement Sources</h3>
+      <span class="dash-card-hint">How users found the platform</span>
+    </div>
+    <div class="dash-sources">
+      ${sources.length ? sources.map(s => {
+        const pct = Math.round((s.count / total) * 100);
+        const icon = SOURCE_ICONS[s._id] || '&#9679;';
+        const isQr = s._id.startsWith('qr');
+        return `<div class="dash-source-row">
+          <span class="dash-source-icon${isQr ? ' qr' : ''}">${icon}</span>
+          <span class="dash-source-name">${s._id}</span>
+          <div class="dash-type-track"><div class="dash-type-fill${isQr ? ' qr-fill' : ''}" style="width:${pct}%"></div></div>
+          <span class="dash-type-val">${s.count}</span>
+          <span class="dash-type-pct">${pct}%</span>
+        </div>`;
+      }).join('') : '<p class="detail-empty">No source data yet. QR scans will appear here once users submit applications.</p>'}
+    </div>
+  </div>`;
+}
+
+function renderClassificationBreakdown(stats: StatsData): string {
+  const items = [...(stats.byClassification ?? [])].sort((a, b) => b.count - a.count);
+  const total = stats.total || 1;
+
+  return `
+  <div class="dash-card">
+    <div class="dash-card-header">
+      <h3 class="dash-card-title">Lead Classification</h3>
+      <a class="section-link" href="#/admin/leads">Manage →</a>
+    </div>
+    <div class="dash-types">
+      ${items.length ? items.map(c => {
+        const pct = Math.round((c.count / total) * 100);
+        const cls = CLASSIFICATION_CSS[c._id] || '';
+        return `<div class="dash-type-row">
+          <span class="tag ${cls} dash-type-tag">${c._id.charAt(0).toUpperCase() + c._id.slice(1)}</span>
+          <div class="dash-type-track"><div class="dash-type-fill" style="width:${pct}%"></div></div>
+          <span class="dash-type-val">${c.count}</span>
+          <span class="dash-type-pct">${pct}%</span>
+        </div>`;
+      }).join('') : '<p class="detail-empty">No leads classified yet. Open a lead to classify as hot, warm, or cold.</p>'}
+    </div>
+  </div>`;
+}
+
 function renderQuickActions(): string {
   return `
   <div class="dash-card dash-card-actions">
@@ -151,7 +214,7 @@ function renderQuickActions(): string {
 }
 
 function renderRecentTable(apps: Application[]): string {
-  if (!apps.length) return '<p class="empty-state">No applications yet.</p>';
+  if (!apps.length) return renderEmptyState({ ...EMPTY_STATES.dashboard, message: 'No recent applications yet.' });
 
   // Mobile cards
   const cards = apps.map(app => {
@@ -221,7 +284,13 @@ export const dashboardPage: Page = {
         </div>
       </div>
       <div id="dash-content">
-        <p class="loading-state">Loading...</p>
+        <div class="dash-kpis">
+          ${Array(4).fill('<div class="dash-kpi"><div class="skeleton skeleton-bar" style="height:32px;width:60px;margin-bottom:8px"></div><div class="skeleton skeleton-bar skeleton-bar--med" style="height:12px"></div></div>').join('')}
+        </div>
+        <div class="dash-grid-2">
+          <div class="skeleton skeleton-card"></div>
+          <div class="skeleton skeleton-card"></div>
+        </div>
       </div>
     </div>`;
   },
@@ -238,7 +307,18 @@ async function loadDashboard(): Promise<void> {
 
   const res = await api.getStats();
   if (!res.success || !res.data) {
-    container.innerHTML = '<p class="empty-state">Failed to load dashboard data.</p>';
+    container.innerHTML = renderEmptyState({ 
+      title: 'Failed to load', 
+      message: res.message || 'Could not load dashboard data. Please try again.',
+      icon: '⚠️'
+    });
+    return;
+  }
+
+  if (res.data.total === 0) {
+    container.innerHTML = `
+      ${renderEmptyState(EMPTY_STATES.dashboard)}
+    `;
     return;
   }
 
@@ -248,6 +328,10 @@ async function loadDashboard(): Promise<void> {
     <div class="dash-grid-2">
       ${renderFunnel(stats)}
       ${renderTypeBreakdown(stats)}
+    </div>
+    <div class="dash-grid-2">
+      ${renderSourceBreakdown(stats)}
+      ${renderClassificationBreakdown(stats)}
     </div>
     <div class="dash-grid-2">
       ${renderTopTags(stats)}

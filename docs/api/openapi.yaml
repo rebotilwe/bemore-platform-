@@ -1,0 +1,537 @@
+openapi: 3.1.0
+info:
+  title: BeMore SME Access Initiative API
+  description: |
+    API for the BeMore lead-generation portal targeting South African property
+    developers, landowners, student accommodation operators, and built environment
+    professionals seeking institutional funding partnerships.
+
+    ## Authentication
+    Admin endpoints require a Bearer token obtained via `/auth/login`.
+    ```
+    Authorization: Bearer <access_token>
+    ```
+
+    ## Public Endpoints
+    - `POST /api/applications` — submit an application (no auth required)
+    - `GET /api/health` — health check (no auth required)
+
+    ## Application Status Flow
+    `new` -> `reviewing` -> `shortlisted` -> `invited` -> `funded`
+
+    ## Auto-Tagging
+    Applications are automatically tagged on submission based on form data:
+    `HIGH_VALUE`, `SHOVEL_READY`, `PIPELINE_READY`, `INSTITUTIONAL_GRADE`
+  version: 1.0.0
+  contact:
+    name: Bukani Tech Solutions
+
+servers:
+  - url: http://localhost:5000/api
+    description: Local development
+  - url: https://bemore-tawny.vercel.app/api
+    description: Production
+
+tags:
+  - name: Health
+    description: System health checks
+  - name: Auth
+    description: Admin authentication
+  - name: Applications
+    description: Application management
+  - name: Reports
+    description: Pre-built intelligence reports
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  uptime:
+                    type: number
+                    example: 86400
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Admin login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: admin@bemore.co.za
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /applications:
+    get:
+      tags: [Applications]
+      summary: List applications (admin)
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [new, reviewing, shortlisted, invited, funded]
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [developer, landowner, student, professional]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of applications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Applications]
+      summary: Submit application (public)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicationInput'
+      responses:
+        '201':
+          description: Application submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+
+  /applications/lookup:
+    post:
+      tags: [Applications]
+      summary: Status lookup (public)
+      description: Allows applicants to check their application status using reference number and email. No authentication required.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refNumber, email]
+              properties:
+                refNumber:
+                  type: string
+                  example: BM-09C5B0EF
+                email:
+                  type: string
+                  format: email
+                  example: thabo@example.co.za
+      responses:
+        '200':
+          description: Application status found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      refNumber:
+                        type: string
+                      firstName:
+                        type: string
+                      userType:
+                        type: string
+                      status:
+                        type: string
+                      tags:
+                        type: array
+                        items:
+                          type: string
+                      summitAccess:
+                        type: boolean
+                      submittedAt:
+                        type: string
+                        format: date-time
+        '404':
+          description: No matching application found
+
+  /applications/bulk-status:
+    post:
+      tags: [Applications]
+      summary: Bulk status update (admin)
+      description: Update status for up to 100 applications at once. Triggers email notifications for shortlisted/invited/funded.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids, status]
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 100
+                status:
+                  type: string
+                  enum: [new, reviewing, shortlisted, invited, funded]
+      responses:
+        '200':
+          description: Bulk update successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      updated:
+                        type: integer
+
+  /applications/send-reminders:
+    post:
+      tags: [Applications]
+      summary: Send summit reminders (admin)
+      description: Send summit reminder emails to up to 100 applicants.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+                  maxItems: 100
+      responses:
+        '200':
+          description: Reminders sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      sent:
+                        type: integer
+
+  /applications/stats:
+    get:
+      tags: [Applications]
+      summary: Application statistics (admin)
+      responses:
+        '200':
+          description: Aggregated statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /applications/export/csv:
+    get:
+      tags: [Applications]
+      summary: Export applications as CSV (admin)
+      responses:
+        '200':
+          description: CSV file download
+          content:
+            text/csv:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /applications/{id}:
+    patch:
+      tags: [Applications]
+      summary: Update application status (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [new, reviewing, shortlisted, invited, funded]
+                adminNotes:
+                  type: string
+                classification:
+                  type: string
+                  enum: [hot, warm, cold, unclassified]
+                followUp:
+                  type: object
+                  properties:
+                    required:
+                      type: boolean
+                    dueDate:
+                      type: string
+                      format: date-time
+                    notes:
+                      type: string
+                dealRoom:
+                  type: object
+                  properties:
+                    summitAccess:
+                      type: boolean
+                    dealRoomEntry:
+                      type: boolean
+                    funders:
+                      type: array
+                      items:
+                        type: string
+                        enum: [PBSA]
+      responses:
+        '200':
+          description: Application updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /reports/{reportName}:
+    get:
+      tags: [Reports]
+      summary: Get pre-built report (admin)
+      parameters:
+        - name: reportName
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - high-value-developers
+              - pipeline-ready-land
+              - institutional-grade-housing
+              - deal-room-shortlist
+      responses:
+        '200':
+          description: Report data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ApplicationInput:
+      type: object
+      required: [userType, personal]
+      properties:
+        userType:
+          type: string
+          enum: [developer, landowner, investor, student, professional, aspiring]
+          example: developer
+        personal:
+          type: object
+          required: [firstName, surname, email, phone]
+          properties:
+            firstName:
+              type: string
+              example: Thabo
+            surname:
+              type: string
+              example: Mokoena
+            email:
+              type: string
+              format: email
+              example: thabo@example.co.za
+            phone:
+              type: string
+              example: "0821234567"
+            companyName:
+              type: string
+              example: Mokoena Developments
+        formData:
+          type: object
+          description: Flexible form data from the 5-step registration process
+          properties:
+            landStatus:
+              type: string
+              example: Land Secured
+            projectStage:
+              type: string
+              example: Funding Stage
+            estimatedValue:
+              type: string
+              example: R20m - R100m
+            engagementSource:
+              type: string
+              example: qr
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+        error:
+          type: 'null'
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        data:
+          type: 'null'
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: VALIDATION_ERROR
+            message:
+              type: string
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string
+            requestId:
+              type: string
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            token:
+              type: string
+            expiresIn:
+              type: string
+              example: 8h
+
+  responses:
+    Unauthorized:
+      description: Authentication required or token invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            data: null
+            error:
+              code: AUTH_TOKEN_INVALID
+              message: Invalid or expired authentication token
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+security:
+  - BearerAuth: []

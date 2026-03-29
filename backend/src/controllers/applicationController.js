@@ -2,7 +2,7 @@ import Application from '../models/Application.js';
 import { APPLICATION_STATUSES } from '../constants/enums.js';
 import * as appService from '../services/applicationService.js';
 import { track } from '../services/analyticsService.js';
-import { sendSubmissionConfirmation, sendStatusNotification } from '../utils/mailer.js';
+import { sendSubmissionConfirmation, sendStatusNotification, sendSummitReminder } from '../utils/mailer.js';
 
 export async function submit(req, res, next) {
   try {
@@ -99,11 +99,16 @@ export async function stats(req, res, next) {
 export async function exportCsv(req, res, next) {
   try {
     const apps = await appService.getAllApplications();
-    const headers = ['Ref Number', 'Type', 'Status', 'First Name', 'Surname', 'Email', 'Phone', 'Company', 'Tags', 'Submitted'];
+    const headers = ['Ref Number', 'Type', 'Status', 'Classification', 'Source', 'First Name', 'Surname', 'Email', 'Phone', 'Company', 'Est. Value', 'Project Stage', 'Land Status', 'Tags', 'Follow-Up Required', 'Follow-Up Due', 'Follow-Up Notes', 'Admin Notes', 'Submitted'];
     const rows = apps.map(a => [
       a.refNumber, a.userType, a.status,
+      a.classification || 'unclassified', a.engagementSource || 'direct',
       a.personal.firstName, a.personal.surname, a.personal.email, a.personal.phone,
-      a.personal.companyName || '', a.tags.join('; '), a.submittedAt,
+      a.personal.companyName || '',
+      a.formData?.estimatedValue || '', a.formData?.projectStage || '', a.formData?.landStatus || '',
+      a.tags.join('; '),
+      a.followUp?.required ? 'Yes' : 'No', a.followUp?.dueDate || '', a.followUp?.notes || '',
+      a.adminNotes || '', a.submittedAt,
     ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
 
     track('export.csv', 'admin', {
@@ -156,6 +161,38 @@ export async function bulkUpdateStatus(req, res, next) {
     }
 
     res.json({ success: true, data: { updated: result.modifiedCount } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ── Admin: send summit reminders ──
+export async function sendReminders(req, res, next) {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || !ids.length) {
+      return res.status(400).json({ success: false, message: 'ids array required' });
+    }
+    if (ids.length > 100) {
+      return res.status(400).json({ success: false, message: 'Maximum 100 items per batch' });
+    }
+
+    const apps = await Application.find({ _id: { $in: ids } }).select('personal refNumber');
+    let sent = 0;
+    for (const app of apps) {
+      if (app.personal?.email) {
+        sendSummitReminder(app.personal.email, app.refNumber, app.personal.firstName).catch(() => {});
+        sent++;
+      }
+    }
+
+    track('email.summit_reminder', 'admin', {
+      actor: { type: 'admin', id: req.admin?.id },
+      meta: { count: sent, ids },
+      req,
+    });
+
+    res.json({ success: true, data: { sent } });
   } catch (err) {
     next(err);
   }

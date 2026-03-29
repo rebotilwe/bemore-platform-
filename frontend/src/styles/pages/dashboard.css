@@ -535,3 +535,54 @@
     grid-template-columns: 1fr 1fr 1fr;
   }
 }
+
+/* Engagement Sources */
+.dash-card-hint {
+  font-size: var(--fs-body-xs);
+  color: var(--steel);
+}
+
+.dash-sources {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.dash-source-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.dash-source-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-sm);
+  font-size: 14px;
+  color: var(--steel);
+  background: var(--ink-soft);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.dash-source-icon.qr {
+  color: var(--gold);
+  background: rgba(201,168,76,0.08);
+  border-color: rgba(201,168,76,0.2);
+}
+
+.dash-source-name {
+  font-size: var(--fs-body-sm);
+  font-weight: 500;
+  color: var(--cream);
+  min-width: 80px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dash-type-fill.qr-fill {
+  background: var(--gold);
+}

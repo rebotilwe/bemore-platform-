@@ -21,10 +21,29 @@ const applicationSchema = new mongoose.Schema({
     dealRoomEntry: { type: Boolean, default: false },
     funders: [{ type: String, enum: FUNDER_NAMES }],
   },
+  engagementSource: { type: String, default: 'direct' },
+  classification: { type: String, enum: ['hot', 'warm', 'cold', 'unclassified'], default: 'unclassified' },
+  followUp: {
+    required: { type: Boolean, default: false },
+    dueDate: Date,
+    notes: String,
+    completedAt: Date,
+  },
   adminNotes: String,
   submittedAt: { type: Date, default: Date.now },
   updatedAt: Date,
 });
+
+applicationSchema.index({ 'personal.email': 1 });
+applicationSchema.index({ status: 1 });
+applicationSchema.index({ userType: 1 });
+applicationSchema.index({ tags: 1 });
+applicationSchema.index({ submittedAt: -1 });
+applicationSchema.index({ classification: 1 });
+applicationSchema.index({ engagementSource: 1 });
+applicationSchema.index({ 'dealRoom.summitAccess': 1 });
+// Compound index for status lookup endpoint
+applicationSchema.index({ refNumber: 1, 'personal.email': 1 });
 
 applicationSchema.pre('save', function (next) {
   this.updatedAt = new Date();

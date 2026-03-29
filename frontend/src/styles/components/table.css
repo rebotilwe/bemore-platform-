@@ -171,6 +171,8 @@
 
 .lead-card:hover {
   border-color: rgba(201,168,76,0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
 }
 
 .lead-card-top {
@@ -284,6 +286,26 @@
   white-space: nowrap;
 }
 
+.dtbl th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: color var(--dur-short);
+}
+
+.dtbl th.sortable:hover {
+  color: var(--gold);
+}
+
+.sort-icon {
+  font-size: 12px;
+  color: var(--steel);
+  margin-left: 2px;
+}
+
+.sort-icon.active {
+  color: var(--gold);
+}
+
 .dtbl td {
   padding: var(--sp-3);
   font-size: var(--fs-body-sm);
@@ -292,8 +314,17 @@
   vertical-align: middle;
 }
 
+.dtbl tbody tr {
+  cursor: pointer;
+  transition: background var(--dur-short) var(--ease-std);
+}
+
 .dtbl tr:hover td {
-  background: rgba(201,168,76,0.02);
+  background: rgba(201,168,76,0.04);
+}
+
+.dtbl tbody tr:active td {
+  background: rgba(201,168,76,0.08);
 }
 
 .dtbl .nc {

@@ -227,6 +227,18 @@ nav {
   margin-bottom: var(--sp-8);
 }
 
+.funders-grid--single {
+  grid-template-columns: 1fr;
+}
+
+.funder-pill--featured {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  background: rgba(201,168,76,0.12);
+  border-color: rgba(201,168,76,0.4);
+}
+
 .funder-pill {
   padding: var(--sp-3) var(--sp-5);
   background: rgba(201,168,76,0.06);

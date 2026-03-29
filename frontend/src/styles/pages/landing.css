@@ -1,0 +1,245 @@
+.landing {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: var(--sp-8) var(--sp-5);
+  padding-left: max(var(--sp-5), var(--safe-left));
+  padding-right: max(var(--sp-5), var(--safe-right));
+  text-align: center;
+}
+
+.landing-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 30%, rgba(201,168,76,0.1) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 70% 80%, rgba(201,168,76,0.04) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Co-Branding */
+.landing-brands {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-6);
+  margin-bottom: var(--sp-10);
+  position: relative;
+  z-index: 2;
+}
+
+.landing-brand-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.landing-brand-logo {
+  font-size: 1.75rem;
+  letter-spacing: 0.06em;
+  color: var(--cream);
+}
+
+.landing-brand-label {
+  font-size: var(--fs-body-xs);
+  color: var(--steel);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.landing-brand-divider {
+  width: 1px;
+  height: 48px;
+  background: rgba(201,168,76,0.3);
+}
+
+/* Content */
+.landing-content {
+  max-width: 600px;
+  position: relative;
+  z-index: 2;
+}
+
+.landing-title {
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  line-height: 1.1;
+  color: var(--cream);
+  margin-bottom: var(--sp-5);
+}
+
+.landing-sub {
+  font-size: var(--fs-body);
+  color: var(--steel);
+  line-height: 1.7;
+  margin-bottom: var(--sp-6);
+}
+
+/* Summit info */
+.landing-summit {
+  padding: var(--sp-4) var(--sp-6);
+  background: rgba(201,168,76,0.06);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: var(--r-md);
+  margin-bottom: var(--sp-8);
+  display: inline-block;
+}
+
+.landing-summit-date {
+  font-size: var(--fs-headline-sm);
+  color: var(--gold);
+  letter-spacing: 0.02em;
+}
+
+.landing-summit-venue {
+  font-size: var(--fs-body-sm);
+  color: var(--steel);
+  margin-top: var(--sp-1);
+}
+
+/* CTAs */
+.landing-ctas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-8);
+}
+
+.landing-cta-primary,
+.landing-cta-secondary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-5) var(--sp-6);
+  border-radius: var(--r-lg);
+  text-decoration: none;
+  text-align: left;
+  transition: all var(--dur-med) var(--ease-std);
+  cursor: pointer;
+}
+
+.landing-cta-primary {
+  background: var(--gold);
+  color: var(--ink);
+  border: 1px solid var(--gold);
+}
+
+.landing-cta-primary:hover {
+  background: var(--gold-light);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(201,168,76,0.3);
+}
+
+.landing-cta-secondary {
+  background: rgba(201,168,76,0.06);
+  border: 1px solid rgba(201,168,76,0.25);
+  color: var(--cream);
+}
+
+.landing-cta-secondary:hover {
+  background: rgba(201,168,76,0.12);
+  border-color: var(--gold);
+  transform: translateY(-2px);
+}
+
+.landing-cta-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.landing-cta-primary .landing-cta-icon {
+  background: rgba(10,10,15,0.15);
+}
+
+.landing-cta-secondary .landing-cta-icon {
+  background: rgba(201,168,76,0.1);
+  color: var(--gold);
+}
+
+.landing-cta-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.landing-cta-title {
+  font-weight: 600;
+  font-size: var(--fs-body);
+  letter-spacing: 0.02em;
+}
+
+.landing-cta-primary .landing-cta-desc {
+  font-size: var(--fs-body-xs);
+  opacity: 0.7;
+}
+
+.landing-cta-secondary .landing-cta-desc {
+  font-size: var(--fs-body-xs);
+  color: var(--steel);
+}
+
+/* Quick links */
+.landing-links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-8);
+}
+
+.landing-link {
+  color: var(--gold);
+  font-size: var(--fs-body-sm);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--dur-short);
+}
+
+.landing-link:hover {
+  border-color: var(--gold);
+}
+
+.landing-link-sep {
+  color: var(--steel);
+}
+
+/* Footer */
+.landing-footer {
+  position: relative;
+  z-index: 2;
+}
+
+.landing-footer p {
+  font-size: var(--fs-body-xs);
+  color: var(--steel);
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 599px) {
+  .landing {
+    padding: var(--sp-6) var(--sp-4);
+  }
+
+  .landing-brands {
+    gap: var(--sp-4);
+  }
+
+  .landing-brand-logo {
+    font-size: 1.35rem;
+  }
+
+  .landing-cta-primary,
+  .landing-cta-secondary {
+    padding: var(--sp-4) var(--sp-5);
+  }
+}

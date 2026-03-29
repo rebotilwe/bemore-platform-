@@ -19,8 +19,23 @@ export default defineConfig({
     emptyOutDir: true,
     target: 'es2022',
     sourcemap: true,
+    cssMinify: true,
     rollupOptions: {
-      input: resolve(__dirname, 'index.html')
-    }
-  }
+      input: resolve(__dirname, 'index.html'),
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./vitest.setup.ts'],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov', 'html'],
+      include: ['src/**/*'],
+    },
+  },
 });

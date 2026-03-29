@@ -14,7 +14,7 @@ const EST_VALUE = ['Under R5m', 'R5m – R20m', 'R5m – R20m', 'R20m – R100m'
 const SEEKING = ['Equity Partner', 'Debt Funding', 'Joint Venture', 'Technical Partner', 'Grant Funding'];
 const PREV_FUNDING = ['None', 'Private Funding', 'Private Funding', 'Institutional Funding', 'Government Grant'];
 const ATTENDANCE = ['Yes – Both Days', 'Yes – Day 1 Only', 'Yes – Day 2 Only', 'No – Virtual Only'];
-const FUNDERS = ['DBSA', 'NHFC', 'NEF', 'SAIF'];
+const FUNDERS = ['PBSA'];
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 function pickN(arr, min, max) {
@@ -100,7 +100,7 @@ function generateApplication() {
     adminNotes: Math.random() > 0.6 ? pick([
       'Strong application, good track record.',
       'Needs further review — verify land ownership docs.',
-      'Interesting profile, potential for DBSA pipeline.',
+      'Interesting profile, potential for institutional pipeline.',
       'Follow up on funding history claims.',
       'Priority — institutional grade project.',
       'Schedule follow-up call with applicant.',

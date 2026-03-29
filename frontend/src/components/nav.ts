@@ -7,6 +7,8 @@ export function renderNav(_currentPath: string): string {
       </button>
       <div class="nav-actions" id="nav-actions">
         <a class="nav-link" href="#/about">About Us</a>
+        <a class="nav-link" href="#/mentee-meter">Live Poll</a>
+        <a class="nav-link" href="#/status">My Status</a>
         <a class="nav-link" href="#/gateway">Apply Now</a>
       </div>
     </nav>`;

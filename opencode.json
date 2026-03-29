@@ -1,0 +1,293 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "build": {
+      "mode": "primary",
+      "prompt": "You are the Build agent for BeMore - a lead-generation portal for property developers, landowners, student accommodation operators, and built environment professionals seeking institutional funding (DBSA, NHFC, NEF, SAIF). When working on specific areas, proactively @mention relevant subagents:\n\n- **Frontend** (@frontend-engineer): UI components, forms, admin dashboard\n- **Backend** (@backend-engineer): Express APIs, MongoDB, JWT auth\n- **Database** (@database-engineer): Mongoose schemas, auto-tagging engine\n- **Reports** (@reporting-analyst): Pre-built reports, CSV exports\n- **Security** (@security-engineer): JWT, input validation, rate limiting\n- **Integration** (@api-integration-engineer): External funder APIs\n- **Email** (@email-delivery-engineer): Notifications, admin alerts\n- **Deployment** (@devops-engineer): Docker, hosting, CI/CD\n- **Testing** (@qa-engineer): Test coverage, edge cases\n\nAlso invoke:\n- **Product** (@product-engineer): Requirements, acceptance criteria\n- **Architecture** (@system-architect): Tech decisions, scalability",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "plan": {
+      "mode": "primary",
+      "prompt": "You are the Plan agent for BeMore. Analyze code and suggest changes WITHOUT making modifications. When identifying work in specialized areas, @mention relevant subagents:\n\n- **Frontend** (@frontend-engineer)\n- **Backend** (@backend-engineer)\n- **Database** (@database-engineer)\n- **Reports** (@reporting-analyst)\n- **Security** (@security-engineer)\n- **Integration** (@api-integration-engineer)\n- **Email** (@email-delivery-engineer)\n- **DevOps** (@devops-engineer)\n\nProvide analysis and recommendations only. Do NOT make code changes.",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": false,
+        "edit": false,
+        "bash": false
+      }
+    },
+    "system-architect": {
+      "description": "Lead Software Architect - Define system architecture, choose tech stack, enforce scalability, security, and maintainability for the BeMore portal",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": false,
+        "edit": false,
+        "bash": false
+      }
+    },
+    "frontend-engineer": {
+      "description": "UI & Frontend Specialist - Build responsive UIs for the lead-generation portal, admin dashboard, forms, and public-facing pages",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "backend-engineer": {
+      "description": "Backend & API Engineer - Build Express.js APIs, implement JWT authentication, handle lead submissions and admin operations",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "database-engineer": {
+      "description": "Database & Data Modeling Engineer - Design MongoDB/Mongoose schemas, implement auto-tagging engine for lead intelligence",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "devops-engineer": {
+      "description": "DevOps & Platform Engineer - Handle deployment, Docker, hosting setup, and infrastructure for the BeMore portal",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "qa-engineer": {
+      "description": "Quality Assurance & Test Automation - Write tests, validate requirements, edge cases for lead flow and admin functionality",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "security-engineer": {
+      "description": "Security & Compliance Engineer - Review code for vulnerabilities, enforce secure coding, JWT implementation, POPIA compliance considerations",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": false,
+        "edit": false,
+        "bash": false
+      }
+    },
+    "product-engineer": {
+      "description": "Product-Focused Engineer - Translate business needs (lead gen, funder matching) into technical tasks, define acceptance criteria",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": false,
+        "edit": false,
+        "bash": false
+      }
+    },
+    "reporting-analyst": {
+      "description": "Reporting & Analytics Specialist - Build pre-built reports (high-value developers, pipeline-ready land, institutional-grade housing), CSV exports",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": false
+      }
+    },
+    "api-integration-engineer": {
+      "description": "API Integration Engineer - Integrate with external funder APIs (DBSA, NHFC, NEF, SAIF), manage webhook connections",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "email-delivery-engineer": {
+      "description": "Email Delivery Engineer - Handle notifications, admin alerts, lead confirmations using SendGrid/Mailgun",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "lead-intelligence-engineer": {
+      "description": "Lead Intelligence Engineer - Implement auto-tagging logic (HIGH_VALUE, SHOVEL_READY, PIPELINE_READY, INSTITUTIONAL_GRADE), lead scoring",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": false
+      }
+    },
+    "admin-dashboard-engineer": {
+      "description": "Admin Dashboard Engineer - Build admin interface for lead management, status workflow (new→reviewing→shortlisted→invited→funded)",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "funder-compliance-engineer": {
+      "description": "Funder Compliance Engineer - Ensure lead data meets institutional funder requirements, document generation",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": false
+      }
+    },
+    "qr-landing-page-engineer": {
+      "description": "QR Code & Landing Page Engineer - Generate QR codes, build co-branded landing pages (BeMore + PBSA), design entry flows",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "live-interaction-engineer": {
+      "description": "Live Interaction / Mentee Meter Engineer - Build real-time polling, Q&A, live feedback tools aligned with summit programme",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "user-journey-engineer": {
+      "description": "User Journey & UX Engineer - Design post-entry flows, confirmation screens, results feedback, deal submission pathways",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "automation-workflow-engineer": {
+      "description": "Automation & Workflow Engineer - Implement immediate acknowledgments, follow-up communications, user pathway onboarding sequences",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "platform-testing-engineer": {
+      "description": "Platform Testing Engineer - Test QR flow, data capture, live question functionality, result display before deployment",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "branding-design-engineer": {
+      "description": "Branding & Design Engineer - Remove financier references, implement neutral ecosystem language, PBSA co-branding",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": false
+      }
+    },
+    "deal-origination-engineer": {
+      "description": "Deal Origination Engine Specialist - Build deal origination engine features, deal readiness tools, pipeline management",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": true
+      }
+    },
+    "user-classification-engineer": {
+      "description": "User Classification Engineer - Capture user profiles, classify (developer, investor, landowner), track development stage, enable follow-up",
+      "mode": "subagent",
+      "tools": {
+        "read": true,
+        "grep": true,
+        "glob": true,
+        "write": true,
+        "edit": true,
+        "bash": false
+      }
+    }
+  }
+}

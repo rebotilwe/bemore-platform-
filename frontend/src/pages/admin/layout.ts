@@ -7,19 +7,44 @@ interface SidebarItem {
   icon: string;
 }
 
-const sidebarItems: SidebarItem[] = [
-  { label: 'Dashboard',  path: '/admin/dashboard', icon: '&#9632;' },
-  { label: 'All Leads',  path: '/admin/leads', icon: '&#9776;' },
-  { label: 'Analytics',  path: '/admin/analytics', icon: '&#9650;' },
-  { label: 'Reports',    path: '/admin/reports', icon: '&#9670;' },
-  { label: 'Deal Room',  path: '/admin/deal-room', icon: '&#9733;' },
-  { label: 'Audit Log',  path: '/admin/audit-log', icon: '&#9201;' },
+interface SidebarSection {
+  label: string;
+  items: SidebarItem[];
+}
+
+const sidebarSections: SidebarSection[] = [
+  {
+    label: 'Overview',
+    items: [
+      { label: 'Dashboard',  path: '/admin/dashboard', icon: '&#9632;' },
+      { label: 'All Leads',  path: '/admin/leads', icon: '&#9776;' },
+    ],
+  },
+  {
+    label: 'Intelligence',
+    items: [
+      { label: 'Analytics',  path: '/admin/analytics', icon: '&#9650;' },
+      { label: 'Reports',    path: '/admin/reports', icon: '&#9670;' },
+      { label: 'Deal Room',  path: '/admin/deal-room', icon: '&#9733;' },
+    ],
+  },
+  {
+    label: 'Tools',
+    items: [
+      { label: 'QR Codes',   path: '/admin/qr', icon: '&#9635;' },
+      { label: 'Audit Log',  path: '/admin/audit-log', icon: '&#9201;' },
+      { label: 'Admin Guide', path: '/admin/guide', icon: '&#9881;' },
+    ],
+  },
 ];
 
 export function renderAdminLayout(content: string, currentPath: string): string {
-  const navItems = sidebarItems.map(item => {
-    const active = currentPath === item.path ? ' active' : '';
-    return `<a class="sb-item${active}" href="#${item.path}"><span class="sidebar-icon">${item.icon}</span>${item.label}</a>`;
+  const sidebarHtml = sidebarSections.map(section => {
+    const items = section.items.map(item => {
+      const active = currentPath === item.path ? ' active' : '';
+      return `<a class="sb-item${active}" href="#${item.path}"><span class="sidebar-icon">${item.icon}</span>${item.label}</a>`;
+    }).join('');
+    return `<div class="sb-sec"><div class="sb-lbl">${section.label}</div>${items}</div>`;
   }).join('');
 
   return `
@@ -29,6 +54,7 @@ export function renderAdminLayout(content: string, currentPath: string): string 
         <span></span><span></span><span></span>
       </button>
       <span class="admin-brand-text display">BE<span>MORE</span></span>
+      <span class="admin-brand-badge">Admin</span>
     </div>
     <div class="admin-r">
       <span class="admin-user">${store.get('adminEmail') || 'Admin'}</span>
@@ -37,10 +63,7 @@ export function renderAdminLayout(content: string, currentPath: string): string 
   </nav>
   <div class="admin-layout">
     <aside class="admin-sidebar" id="admin-sidebar">
-      <div class="sb-sec">
-        <div class="sb-lbl">Main</div>
-        ${navItems}
-      </div>
+      ${sidebarHtml}
     </aside>
     <div class="admin-sidebar-overlay" id="admin-sidebar-overlay"></div>
     <section class="admin-main">${content}</section>

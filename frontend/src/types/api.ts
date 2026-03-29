@@ -8,6 +8,7 @@ export interface ApiResponse<T> {
 
 export interface PaginatedResponse<T> {
   success: boolean;
+  message?: string;
   data: T[];
   pagination: {
     total: number;
@@ -27,6 +28,8 @@ export interface StatsData {
   byType: TypeCount[];
   byStatus: TypeCount[];
   byTag: TypeCount[];
+  bySource: TypeCount[];
+  byClassification: TypeCount[];
   recentApps: Application[];
 }
 

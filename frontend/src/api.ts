@@ -27,7 +27,14 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
   if (!res.ok) {
     try {
-      return await res.json();
+      const data = await res.json();
+      if (res.status === 409) {
+        return { 
+          success: false, 
+          message: 'This email has already submitted an application. We\'ll be in touch soon!' 
+        } as T;
+      }
+      return data;
     } catch {
       return { success: false, message: `Server error (${res.status})` } as T;
     }
@@ -86,6 +93,23 @@ export const api = {
   },
 
   // ── Applications ──
+  async lookupStatus(refNumber: string, email: string): Promise<ApiResponse<{
+    refNumber: string; firstName: string; userType: string; status: string;
+    tags: string[]; summitAccess: boolean; submittedAt: string; updatedAt?: string;
+  }>> {
+    if (store.get('useApi')) {
+      return request('POST', '/applications/lookup', { refNumber, email });
+    }
+    const apps = localStore.get();
+    const app = apps.find(a => a.refNumber === refNumber.toUpperCase() && a.personal.email === email.toLowerCase());
+    if (!app) return { success: false, message: 'No application found. Please check your reference number and email.' };
+    return { success: true, data: {
+      refNumber: app.refNumber, firstName: app.personal.firstName, userType: app.userType,
+      status: app.status, tags: app.tags, summitAccess: app.dealRoom?.summitAccess || false,
+      submittedAt: app.submittedAt, updatedAt: app.updatedAt,
+    }};
+  },
+
   async submit(payload: SubmitPayload): Promise<ApiResponse<{ refNumber: string }>> {
     if (store.get('useApi')) {
       return request('POST', '/applications', payload);
@@ -153,7 +177,13 @@ export const api = {
     const tagCounts: Record<string, number> = {};
     apps.forEach(a => a.tags?.forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; }));
     const byTag = Object.entries(tagCounts).map(([_id, count]) => ({ _id, count }));
-    return { success: true, data: { total: apps.length, byType, byStatus, byTag, recentApps: apps.slice(0, 8) } };
+    const sourceCounts: Record<string, number> = {};
+    apps.forEach(a => { const s = a.engagementSource as string || 'direct'; sourceCounts[s] = (sourceCounts[s] || 0) + 1; });
+    const bySource = Object.entries(sourceCounts).map(([_id, count]) => ({ _id, count }));
+    const classCounts: Record<string, number> = {};
+    apps.forEach(a => { const c = a.classification as string || 'unclassified'; classCounts[c] = (classCounts[c] || 0) + 1; });
+    const byClassification = Object.entries(classCounts).map(([_id, count]) => ({ _id, count }));
+    return { success: true, data: { total: apps.length, byType, byStatus, byTag, bySource, byClassification, recentApps: apps.slice(0, 8) } };
   },
 
   // ── Analytics ──

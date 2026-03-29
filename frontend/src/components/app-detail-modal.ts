@@ -1,4 +1,4 @@
-import type { Application, ApplicationStatus } from '../types/index.ts';
+import type { Application, ApplicationStatus, Classification } from '../types/index.ts';
 import { CATEGORY_LABELS } from '../constants/categories.ts';
 import { STATUS_LABELS, STATUS_CSS } from '../constants/status.ts';
 import { APPLICATION_STATUSES } from '../constants/status.ts';
@@ -70,6 +70,20 @@ export function renderAppDetail(app: Application): string {
   const funders = (app.dealRoom?.funders ?? []).map(f => `<span class="tag-badge">${f}</span>`).join(' ');
   const fd = (app.formData as Record<string, unknown>) ?? {};
 
+  // Engagement source
+  const sourceTag = app.engagementSource && app.engagementSource !== 'direct'
+    ? `<span class="tag-badge tag-source">${app.engagementSource.toUpperCase()}</span>`
+    : '';
+
+  // Classification options
+  const classificationOptions = ['unclassified', 'hot', 'warm', 'cold'].map(c => {
+    const sel = (app.classification || 'unclassified') === c ? ' selected' : '';
+    return `<option value="${c}"${sel}>${c.charAt(0).toUpperCase() + c.slice(1)}</option>`;
+  }).join('');
+
+  // Follow-up
+  const followUp = app.followUp ?? { required: false };
+
   // Status options
   const statusOptions = APPLICATION_STATUSES.map(s => {
     const sel = app.status === s ? ' selected' : '';
@@ -85,6 +99,7 @@ export function renderAppDetail(app: Application): string {
           <div class="modal-sub-row">
             <span class="lead-card-ref">${app.refNumber}</span>
             <span class="tag ${statusCls}" id="modal-status-badge">${statusLbl}</span>
+            ${sourceTag}
           </div>
         </div>
         <button class="modal-close" id="modal-close-btn" aria-label="Close">&times;</button>
@@ -106,6 +121,26 @@ export function renderAppDetail(app: Application): string {
               <textarea class="modal-action-textarea" id="modal-notes" rows="3" placeholder="Add notes about this application...">${app.adminNotes || ''}</textarea>
             </div>
             <button class="btn-action" id="modal-save-notes">Save Notes</button>
+          </div>
+          <div class="modal-action-row">
+            <div class="modal-action-group">
+              <label class="modal-action-lbl" for="modal-classification">Classification</label>
+              <select class="modal-action-select" id="modal-classification">${classificationOptions}</select>
+            </div>
+            <button class="btn-action" id="modal-save-classification">Save</button>
+          </div>
+          <div class="modal-action-row">
+            <div class="modal-action-group" style="flex:1">
+              <label class="modal-action-lbl">Follow-Up</label>
+              <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+                <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--cream)">
+                  <input type="checkbox" id="modal-followup-req" ${followUp.required ? 'checked' : ''} /> Required
+                </label>
+                <input type="date" id="modal-followup-date" class="modal-action-select" value="${followUp.dueDate ? followUp.dueDate.split('T')[0] : ''}" style="flex:1;min-width:140px" />
+              </div>
+              <textarea class="modal-action-textarea" id="modal-followup-notes" rows="2" placeholder="Follow-up notes..." style="margin-top:8px">${followUp.notes || ''}</textarea>
+            </div>
+            <button class="btn-action" id="modal-save-followup">Save</button>
           </div>
         </div>
 
@@ -214,6 +249,50 @@ export function openModal(html: string, app?: Application, onUpdate?: (updated: 
       }
       btn.disabled = false;
       btn.textContent = 'Update Status';
+    });
+
+    // ── Save classification ──
+    document.getElementById('modal-save-classification')?.addEventListener('click', async () => {
+      const select = document.getElementById('modal-classification') as HTMLSelectElement;
+      const classification = select.value as Classification;
+      const btn = document.getElementById('modal-save-classification') as HTMLButtonElement;
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+      const res = await api.updateApplication(app._id, { classification });
+      if (res.success && res.data) {
+        app.classification = classification;
+        toast(`Classified as ${classification}`);
+        if (onUpdate) onUpdate(res.data);
+      } else {
+        toast('Failed to save classification');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Save';
+    });
+
+    // ── Save follow-up ──
+    document.getElementById('modal-save-followup')?.addEventListener('click', async () => {
+      const reqCheckbox = document.getElementById('modal-followup-req') as HTMLInputElement;
+      const dateInput = document.getElementById('modal-followup-date') as HTMLInputElement;
+      const notesInput = document.getElementById('modal-followup-notes') as HTMLTextAreaElement;
+      const btn = document.getElementById('modal-save-followup') as HTMLButtonElement;
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+      const followUpData = {
+        required: reqCheckbox.checked,
+        dueDate: dateInput.value || undefined,
+        notes: notesInput.value.trim() || undefined,
+      };
+      const res = await api.updateApplication(app._id, { followUp: followUpData });
+      if (res.success && res.data) {
+        app.followUp = res.data.followUp;
+        toast('Follow-up saved');
+        if (onUpdate) onUpdate(res.data);
+      } else {
+        toast('Failed to save follow-up');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Save';
     });
 
     // ── Save admin notes ──

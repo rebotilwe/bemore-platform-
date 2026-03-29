@@ -45,7 +45,9 @@ export function renderStepConfirm(): string {
       <ul style="padding-left:var(--sp-5);margin-top:var(--sp-3)">
         <li>Consent to BeMore Group and its Programme partners collecting, processing, and storing my personal and project-related information for evaluation, communication, and engagement with funding institutions.</li>
         <li>Understand that my information will be handled in accordance with the <strong>Protection of Personal Information Act (POPIA)</strong>.</li>
-        <li>Acknowledge that I may request access to, correction of, or deletion of my personal information at any time.</li>
+        <li>Acknowledge that my personal data will be retained for a maximum of <strong>24 months</strong> from the date of submission, after which it will be securely deleted unless I have entered into an active funding relationship.</li>
+        <li>Understand I may <strong>request access to, correction of, or deletion</strong> of my personal information at any time by emailing <strong>info@bts-app.co.za</strong>. Requests will be processed within 30 days.</li>
+        <li>Acknowledge that I may <strong>withdraw this consent</strong> at any time by contacting the above address, which may result in my application being removed from the Programme.</li>
       </ul>
     </div>
     <div class="consent-row" id="consent-popia" role="checkbox" aria-checked="false" aria-label="Provide POPIA consent" tabindex="0">

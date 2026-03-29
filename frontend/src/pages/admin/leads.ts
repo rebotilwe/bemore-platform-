@@ -8,6 +8,9 @@ import { formatDate } from '../../utils/format.ts';
 import { exportCsv } from '../../utils/csv.ts';
 import { mountAdminLayout } from './layout.ts';
 import { renderAppDetail, openModal } from '../../components/app-detail-modal.ts';
+import { showBulkStatusConfirm } from '../../components/confirm-dialog.ts';
+import { renderEmptyState, EMPTY_STATES } from '../../components/empty-state.ts';
+import { setButtonLoading } from '../../components/loading-button.ts';
 
 const TAG_CSS: Record<string, string> = {
   developer: 'tag-developer', landowner: 'tag-landowner', student: 'tag-student',
@@ -27,6 +30,15 @@ const FILTER_CATEGORIES: { value: string; label: string }[] = [
 let currentApps: Application[] = [];
 let totalCount = 0;
 let selectedIds = new Set<string>();
+let sortField = 'submittedAt';
+let sortDir: 'asc' | 'desc' = 'desc';
+
+function sortIcon(field: string): string {
+  if (field !== sortField) return '<span class="sort-icon">&#8597;</span>';
+  return sortDir === 'asc'
+    ? '<span class="sort-icon active">&#8593;</span>'
+    : '<span class="sort-icon active">&#8595;</span>';
+}
 
 function renderFilterBar(): string {
   const filters = store.get('filters');
@@ -73,7 +85,7 @@ function renderBulkBar(): string {
 }
 
 function renderCards(apps: Application[]): string {
-  if (!apps.length) return '<p class="empty-state">No leads match your filters.</p>';
+  if (!apps.length) return renderEmptyState({ ...EMPTY_STATES.search, message: 'No leads match your filters.' });
 
   return `<div class="leads-cards">${apps.map(app => {
     const name = `${app.personal?.firstName ?? ''} ${app.personal?.surname ?? ''}`.trim() || 'Unknown';
@@ -98,6 +110,8 @@ function renderCards(apps: Application[]): string {
           <div class="lead-card-badges">
             <span class="tag ${typeCls}">${typeLbl}</span>
             <span class="tag ${statusCls}">${statusLbl}</span>
+            ${app.classification && app.classification !== 'unclassified' ? `<span class="tag tag-classification-${app.classification}">${app.classification.toUpperCase()}</span>` : ''}
+            ${app.engagementSource && app.engagementSource !== 'direct' ? `<span class="tag tag-source">${app.engagementSource}</span>` : ''}
           </div>
         </div>
         <div class="lead-card-name" data-id="${app._id}">${name}</div>
@@ -155,7 +169,18 @@ function renderTable(apps: Application[]): string {
     <div class="tbl-wrap">
       <table class="dtbl">
         <thead>
-          <tr><th><input type="checkbox" id="bulk-check-all" /></th><th>Name</th><th>Ref</th><th>Type</th><th>Email</th><th>Value</th><th>Tags</th><th>Status</th><th>Date</th><th>Action</th></tr>
+          <tr>
+            <th><input type="checkbox" id="bulk-check-all" /></th>
+            <th class="sortable" data-sort="personal.surname">Name ${sortIcon('personal.surname')}</th>
+            <th>Ref</th>
+            <th class="sortable" data-sort="userType">Type ${sortIcon('userType')}</th>
+            <th>Email</th>
+            <th>Value</th>
+            <th>Tags</th>
+            <th class="sortable" data-sort="status">Status ${sortIcon('status')}</th>
+            <th class="sortable" data-sort="submittedAt">Date ${sortIcon('submittedAt')}</th>
+            <th>Action</th>
+          </tr>
         </thead>
         <tbody>${rows}</tbody>
       </table>
@@ -172,10 +197,21 @@ async function loadLeads(): Promise<void> {
     userType: filters.userType,
     status: filters.status,
     search: filters.search,
+    sortBy: sortField,
+    order: sortDir,
   });
 
   if (!res.success) {
-    container.innerHTML = '<p class="empty-state">Failed to load leads.</p>';
+    container.innerHTML = renderEmptyState({ 
+      title: 'Failed to load', 
+      message: res.message || 'Could not load leads. Please try again.',
+      icon: '⚠️'
+    });
+    return;
+  }
+
+  if (res.data.length === 0) {
+    container.innerHTML = renderEmptyState(EMPTY_STATES.leads);
     return;
   }
 
@@ -187,6 +223,22 @@ async function loadLeads(): Promise<void> {
   bindTableActions();
   bindDetailModal();
   bindBulkActions();
+  bindSortHeaders();
+}
+
+function bindSortHeaders(): void {
+  document.querySelectorAll<HTMLElement>('.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const field = th.dataset.sort!;
+      if (sortField === field) {
+        sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        sortField = field;
+        sortDir = field === 'submittedAt' ? 'desc' : 'asc';
+      }
+      loadLeads();
+    });
+  });
 }
 
 function bindTableActions(): void {
@@ -264,7 +316,7 @@ function bindBulkActions(): void {
     updateBulkBar();
   });
 
-  // Apply bulk status
+  // Apply bulk status with confirmation
   document.getElementById('bulk-apply')?.addEventListener('click', async () => {
     const select = document.getElementById('bulk-status-select') as HTMLSelectElement;
     const status = select.value;
@@ -272,19 +324,20 @@ function bindBulkActions(): void {
     if (!selectedIds.size) { toast('No leads selected'); return; }
 
     const btn = document.getElementById('bulk-apply') as HTMLButtonElement;
-    btn.disabled = true;
-    btn.textContent = `Updating ${selectedIds.size}...`;
-
-    const res = await api.bulkUpdateStatus([...selectedIds], status);
-    if (res.success) {
-      toast(`${selectedIds.size} applications updated to ${(STATUS_LABELS as Record<string, string>)[status]}`);
-      selectedIds.clear();
-      loadLeads();
-    } else {
-      toast('Bulk update failed');
-    }
-    btn.disabled = false;
-    btn.textContent = 'Apply';
+    
+    showBulkStatusConfirm(selectedIds.size, async () => {
+      setButtonLoading(btn, true, `Updating ${selectedIds.size}...`);
+      
+      const res = await api.bulkUpdateStatus([...selectedIds], status);
+      if (res.success) {
+        toast(`${selectedIds.size} applications updated to ${(STATUS_LABELS as Record<string, string>)[status]}`);
+        selectedIds.clear();
+        loadLeads();
+      } else {
+        toast(res.message || 'Bulk update failed');
+      }
+      setButtonLoading(btn, false);
+    });
   });
 
   // Clear selection
@@ -310,7 +363,7 @@ export const leadsPage: Page = {
       </div>
       ${renderFilterBar()}
       <div id="leads-content">
-        <p class="loading-state">Loading...</p>
+        <div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div>
       </div>
     </div>`;
   },
@@ -350,8 +403,7 @@ export const leadsPage: Page = {
 
     document.getElementById('leads-export')?.addEventListener('click', async () => {
       const btn = document.getElementById('leads-export') as HTMLButtonElement;
-      btn.disabled = true;
-      btn.textContent = 'Exporting...';
+      setButtonLoading(btn, true, 'Exporting...');
       // Fetch ALL records (not just current page)
       const allRes = await api.getApplications({ limit: 10000 });
       if (allRes.success && allRes.data.length) {
@@ -360,8 +412,7 @@ export const leadsPage: Page = {
       } else {
         toast('No data to export');
       }
-      btn.disabled = false;
-      btn.textContent = 'Export CSV';
+      setButtonLoading(btn, false);
     });
 
     loadLeads();

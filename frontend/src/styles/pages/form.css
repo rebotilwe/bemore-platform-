@@ -302,3 +302,13 @@
     max-width: var(--container-xl);
   }
 }
+
+/* Save indicator */
+.save-indicator {
+  color: var(--steel);
+  transition: color var(--dur-med) var(--ease-std);
+}
+
+.save-indicator.saved {
+  color: var(--green);
+}

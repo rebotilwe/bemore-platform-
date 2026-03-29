@@ -1,3 +1,10 @@
+const defaultCorsOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:3000',
+];
+
 export const config = Object.freeze({
   port: Number(process.env.PORT) || 5000,
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -10,8 +17,8 @@ export const config = Object.freeze({
   },
   cors: {
     origin: process.env.CORS_ORIGIN
-      ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
-      : '*',
+      ? (process.env.CORS_ORIGIN.trim() === '*' ? true : process.env.CORS_ORIGIN.split(',').map(o => o.trim()))
+      : defaultCorsOrigins,
   },
   mail: {
     host: process.env.SMTP_HOST || '',
@@ -19,6 +26,7 @@ export const config = Object.freeze({
     user: process.env.SMTP_USER || '',
     pass: process.env.SMTP_PASS || '',
     from: process.env.SMTP_FROM || 'noreply@bemore.co.za',
+    fromName: process.env.SMTP_FROM_NAME || 'BeMore Group',
   },
   admin: {
     email: process.env.ADMIN_SEED_EMAIL || 'admin@bemore.co.za',

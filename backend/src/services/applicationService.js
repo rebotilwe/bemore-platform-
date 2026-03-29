@@ -1,9 +1,13 @@
 import Application from '../models/Application.js';
 import { APPLICATION_STATUSES, FUNDER_NAMES, SORTABLE_FIELDS } from '../constants/enums.js';
 
-const ALLOWED_UPDATE_FIELDS = ['status', 'dealRoom', 'adminNotes'];
+const ALLOWED_UPDATE_FIELDS = ['status', 'dealRoom', 'adminNotes', 'classification', 'followUp'];
 
 export async function createApplication(data) {
+  // Extract engagement source from formData to top-level field
+  if (data.formData?.engagementSource) {
+    data.engagementSource = data.formData.engagementSource;
+  }
   const app = new Application(data);
   await app.save();
   return app;
@@ -76,15 +80,17 @@ export async function updateApplication(id, updates) {
 }
 
 export async function getStats() {
-  const [total, byType, byStatus, byTag, recentApps] = await Promise.all([
+  const [total, byType, byStatus, byTag, bySource, byClassification, recentApps] = await Promise.all([
     Application.countDocuments(),
     Application.aggregate([{ $group: { _id: '$userType', count: { $sum: 1 } } }]),
     Application.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
     Application.aggregate([{ $unwind: '$tags' }, { $group: { _id: '$tags', count: { $sum: 1 } } }]),
+    Application.aggregate([{ $group: { _id: { $ifNull: ['$engagementSource', 'direct'] }, count: { $sum: 1 } } }]),
+    Application.aggregate([{ $group: { _id: { $ifNull: ['$classification', 'unclassified'] }, count: { $sum: 1 } } }]),
     Application.find().sort({ submittedAt: -1 }).limit(8),
   ]);
 
-  return { total, byType, byStatus, byTag, recentApps };
+  return { total, byType, byStatus, byTag, bySource, byClassification, recentApps };
 }
 
 export async function getAllApplications() {

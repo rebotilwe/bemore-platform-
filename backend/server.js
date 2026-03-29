@@ -4,13 +4,13 @@ import { createApp } from './src/app.js';
 import { connectDb } from './src/config/db.js';
 import { config } from './src/config/index.js';
 import { seedAdmin } from './src/models/Admin.js';
+import logger from './src/utils/logger.js';
 
 const app = createApp();
 
 async function start() {
-  // Fail fast if JWT secret not set in production
   if (config.nodeEnv === 'production' && config.jwtSecret === 'dev-secret-change-me') {
-    console.error('FATAL: JWT_SECRET must be set in production. Exiting.');
+    logger.error('FATAL: JWT_SECRET must be set in production. Exiting.');
     process.exit(1);
   }
 
@@ -18,21 +18,20 @@ async function start() {
   await seedAdmin();
 
   const server = app.listen(config.port, () => {
-    console.log(`Server running on port ${config.port} [${config.nodeEnv}]`);
+    logger.info(`Server running on port ${config.port} [${config.nodeEnv}]`);
   });
 
-  // ── Graceful shutdown ──
   const shutdown = async (signal) => {
-    console.log(`\n${signal} received — shutting down...`);
+    logger.info(`${signal} received — shutting down...`);
     const forceExit = setTimeout(() => {
-      console.error('Forced shutdown after timeout');
+      logger.error('Forced shutdown after timeout');
       process.exit(1);
     }, 10000);
 
     server.close(async () => {
       await mongoose.disconnect();
       clearTimeout(forceExit);
-      console.log('Shutdown complete');
+      logger.info('Shutdown complete');
       process.exit(0);
     });
   };
@@ -42,6 +41,6 @@ async function start() {
 }
 
 start().catch((err) => {
-  console.error('Failed to start server:', err);
+  logger.error('Failed to start server:', err);
   process.exit(1);
 });
