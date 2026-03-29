@@ -43,8 +43,8 @@ async function run() {
   console.log('Logging into admin...');
   await page.goto(`${BASE}/#/admin/login`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(500);
-  await page.fill('input[type="email"]', 'admin@bemore.co.za');
-  await page.fill('input[type="password"]', 'BeMore@Summit2026!');
+  await page.fill('input[type="email"]', process.env.ADMIN_EMAIL || 'admin@bemore.co.za');
+  await page.fill('input[type="password"]', process.env.ADMIN_PASS || '');
   await page.click('button[type="submit"], .btn-primary');
   await page.waitForTimeout(2000);
 
