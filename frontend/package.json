@@ -14,11 +14,12 @@
     "test:coverage": "vitest --coverage"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.0.0",
     "@types/node": "^25.5.0",
+    "@vitest/coverage-v8": "^4.1.2",
+    "jsdom": "^26.0.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.3",
-    "vitest": "^3.0.0",
-    "@testing-library/dom": "^10.0.0",
-    "jsdom": "^26.0.0"
+    "vitest": "^3.0.0"
   }
 }
