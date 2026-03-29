@@ -11,7 +11,7 @@ export function createApp() {
   const app = express();
 
   app.use(requestLogger);
-  app.use(express.json());
+  app.use(express.json({ limit: '100kb' }));
   app.use(cors({ origin: config.cors.origin }));
   app.use(helmet());
 

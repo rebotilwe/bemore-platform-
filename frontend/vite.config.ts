@@ -18,7 +18,7 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     target: 'es2022',
-    sourcemap: true,
+    sourcemap: false,
     cssMinify: true,
     rollupOptions: {
       input: resolve(__dirname, 'index.html'),

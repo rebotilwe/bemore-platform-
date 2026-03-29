@@ -45,7 +45,7 @@ export async function listApplications(query) {
 
   const [total, data] = await Promise.all([
     Application.countDocuments(filter),
-    Application.find(filter).sort(sort).skip((page - 1) * limit).limit(limit),
+    Application.find(filter).sort(sort).skip((page - 1) * limit).limit(limit).lean(),
   ]);
 
   return { data, pagination: { total, page, limit, pages: Math.ceil(total / limit) } };

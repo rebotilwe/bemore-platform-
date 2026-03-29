@@ -26,12 +26,19 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   }
 
   if (!res.ok) {
+    // Auto-logout on expired/invalid token
+    if (res.status === 401 && store.get('token') && !path.includes('/auth/login')) {
+      store.set('token', '');
+      store.set('isAuthenticated', false);
+      window.location.hash = '/admin/login';
+    }
+
     try {
       const data = await res.json();
       if (res.status === 409) {
-        return { 
-          success: false, 
-          message: 'This email has already submitted an application. We\'ll be in touch soon!' 
+        return {
+          success: false,
+          message: 'This email has already submitted an application. We\'ll be in touch soon!'
         } as T;
       }
       return data;
