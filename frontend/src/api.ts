@@ -9,21 +9,45 @@ import { generateRefNumber } from './utils/format.ts';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 
+const REQUEST_TIMEOUT = 15000; // 15 seconds
+const RETRY_DELAY = 2000;
+const MAX_RETRIES = 1; // 1 retry for GET on network error
+
+async function fetchWithTimeout(url: string, opts: RequestInit, timeout = REQUEST_TIMEOUT): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    const res = await fetch(url, { ...opts, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const token = store.get('token');
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}${path}`, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  } catch {
-    return { success: false, message: 'Network error — please check your connection' } as T;
+  const opts: RequestInit = { method, headers, body: body ? JSON.stringify(body) : undefined };
+  let res: Response | undefined;
+
+  // Retry loop (only retries GET on network/timeout errors)
+  const maxAttempts = method === 'GET' ? MAX_RETRIES + 1 : 1;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      if (attempt > 0) await new Promise(r => setTimeout(r, RETRY_DELAY));
+      res = await fetchWithTimeout(`${API_URL}${path}`, opts);
+      break;
+    } catch (err) {
+      const msg = (err as Error).name === 'AbortError' ? 'Request timed out' : 'Network error — please check your connection';
+      if (attempt === maxAttempts - 1) {
+        return { success: false, message: msg } as T;
+      }
+    }
   }
+
+  if (!res) return { success: false, message: 'Request failed' } as T;
 
   if (!res.ok) {
     // Auto-logout on expired/invalid token

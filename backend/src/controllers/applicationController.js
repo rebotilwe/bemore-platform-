@@ -98,28 +98,42 @@ export async function stats(req, res, next) {
 
 export async function exportCsv(req, res, next) {
   try {
-    const apps = await appService.getAllApplications();
     const headers = ['Ref Number', 'Type', 'Status', 'Classification', 'Source', 'First Name', 'Surname', 'Email', 'Phone', 'Company', 'Est. Value', 'Project Stage', 'Land Status', 'Tags', 'Follow-Up Required', 'Follow-Up Due', 'Follow-Up Notes', 'Admin Notes', 'Submitted'];
-    const rows = apps.map(a => [
-      a.refNumber, a.userType, a.status,
-      a.classification || 'unclassified', a.engagementSource || 'direct',
-      a.personal.firstName, a.personal.surname, a.personal.email, a.personal.phone,
-      a.personal.companyName || '',
-      a.formData?.estimatedValue || '', a.formData?.projectStage || '', a.formData?.landStatus || '',
-      a.tags.join('; '),
-      a.followUp?.required ? 'Yes' : 'No', a.followUp?.dueDate || '', a.followUp?.notes || '',
-      a.adminNotes || '', a.submittedAt,
-    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
-
-    track('export.csv', 'admin', {
-      actor: { type: 'admin', id: req.admin?.id },
-      meta: { count: apps.length },
-      req,
-    });
 
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename=bemore-applications.csv');
-    res.send([headers.join(','), ...rows].join('\n'));
+    res.write(headers.join(',') + '\n');
+
+    // Stream with cursor — doesn't load all records into memory
+    const cursor = Application.find()
+      .sort({ submittedAt: -1 })
+      .select('refNumber userType status classification engagementSource personal formData tags followUp adminNotes submittedAt')
+      .lean()
+      .cursor();
+
+    let count = 0;
+    for await (const a of cursor) {
+      const row = [
+        a.refNumber, a.userType, a.status,
+        a.classification || 'unclassified', a.engagementSource || 'direct',
+        a.personal?.firstName, a.personal?.surname, a.personal?.email, a.personal?.phone,
+        a.personal?.companyName || '',
+        a.formData?.estimatedValue || '', a.formData?.projectStage || '', a.formData?.landStatus || '',
+        (a.tags || []).join('; '),
+        a.followUp?.required ? 'Yes' : 'No', a.followUp?.dueDate || '', a.followUp?.notes || '',
+        a.adminNotes || '', a.submittedAt,
+      ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',');
+      res.write(row + '\n');
+      count++;
+    }
+
+    track('export.csv', 'admin', {
+      actor: { type: 'admin', id: req.admin?.id },
+      meta: { count },
+      req,
+    });
+
+    res.end();
   } catch (err) {
     next(err);
   }

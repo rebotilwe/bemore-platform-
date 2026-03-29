@@ -17,7 +17,25 @@ router.post('/', publicApplicationLimiter,
   body('personal.email').isEmail().withMessage('Valid email required'),
   body('personal.phone').notEmpty().withMessage('Phone required').matches(/^[\d\s\-+()]{10,15}$/).withMessage('Phone must be 10-15 digits'),
   body('personal.companyName').optional().isString().withMessage('Company name must be a string'),
-  body('formData').optional().isObject().withMessage('formData must be an object'),
+  body('formData').optional().isObject().withMessage('formData must be an object')
+    .custom((val) => {
+      // Reject deeply nested or oversized formData
+      const str = JSON.stringify(val);
+      if (str.length > 50000) throw new Error('formData too large');
+      // Whitelist known top-level keys
+      const allowed = new Set([
+        'landStatus', 'projectStage', 'estimatedValue', 'seeking', 'previousFunding',
+        'projectDescription', 'whyChooseYou', 'summitAttendance', 'tcAccepted', 'popiaConsent',
+        'yearsExperience', 'developmentTypes', 'landSize', 'zoningStatus', 'isServiced',
+        'ownershipStructure', 'investmentFocus', 'investmentTicket', 'bedCount', 'occupancyRate',
+        'universityPartnership', 'assetType', 'profession', 'registrationStatus', 'projectScale',
+        'developmentInterests', 'relevantExperience', 'engagementSource',
+      ]);
+      for (const key of Object.keys(val)) {
+        if (!allowed.has(key)) delete val[key]; // Strip unknown fields
+      }
+      return true;
+    }),
   validate,
   submit,
 );

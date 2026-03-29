@@ -88,20 +88,38 @@ async function render(): Promise<void> {
   const app = document.getElementById('app');
   if (!app) return;
 
-  // Resolve page (may be async for lazy-loaded admin pages)
-  const page = await route.page();
-  currentPage = page;
+  try {
+    // Resolve page (may be async for lazy-loaded admin pages)
+    const page = await route.page();
+    currentPage = page;
 
-  if (route.layout === 'admin') {
-    app.innerHTML = renderAdminLayout(page.render(), path);
-    mountAdminLayout();
-  } else {
-    const showNav = path !== '/admin/login' && path !== '/landing';
-    app.innerHTML = (showNav ? renderNav(path) : '') + `<main>${page.render()}</main>`;
-    if (showNav) mountNav();
+    if (route.layout === 'admin') {
+      app.innerHTML = renderAdminLayout(page.render(), path);
+      mountAdminLayout();
+    } else {
+      const showNav = path !== '/admin/login' && path !== '/landing';
+      app.innerHTML = (showNav ? renderNav(path) : '') + `<main>${page.render()}</main>`;
+      if (showNav) mountNav();
+    }
+
+    if (page.mount) page.mount();
+  } catch (err) {
+    console.error('Page render error:', err);
+    app.innerHTML = `
+      <section class="success-view">
+        <div class="success-bg" aria-hidden="true"></div>
+        <div class="success-wrap" style="text-align:center">
+          <div class="success-ico fade-in" style="background:rgba(201,76,76,0.1);border-color:rgba(201,76,76,0.4);color:var(--red)">!</div>
+          <h2 class="success-h display">Something Went Wrong</h2>
+          <p class="success-p">This page encountered an error. Please try refreshing.</p>
+          <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+            <button class="btn-primary" onclick="location.reload()">Refresh Page</button>
+            <a class="btn-ghost" href="#/">Go Home</a>
+          </div>
+        </div>
+      </section>`;
   }
 
-  if (page.mount) page.mount();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 

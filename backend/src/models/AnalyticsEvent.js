@@ -30,5 +30,6 @@ analyticsEventSchema.index({ timestamp: 1 }, { expireAfterSeconds: 365 * 24 * 60
 // Compound indexes for common queries
 analyticsEventSchema.index({ category: 1, timestamp: -1 });
 analyticsEventSchema.index({ event: 1, timestamp: -1 });
+analyticsEventSchema.index({ 'actor.email': 1, timestamp: -1 });
 
 export default mongoose.model('AnalyticsEvent', analyticsEventSchema);
