@@ -13,6 +13,7 @@ router.use('/auth', authRouter);
 router.use('/applications', applicationsRouter);
 router.use('/reports', reportsRouter);
 router.use('/analytics', analyticsRouter);
+router.use('/insights', analyticsRouter); // Alias — ad blockers block /analytics
 router.use('/polls', pollsRouter);
 
 export default router;

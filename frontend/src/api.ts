@@ -188,26 +188,26 @@ export const api = {
 
   // ── Analytics ──
   async getAnalyticsDashboard(range = '30d'): Promise<ApiResponse<AnalyticsDashboard>> {
-    return request('GET', `/analytics/dashboard?range=${range}`);
+    return request('GET', `/insights/dashboard?range=${range}`);
   },
   async getAnalyticsFunnel(): Promise<ApiResponse<FunnelData>> {
-    return request('GET', '/analytics/funnel');
+    return request('GET', '/insights/funnel');
   },
   async getAnalyticsTrends(granularity = 'day', range = '30d'): Promise<ApiResponse<TrendData>> {
-    return request('GET', `/analytics/trends?granularity=${granularity}&range=${range}`);
+    return request('GET', `/insights/trends?granularity=${granularity}&range=${range}`);
   },
   async getAnalyticsTags(): Promise<ApiResponse<TagAnalytics>> {
-    return request('GET', '/analytics/tags');
+    return request('GET', '/insights/tags');
   },
   async getAnalyticsDemographics(): Promise<ApiResponse<DemographicsData>> {
-    return request('GET', '/analytics/demographics');
+    return request('GET', '/insights/demographics');
   },
   async getAnalyticsDealRoom(): Promise<ApiResponse<DealRoomAnalytics>> {
-    return request('GET', '/analytics/deal-room');
+    return request('GET', '/insights/deal-room');
   },
 
   async getAuditLog(queryString: string): Promise<PaginatedResponse<unknown>> {
-    return request('GET', `/analytics/events?${queryString}`);
+    return request('GET', `/insights/events?${queryString}`);
   },
 
   async bulkUpdateStatus(ids: string[], status: string): Promise<ApiResponse<{ updated: number }>> {
