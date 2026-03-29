@@ -13,7 +13,7 @@ export const healthLimiter = rateLimit({
 
 export const publicApplicationLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 30,
+  max: 100,
   message: { success: false, error: 'Too many requests. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -23,16 +23,10 @@ export const publicApplicationLimiter = rateLimit({
 
 export const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 60,
-  message: { success: false, error: 'Too many admin requests. Please try again later.' },
+  max: 0, // 0 = no limit for admin
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    return req.admin?.id || req.ip || req.connection.remoteAddress || 'unknown';
-  },
-  skip: (_req, res) => {
-    return res.locals.skipRateLimit === true;
-  },
+  skip: () => true, // Disabled for now — admins have no rate limit
 });
 
 export const voteLimiter = rateLimit({
