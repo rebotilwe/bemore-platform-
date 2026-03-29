@@ -9,6 +9,7 @@ import { mountAdminLayout } from './layout.ts';
 import { renderAppDetail, openModal } from '../../components/app-detail-modal.ts';
 import { renderEmptyState, EMPTY_STATES } from '../../components/empty-state.ts';
 import { setButtonLoading } from '../../components/loading-button.ts';
+import { exportPdfReport } from '../../utils/pdf-report.ts';
 
 const TAG_CSS: Record<string, string> = {
   developer: 'tag-developer', landowner: 'tag-landowner', student: 'tag-student',
@@ -125,6 +126,7 @@ function renderResults(meta: ReportMeta, apps: Application[]): string {
         <p class="rpt-results-sub">${meta.description}</p>
       </div>
       <div class="rpt-results-actions">
+        <button class="export-btn" id="rpt-export-pdf">Export PDF</button>
         <button class="export-btn" id="rpt-export">Export CSV</button>
         <button class="btn-ghost rpt-back" id="rpt-back">← All Reports</button>
       </div>
@@ -176,6 +178,16 @@ function bindResults(): void {
     if (output) output.innerHTML = '';
     if (grid) grid.style.display = '';
     document.querySelectorAll('.rpt-card').forEach(c => c.classList.remove('active'));
+  });
+
+  document.getElementById('rpt-export-pdf')?.addEventListener('click', () => {
+    if (reportApps.length) {
+      const meta = REPORTS.find(r => r.name === activeReport);
+      if (meta) {
+        exportPdfReport(reportApps, { title: meta.title, description: meta.description, color: meta.color });
+        toast(`${meta.title} PDF generated`);
+      }
+    }
   });
 
   document.getElementById('rpt-export')?.addEventListener('click', () => {
