@@ -47,6 +47,7 @@ function renderPollList(polls: Record<string, unknown>[]): string {
             ${p.status === 'draft' ? `<button class="btn-action" data-activate="${p._id}">Activate</button>` : ''}
             ${p.status === 'active' ? `<button class="btn-primary" data-control="${p._id}" style="font-size:13px">Control Panel</button>` : ''}
             ${p.status === 'paused' ? `<button class="btn-action" data-resume="${p._id}">Resume</button>` : ''}
+            ${p.status !== 'draft' ? `<button class="btn-action" data-results="${p._id}">View Results</button>` : ''}
             ${['draft', 'closed'].includes(p.status as string) ? `<button class="btn-action" data-delete="${p._id}" style="color:var(--red)">Delete</button>` : ''}
           </div>
         </div>`;
@@ -184,6 +185,69 @@ function renderResultsForType(question: Record<string, unknown>, results: Record
   if (type === 'rating') return renderRatingDisplay(results as { average: number; max: number; totalVotes: number; distribution: { value: number; count: number }[] });
   if (type === 'open-text') return renderOpenTextList((results.responses as Array<{ text: string; timestamp: string }>) || []);
   return '';
+}
+
+// ═══════════════════════════════════════════
+//  FULL RESULTS VIEW
+// ═══════════════════════════════════════════
+
+function renderFullResults(poll: Record<string, unknown>, results: Array<Record<string, unknown>>): string {
+  const questions = (poll.questions as Array<Record<string, unknown>>) || [];
+  let totalResponses = 0;
+  results.forEach(r => { totalResponses += (r.totalVotes as number) || 0; });
+
+  return `
+    <div class="poll-results-full">
+      <div class="poll-results-header">
+        <div>
+          <h3 class="poll-results-title display">${poll.title}</h3>
+          <p class="poll-results-sub">${questions.length} question${questions.length !== 1 ? 's' : ''} &middot; ${totalResponses} total response${totalResponses !== 1 ? 's' : ''}</p>
+        </div>
+      </div>
+
+      ${results.map((r, i) => {
+        const q = (r.question || questions[i]) as Record<string, unknown>;
+        if (!q) return '';
+        const type = q.type as string;
+        const totalVotes = (r.totalVotes as number) || 0;
+
+        return `
+        <div class="poll-results-question">
+          <div class="poll-results-q-header">
+            <span class="poll-results-q-num">Q${i + 1}</span>
+            <span class="poll-results-q-type">${type.replace('-', ' ')}</span>
+            <span class="poll-results-q-votes">${totalVotes} vote${totalVotes !== 1 ? 's' : ''}</span>
+          </div>
+          <h4 class="poll-results-q-text">${q.text}</h4>
+          <div class="poll-results-q-chart">
+            ${renderResultsForType(q, r)}
+          </div>
+        </div>`;
+      }).join('')}
+
+      <button class="btn-ghost" id="pr-back" style="margin-top:var(--sp-6)">← Back to Polls</button>
+    </div>`;
+}
+
+async function openFullResults(pollId: string): Promise<void> {
+  const container = $('polls-content');
+  if (!container) return;
+  container.innerHTML = '<div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card" style="height:200px"></div>';
+
+  const res = await (api as ApiCall).getPollResults(pollId);
+  if (!res.success || !res.data) {
+    toast('Failed to load results');
+    loadPollList();
+    return;
+  }
+
+  const data = res.data as Record<string, unknown>;
+  const poll = data.poll as Record<string, unknown>;
+  const results = (data.results as Array<Record<string, unknown>>) || [];
+
+  container.innerHTML = renderFullResults(poll, results);
+
+  $('pr-back')?.addEventListener('click', () => loadPollList());
 }
 
 // ═══════════════════════════════════════════
@@ -345,6 +409,12 @@ function bindListActions(polls: Record<string, unknown>[]): void {
       await (api as ApiCall).setPollStatus((btn as HTMLElement).dataset.resume!, 'active');
       toast('Poll resumed');
       loadPollList();
+    });
+  });
+
+  document.querySelectorAll('[data-results]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      openFullResults((btn as HTMLElement).dataset.results!);
     });
   });
 

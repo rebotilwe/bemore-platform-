@@ -261,9 +261,25 @@
     <div class="screenshot-label">Mentee Meter — Waiting State (no poll active yet, updates automatically when admin starts)</div>
   </div>
 
+  <h3 style="color:var(--gold);margin:24px 0 12px;font-size:18px">Full Results Dashboard</h3>
+
+  <p style="font-size:15px;color:#c4c4c4;margin-bottom:16px">Every vote is permanently stored in MongoDB. The admin can view full results for any poll at any time — all questions, all responses, all analytics — from a dedicated results page.</p>
+
+  <div class="resp">
+    <div class="resp-label">What the Results Page Shows</div>
+    <p><strong>Per question:</strong> Question number, type badge, vote count, and the full results visualisation (bar chart for MC, word cloud for text, average + distribution for ratings, response list for open text).</p>
+    <p><strong>Aggregate totals:</strong> Total responses across all questions in the poll.</p>
+    <p><strong>Accessible anytime:</strong> Click "View Results" on any paused, active, or closed poll from the Mentee Meter admin page.</p>
+  </div>
+
+  <div class="screenshot">
+    <img src="/docs/screenshots/21-admin-poll-results.png" alt="Poll results dashboard">
+    <div class="screenshot-label">Admin — Full Poll Results Dashboard (all questions, all responses, permanent record)</div>
+  </div>
+
   <div class="note">
     <div class="note-label">Technical Note</div>
-    <p>The Mentee Meter uses <strong>Server-Sent Events (SSE)</strong> for real-time updates — zero external dependencies. The backend holds connections in memory and broadcasts vote results to all connected clients instantly. This architecture handles 500+ concurrent voters on a single Railway container. All poll responses are stored in MongoDB alongside application data for unified analytics.</p>
+    <p>The Mentee Meter uses <strong>Server-Sent Events (SSE)</strong> for real-time updates — zero external dependencies. The backend holds connections in memory and broadcasts vote results to all connected clients instantly. This architecture handles 500+ concurrent voters on a single Railway container. All poll responses are stored in MongoDB alongside application data for unified analytics. An in-memory cache layer with debounced broadcasting ensures fast response times even under heavy voting load.</p>
   </div>
 </div>
 
