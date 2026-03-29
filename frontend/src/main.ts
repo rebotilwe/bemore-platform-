@@ -29,9 +29,15 @@ async function init(): Promise<void> {
   // Initialize router
   router.init();
 
-  // Register service worker
+  // Unregister any existing service workers (clean slate)
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => r.unregister());
+    });
+    // Clear all caches
+    if ('caches' in window) {
+      caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+    }
   }
 }
 
