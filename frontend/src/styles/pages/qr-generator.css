@@ -152,3 +152,12 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 599px) {
+  .qr-preview-card { padding: var(--sp-5); }
+  .qr-img-wrap { padding: var(--sp-4); }
+  .qr-img-wrap img { max-width: 240px; }
+  .qr-btn-row { flex-direction: column; }
+  .qr-btn-row .btn-primary,
+  .qr-btn-row .btn-ghost { width: 100%; }
+}

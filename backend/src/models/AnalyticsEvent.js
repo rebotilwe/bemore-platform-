@@ -4,7 +4,7 @@ const analyticsEventSchema = new mongoose.Schema({
   event: { type: String, required: true, index: true },
   category: {
     type: String,
-    enum: ['application', 'admin', 'auth', 'report', 'system'],
+    enum: ['application', 'admin', 'auth', 'report', 'system', 'poll'],
     required: true,
     index: true,
   },

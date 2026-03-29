@@ -254,25 +254,25 @@
 }
 
 @media (max-width: 599px) {
-  .st-card {
-    padding: var(--sp-5);
-  }
+  .status-inner { padding: var(--sp-6) var(--sp-4); }
 
-  .st-info-grid {
-    grid-template-columns: 1fr;
-  }
+  .st-card { padding: var(--sp-4); }
+
+  .st-info-grid { grid-template-columns: 1fr; gap: var(--sp-3); }
 
   .st-timeline {
-    flex-wrap: wrap;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: var(--sp-1);
   }
 
-  .st-step {
-    flex: 0 0 auto;
-    min-width: 60px;
-  }
+  .st-step { min-width: unset; }
 
-  .st-next-steps .next-steps-grid {
-    grid-template-columns: 1fr;
-  }
+  .st-marker { width: 28px; height: 28px; font-size: 11px; }
+
+  .st-label { font-size: 9px; }
+
+  .st-next-steps .next-steps-grid { grid-template-columns: 1fr; }
+
+  .status-input { min-height: 48px; font-size: 16px; /* prevents iOS zoom */ }
 }

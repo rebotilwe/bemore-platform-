@@ -121,7 +121,7 @@
     <tbody>
       <tr><td>1. Data Collation</td><td><span class="status done">COMPLETE</span></td><td>5-step form, auto-tagging, classification, follow-up tracking</td></tr>
       <tr><td>2. QR Code Landing Page</td><td><span class="status done">COMPLETE</span></td><td>Co-branded BeMore + PBSA, two CTAs, source tracking</td></tr>
-      <tr><td>3. Mentee Meter</td><td><span class="status config">READY — NEEDS URL</span></td><td>Page built, Mentimeter iframe ready — set URL to activate</td></tr>
+      <tr><td>3. Mentee Meter</td><td><span class="status done">COMPLETE</span></td><td>Custom-built live polling: 4 question types, real-time SSE, 4 polls ready</td></tr>
       <tr><td>4. User Journey After Entry</td><td><span class="status done">COMPLETE</span></td><td>Confirmation, timeline, next steps, status lookup page</td></tr>
       <tr><td>5. Automation Response</td><td><span class="status done">COMPLETE</span></td><td>6 email templates, immediate acknowledgment, follow-up comms</td></tr>
       <tr><td>6. Platform Testing</td><td><span class="status done">COMPLETE</span></td><td>97 backend + 42 frontend tests, QR flow verified, emails tested</td></tr>
@@ -205,21 +205,65 @@
   </div>
 
   <div class="resp">
-    <div class="resp-label">Delivered</div>
-    <p><strong>Mentee Meter page</strong> built at <code>/#/mentee-meter</code> with branded wrapper.</p>
-    <p><strong>Mentimeter integration:</strong> Configurable iframe embed. When the Mentimeter URL is provided, it embeds directly in the BeMore platform with full branding.</p>
-    <p><strong>Navigation:</strong> "Live Poll" link added to the main navigation bar — accessible from every page.</p>
-    <p><strong>Configuration:</strong> Set the Mentimeter URL in one config file and redeploy (30 seconds on Vercel). Currently shows a "Coming Soon" placeholder until the URL is provided.</p>
+    <div class="resp-label">Delivered — Custom Built, Fully Owned</div>
+    <p>Rather than embedding a third-party tool, we built a <strong>complete live polling system</strong> directly into the BeMore platform. All data feeds into our MongoDB database — no external dependencies.</p>
+    <p><strong>4 question types:</strong> Multiple Choice, Word Cloud, Rating Scale, and Open Text.</p>
+    <p><strong>Real-time results:</strong> Uses Server-Sent Events (SSE) — when someone votes, all connected viewers see results update instantly (under 100ms).</p>
+    <p><strong>Anonymous voting:</strong> No login required. Session-based deduplication prevents double-voting per question at the database level.</p>
+    <p><strong>Mobile-first:</strong> All vote buttons meet 48px minimum touch targets. Font sizes prevent iOS auto-zoom. Works on any phone via QR code scan.</p>
   </div>
 
-  <div class="note">
-    <div class="note-label">Action Required</div>
-    <p>Provide the Mentimeter presentation URL (e.g., <code>https://www.menti.com/xxxxx</code>) and we will activate it within minutes.</p>
+  <h3 style="color:var(--gold);margin:24px 0 12px;font-size:18px">How It Works at the Summit</h3>
+
+  <div class="resp">
+    <div class="resp-label">Admin Flow (Control Panel)</div>
+    <p><strong>Step 1:</strong> Admin goes to Dashboard → Mentee Meter → selects a poll → clicks <strong>"Activate"</strong>.</p>
+    <p><strong>Step 2:</strong> Admin clicks <strong>"Start First Question"</strong> in the Control Panel.</p>
+    <p><strong>Step 3:</strong> All attendees on <code>/#/mentee-meter</code> instantly see the question appear on their phones.</p>
+    <p><strong>Step 4:</strong> Admin watches live results update in real-time on the Control Panel.</p>
+    <p><strong>Step 5:</strong> Admin clicks <strong>"Next Question →"</strong> to advance. All phones update simultaneously.</p>
+    <p><strong>Step 6:</strong> Admin clicks <strong>"Close Poll"</strong> when the session ends.</p>
+  </div>
+
+  <div class="resp">
+    <div class="resp-label">Attendee Flow (Phone)</div>
+    <p><strong>Step 1:</strong> Scan QR code → land on BeMore → tap <strong>"Live Poll"</strong> in the navigation.</p>
+    <p><strong>Step 2:</strong> See the current question. Tap an option to vote (Multiple Choice), type a response (Word Cloud / Open Text), or select a number (Rating).</p>
+    <p><strong>Step 3:</strong> After voting, see the live results chart updating as other attendees vote.</p>
+    <p><strong>Step 4:</strong> When admin advances, the next question appears automatically — no page refresh needed.</p>
+  </div>
+
+  <h3 style="color:var(--gold);margin:24px 0 12px;font-size:18px">Pre-Built Polls Ready for the Summit</h3>
+
+  <table>
+    <thead><tr><th>Poll</th><th>Questions</th><th>Types</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Deal Readiness Assessment</td><td>3</td><td>MC, Word Cloud, Rating (1-5)</td><td><span class="status config">PAUSED</span></td></tr>
+      <tr><td>Funding Readiness Check</td><td>5</td><td>3 MC, Word Cloud, Rating (1-10)</td><td><span class="status config">DRAFT</span></td></tr>
+      <tr><td>Summit Engagement Survey</td><td>5</td><td>2 MC, Word Cloud, Rating, Open Text</td><td><span class="status config">DRAFT</span></td></tr>
+      <tr><td>HDI Empowerment Assessment</td><td>6</td><td>3 MC, Word Cloud, Rating (1-10), Open Text</td><td><span class="status config">DRAFT</span></td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:13px;color:#8a8a9a;margin-top:8px">All polls are in draft/paused status. Activate from the admin dashboard when ready. Only one poll can be active at a time.</p>
+
+  <div class="screenshot">
+    <img src="/docs/screenshots/18-admin-polls.png" alt="Admin Mentee Meter management">
+    <div class="screenshot-label">Admin — Mentee Meter Poll Management (create, activate, control polls)</div>
   </div>
 
   <div class="screenshot">
-    <img src="/docs/screenshots/05-mentee-meter.png" alt="Mentee Meter page">
-    <div class="screenshot-label">Mentee Meter — Ready for Mentimeter URL (currently showing placeholder)</div>
+    <img src="/docs/screenshots/05-mentee-meter.png" alt="Mentee Meter voter page">
+    <div class="screenshot-label">Public — Mentee Meter Live Voting Page (shows active question + real-time results)</div>
+  </div>
+
+  <div class="screenshot">
+    <img src="/docs/screenshots/19-mentee-meter-waiting.png" alt="Mentee Meter waiting state">
+    <div class="screenshot-label">Mentee Meter — Waiting State (no poll active yet, updates automatically when admin starts)</div>
+  </div>
+
+  <div class="note">
+    <div class="note-label">Technical Note</div>
+    <p>The Mentee Meter uses <strong>Server-Sent Events (SSE)</strong> for real-time updates — zero external dependencies. The backend holds connections in memory and broadcasts vote results to all connected clients instantly. This architecture handles 500+ concurrent voters on a single Railway container. All poll responses are stored in MongoDB alongside application data for unified analytics.</p>
   </div>
 </div>
 
@@ -288,8 +332,9 @@
 
   <div class="resp">
     <div class="resp-label">Delivered — 139 Automated Tests</div>
-    <p><strong>97 backend tests</strong> (Jest + MongoDB Memory Server) covering auth, applications, status lookup, classification, follow-up, CSV export, bulk operations, health check.</p>
+    <p><strong>97 backend tests</strong> (Jest + MongoDB Memory Server) covering auth, applications, status lookup, classification, follow-up, CSV export, bulk operations, health check, and poll system.</p>
     <p><strong>42 frontend tests</strong> (Vitest) covering validation, auto-tagging, formatting.</p>
+    <p><strong>Mentee Meter tested:</strong> Poll creation, activation, voting, double-vote prevention, SSE streaming, results aggregation — all verified.</p>
   </div>
 
   <table>

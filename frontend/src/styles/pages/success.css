@@ -32,8 +32,8 @@
 }
 
 .success-ico {
-  width: 88px;
-  height: 88px;
+  width: clamp(64px, 18vw, 88px);
+  height: clamp(64px, 18vw, 88px);
   border-radius: 50%;
   margin: 0 auto var(--sp-6);
   background: rgba(76,184,122,0.1);

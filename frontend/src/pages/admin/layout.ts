@@ -23,9 +23,10 @@ const sidebarSections: SidebarSection[] = [
   {
     label: 'Intelligence',
     items: [
-      { label: 'Analytics',  path: '/admin/analytics', icon: '&#9650;' },
-      { label: 'Reports',    path: '/admin/reports', icon: '&#9670;' },
-      { label: 'Deal Room',  path: '/admin/deal-room', icon: '&#9733;' },
+      { label: 'Analytics',    path: '/admin/analytics', icon: '&#9650;' },
+      { label: 'Reports',      path: '/admin/reports', icon: '&#9670;' },
+      { label: 'Deal Room',    path: '/admin/deal-room', icon: '&#9733;' },
+      { label: 'Mentee Meter', path: '/admin/polls', icon: '&#9879;' },
     ],
   },
   {
@@ -70,7 +71,13 @@ export function renderAdminLayout(content: string, currentPath: string): string 
   </div>`;
 }
 
+let layoutMounted = false;
+
 export function mountAdminLayout(): void {
+  // Prevent duplicate event listeners when called by both router and page.mount()
+  if (layoutMounted) return;
+  layoutMounted = true;
+
   document.getElementById('admin-logout-btn')?.addEventListener('click', () => logout());
 
   const burger = document.getElementById('admin-burger');
@@ -98,4 +105,9 @@ export function mountAdminLayout(): void {
   sidebar.querySelectorAll('.sb-item').forEach(item => {
     item.addEventListener('click', close);
   });
+}
+
+// Reset flag when navigating (called before re-rendering layout)
+export function resetLayoutMount(): void {
+  layoutMounted = false;
 }

@@ -226,4 +226,34 @@ export const api = {
     const filtered = apps.filter(filters[name] || (() => false));
     return { success: true, data: { report: name, description: '', count: filtered.length, data: filtered } };
   },
+
+  // ── Polls ──
+  async getActivePoll(): Promise<ApiResponse<unknown>> {
+    return request('GET', '/polls/active');
+  },
+  async pollVote(pollId: string, data: Record<string, unknown>): Promise<ApiResponse<unknown>> {
+    return request('POST', `/polls/${pollId}/vote`, data);
+  },
+  async getPolls(status?: string): Promise<ApiResponse<unknown[]>> {
+    const qs = status ? `?status=${status}` : '';
+    return request('GET', `/polls${qs}`);
+  },
+  async createPoll(data: Record<string, unknown>): Promise<ApiResponse<unknown>> {
+    return request('POST', '/polls', data);
+  },
+  async updatePoll(id: string, data: Record<string, unknown>): Promise<ApiResponse<unknown>> {
+    return request('PATCH', `/polls/${id}`, data);
+  },
+  async setPollStatus(id: string, status: string): Promise<ApiResponse<unknown>> {
+    return request('PATCH', `/polls/${id}/status`, { status });
+  },
+  async setPollActiveQuestion(id: string, questionIndex: number): Promise<ApiResponse<unknown>> {
+    return request('PATCH', `/polls/${id}/activate`, { questionIndex });
+  },
+  async getPollResults(id: string): Promise<ApiResponse<unknown>> {
+    return request('GET', `/polls/${id}/results`);
+  },
+  async deletePoll(id: string): Promise<ApiResponse<unknown>> {
+    return request('DELETE', `/polls/${id}`);
+  },
 };

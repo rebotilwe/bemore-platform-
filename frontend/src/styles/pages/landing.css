@@ -228,18 +228,22 @@
 @media (max-width: 599px) {
   .landing {
     padding: var(--sp-6) var(--sp-4);
+    padding-left: max(var(--sp-4), env(safe-area-inset-left));
+    padding-right: max(var(--sp-4), env(safe-area-inset-right));
   }
 
-  .landing-brands {
-    gap: var(--sp-4);
-  }
-
-  .landing-brand-logo {
-    font-size: 1.35rem;
-  }
+  .landing-brands { gap: var(--sp-4); }
+  .landing-brand-logo { font-size: 1.35rem; }
+  .landing-brand-divider { height: 32px; }
 
   .landing-cta-primary,
   .landing-cta-secondary {
     padding: var(--sp-4) var(--sp-5);
+    width: 100%;
+    min-height: 56px;
   }
+
+  .landing-summit { width: 100%; text-align: center; }
+  .landing-links { flex-direction: column; gap: var(--sp-2); }
+  .landing-link-sep { display: none; }
 }

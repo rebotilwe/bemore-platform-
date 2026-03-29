@@ -29,6 +29,16 @@
       "description": "Start your application"
     },
     {
+      "name": "Live Poll",
+      "url": "/#/mentee-meter",
+      "description": "Join the Mentee Meter live session"
+    },
+    {
+      "name": "Check Status",
+      "url": "/#/status",
+      "description": "Check your application status"
+    },
+    {
       "name": "About BeMore",
       "url": "/#/about",
       "description": "Learn about the BeMore initiative"

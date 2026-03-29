@@ -19,8 +19,9 @@ import { analyticsPage } from './pages/admin/analytics.ts';
 import { auditLogPage } from './pages/admin/audit-log.ts';
 import { qrGeneratorPage } from './pages/admin/qr-generator.ts';
 import { guidePage } from './pages/admin/guide.ts';
+import { pollsPage } from './pages/admin/polls.ts';
 import { renderNav, mountNav } from './components/nav.ts';
-import { renderAdminLayout, mountAdminLayout } from './pages/admin/layout.ts';
+import { renderAdminLayout, mountAdminLayout, resetLayoutMount } from './pages/admin/layout.ts';
 
 const routes: RouteConfig[] = [
   { path: '/',                page: () => heroPage,      layout: 'public' },
@@ -40,6 +41,7 @@ const routes: RouteConfig[] = [
   { path: '/admin/audit-log', page: () => auditLogPage,  layout: 'admin', guard: authGuard },
   { path: '/admin/qr',        page: () => qrGeneratorPage, layout: 'admin', guard: authGuard },
   { path: '/admin/guide',     page: () => guidePage,        layout: 'admin', guard: authGuard },
+  { path: '/admin/polls',    page: () => pollsPage,        layout: 'admin', guard: authGuard },
 ];
 
 let currentPage: Page | null = null;
@@ -86,6 +88,7 @@ function render(): void {
 
   // Cleanup previous page
   if (currentPage?.unmount) currentPage.unmount();
+  resetLayoutMount();
 
   const app = document.getElementById('app');
   if (!app) return;

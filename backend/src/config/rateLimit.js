@@ -36,6 +36,16 @@ export const adminLimiter = rateLimit({
   },
 });
 
+export const voteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  message: { success: false, error: 'Too many votes. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.body?.sessionId || req.ip || 'unknown',
+  skip: () => process.env.NODE_ENV === 'test',
+});
+
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
