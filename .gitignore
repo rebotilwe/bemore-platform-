@@ -54,3 +54,4 @@ New folder/
 *.jpeg
 !frontend/public/icons/*.png
 !frontend/public/favicon.ico
+!frontend/public/docs/screenshots/*.png
