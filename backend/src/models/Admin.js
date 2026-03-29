@@ -12,11 +12,14 @@ const adminSchema = new mongoose.Schema({
 const Admin = mongoose.model('Admin', adminSchema);
 
 export async function seedAdmin() {
+  if (!config.admin.email || !config.admin.password) {
+    return; // No seed credentials configured — skip
+  }
   const exists = await Admin.findOne({ email: config.admin.email });
   if (!exists) {
     const hashed = await bcrypt.hash(config.admin.password, 10);
     await Admin.create({ email: config.admin.email, password: hashed, name: 'Admin' });
-    console.log('Admin seeded');
+    console.log('Admin seeded:', config.admin.email);
   }
 }
 

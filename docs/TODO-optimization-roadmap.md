@@ -225,11 +225,11 @@
 
 ## Quick Wins (< 30 min each)
 
-- [ ] Disable sourcemaps in production (`vite.config.ts`: `sourcemap: false`)
-- [ ] Add `.lean()` to all admin list queries
-- [ ] Add `express.json({ limit: '100kb' })` body size limit
-- [ ] Add SMTP verify to health endpoint
-- [ ] Add 401 → auto-logout in frontend `request()` function
+- [x] Disable sourcemaps in production (`vite.config.ts`: `sourcemap: false`) — DONE 29 Mar
+- [x] Add `.lean()` to all admin list queries — DONE 29 Mar
+- [x] Add `express.json({ limit: '100kb' })` body size limit — DONE 29 Mar
+- [x] Add SMTP verify to health endpoint — DONE 29 Mar
+- [x] Add 401 → auto-logout in frontend `request()` function — DONE 29 Mar
 - [ ] Add compound index `{ classification: 1, status: 1 }`
 - [ ] Move token from localStorage to sessionStorage
 

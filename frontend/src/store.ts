@@ -29,8 +29,8 @@ class Store {
       selectedProfile: null,
       formData: {},
       currentStep: 1,
-      token: localStorage.getItem('bm_token'),
-      isAuthenticated: !!localStorage.getItem('bm_token'),
+      token: sessionStorage.getItem('bm_token') || localStorage.getItem('bm_token'),
+      isAuthenticated: !!(sessionStorage.getItem('bm_token') || localStorage.getItem('bm_token')),
       adminEmail: null,
       stats: null,
       applications: [],
@@ -51,8 +51,13 @@ class Store {
 
     // Persist certain keys
     if (key === 'token') {
-      if (value) localStorage.setItem('bm_token', value as string);
-      else localStorage.removeItem('bm_token');
+      if (value) {
+        sessionStorage.setItem('bm_token', value as string);
+        localStorage.removeItem('bm_token'); // migrate away from localStorage
+      } else {
+        sessionStorage.removeItem('bm_token');
+        localStorage.removeItem('bm_token');
+      }
     }
   }
 

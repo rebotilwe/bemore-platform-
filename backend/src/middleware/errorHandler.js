@@ -49,5 +49,6 @@ export default function errorHandler(err, req, res, _next) {
   res.status(err.status || 500).json({
     success: false,
     message: config.nodeEnv === 'production' ? 'Server error' : err.message,
+    requestId: req.requestId,
   });
 }

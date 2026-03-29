@@ -1,7 +1,7 @@
 import type { Page, RouteConfig } from './types/index.ts';
 import { authGuard } from './auth.ts';
 
-// Page imports (lazy — filled in after pages are created)
+// Public pages — eagerly loaded (small, always needed)
 import { heroPage } from './pages/public/hero.ts';
 import { gatewayPage } from './pages/public/gateway.ts';
 import { formPage } from './pages/public/form.ts';
@@ -11,51 +11,48 @@ import { menteeMeterPage } from './pages/public/mentee-meter.ts';
 import { landingPage } from './pages/public/landing.ts';
 import { statusPage } from './pages/public/status.ts';
 import { loginPage } from './pages/admin/login.ts';
-import { dashboardPage } from './pages/admin/dashboard.ts';
-import { leadsPage } from './pages/admin/leads.ts';
-import { reportsPage } from './pages/admin/reports.ts';
-import { dealRoomPage } from './pages/admin/deal-room.ts';
-import { analyticsPage } from './pages/admin/analytics.ts';
-import { auditLogPage } from './pages/admin/audit-log.ts';
-import { qrGeneratorPage } from './pages/admin/qr-generator.ts';
-import { guidePage } from './pages/admin/guide.ts';
-import { pollsPage } from './pages/admin/polls.ts';
+
+// Admin pages — lazy loaded (only fetched when authenticated)
+const lazy = (loader: () => Promise<Record<string, Page>>, key: string) =>
+  async (): Promise<Page> => (await loader())[key];
+
 import { renderNav, mountNav } from './components/nav.ts';
 import { renderAdminLayout, mountAdminLayout, resetLayoutMount } from './pages/admin/layout.ts';
 
 const routes: RouteConfig[] = [
-  { path: '/',                page: () => heroPage,      layout: 'public' },
-  { path: '/gateway',         page: () => gatewayPage,   layout: 'public' },
-  { path: '/register',        page: () => formPage,      layout: 'public' },
-  { path: '/about',            page: () => aboutPage,     layout: 'public' },
-  { path: '/success',         page: () => successPage,   layout: 'public' },
-  { path: '/mentee-meter',    page: () => menteeMeterPage, layout: 'public' },
-  { path: '/landing',         page: () => landingPage,     layout: 'public' },
-  { path: '/status',          page: () => statusPage,      layout: 'public' },
-  { path: '/admin/login',     page: () => loginPage,     layout: 'public' },
-  { path: '/admin/dashboard', page: () => dashboardPage, layout: 'admin', guard: authGuard },
-  { path: '/admin/leads',     page: () => leadsPage,     layout: 'admin', guard: authGuard },
-  { path: '/admin/analytics',  page: () => analyticsPage,  layout: 'admin', guard: authGuard },
-  { path: '/admin/reports',   page: () => reportsPage,   layout: 'admin', guard: authGuard },
-  { path: '/admin/deal-room', page: () => dealRoomPage,  layout: 'admin', guard: authGuard },
-  { path: '/admin/audit-log', page: () => auditLogPage,  layout: 'admin', guard: authGuard },
-  { path: '/admin/qr',        page: () => qrGeneratorPage, layout: 'admin', guard: authGuard },
-  { path: '/admin/guide',     page: () => guidePage,        layout: 'admin', guard: authGuard },
-  { path: '/admin/polls',    page: () => pollsPage,        layout: 'admin', guard: authGuard },
+  // Public
+  { path: '/',              page: () => heroPage,        layout: 'public' },
+  { path: '/gateway',       page: () => gatewayPage,     layout: 'public' },
+  { path: '/register',      page: () => formPage,        layout: 'public' },
+  { path: '/about',         page: () => aboutPage,       layout: 'public' },
+  { path: '/success',       page: () => successPage,     layout: 'public' },
+  { path: '/mentee-meter',  page: () => menteeMeterPage, layout: 'public' },
+  { path: '/landing',       page: () => landingPage,     layout: 'public' },
+  { path: '/status',        page: () => statusPage,      layout: 'public' },
+  { path: '/admin/login',   page: () => loginPage,       layout: 'public' },
+  // Admin — lazy loaded
+  { path: '/admin/dashboard', page: lazy(() => import('./pages/admin/dashboard.ts'), 'dashboardPage'),      layout: 'admin', guard: authGuard },
+  { path: '/admin/leads',     page: lazy(() => import('./pages/admin/leads.ts'), 'leadsPage'),              layout: 'admin', guard: authGuard },
+  { path: '/admin/analytics', page: lazy(() => import('./pages/admin/analytics.ts'), 'analyticsPage'),      layout: 'admin', guard: authGuard },
+  { path: '/admin/reports',   page: lazy(() => import('./pages/admin/reports.ts'), 'reportsPage'),          layout: 'admin', guard: authGuard },
+  { path: '/admin/deal-room', page: lazy(() => import('./pages/admin/deal-room.ts'), 'dealRoomPage'),       layout: 'admin', guard: authGuard },
+  { path: '/admin/audit-log', page: lazy(() => import('./pages/admin/audit-log.ts'), 'auditLogPage'),       layout: 'admin', guard: authGuard },
+  { path: '/admin/qr',        page: lazy(() => import('./pages/admin/qr-generator.ts'), 'qrGeneratorPage'), layout: 'admin', guard: authGuard },
+  { path: '/admin/guide',     page: lazy(() => import('./pages/admin/guide.ts'), 'guidePage'),              layout: 'admin', guard: authGuard },
+  { path: '/admin/polls',     page: lazy(() => import('./pages/admin/polls.ts'), 'pollsPage'),              layout: 'admin', guard: authGuard },
 ];
 
 let currentPage: Page | null = null;
 
 function getHash(): string {
-  const hash = window.location.hash.slice(1) || '/';
-  return hash;
+  return window.location.hash.slice(1) || '/';
 }
 
 function matchRoute(path: string): RouteConfig | undefined {
   return routes.find(r => r.path === path);
 }
 
-function render(): void {
+async function render(): Promise<void> {
   const path = getHash();
   const route = matchRoute(path);
 
@@ -80,19 +77,19 @@ function render(): void {
     return;
   }
 
-  // Auth guard
   if (route.guard && !route.guard()) {
     navigate('/admin/login');
     return;
   }
 
-  // Cleanup previous page
   if (currentPage?.unmount) currentPage.unmount();
   resetLayoutMount();
 
   const app = document.getElementById('app');
   if (!app) return;
-  const page = route.page();
+
+  // Resolve page (may be async for lazy-loaded admin pages)
+  const page = await route.page();
   currentPage = page;
 
   if (route.layout === 'admin') {
@@ -104,10 +101,7 @@ function render(): void {
     if (showNav) mountNav();
   }
 
-  // Mount page event listeners
   if (page.mount) page.mount();
-
-  // Scroll to top
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -117,7 +111,7 @@ export function navigate(path: string): void {
 
 export const router = {
   init(): void {
-    window.addEventListener('hashchange', render);
+    window.addEventListener('hashchange', () => render());
     render();
   },
 };

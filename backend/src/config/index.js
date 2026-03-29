@@ -29,7 +29,7 @@ export const config = Object.freeze({
     fromName: process.env.SMTP_FROM_NAME || 'BeMore Group',
   },
   admin: {
-    email: process.env.ADMIN_SEED_EMAIL || 'admin@bemore.co.za',
-    password: process.env.ADMIN_SEED_PASSWORD || 'BeMore@2026!',
+    email: process.env.ADMIN_SEED_EMAIL || '',
+    password: process.env.ADMIN_SEED_PASSWORD || '',
   },
 });

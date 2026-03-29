@@ -1,37 +1,40 @@
 import winston from 'winston';
 import { config } from '../config/index.js';
 
-const logFormat = winston.format.combine(
+const isProd = config.nodeEnv === 'production';
+
+// Production: structured JSON (parseable by log aggregators)
+// Development: colorized human-readable
+const prodFormat = winston.format.combine(
+  winston.format.timestamp(),
+  winston.format.errors({ stack: true }),
+  winston.format.json(),
+);
+
+const devFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   winston.format.errors({ stack: true }),
-  winston.format.printf(({ timestamp, level, message, stack, ...meta }) => {
-    let log = `${timestamp} [${level.toUpperCase()}]: ${message}`;
-    if (Object.keys(meta).length > 0 && meta.req) {
-      const req = meta.req;
-      log += ` | ${req.method} ${req.originalUrl}`;
-      delete meta.req;
-    }
-    if (Object.keys(meta).length > 0) {
-      log += ` | ${JSON.stringify(meta)}`;
-    }
-    if (stack) {
-      log += `\n${stack}`;
-    }
+  winston.format.colorize(),
+  winston.format.printf(({ timestamp, level, message, requestId, duration, ...meta }) => {
+    let log = `${timestamp} [${level}]: ${message}`;
+    if (requestId) log += ` [${requestId}]`;
+    if (duration) log += ` (${duration}ms)`;
+    // Strip noisy fields
+    delete meta.req;
+    delete meta.service;
+    const keys = Object.keys(meta);
+    if (keys.length > 0) log += ` ${JSON.stringify(meta)}`;
     return log;
-  })
+  }),
 );
 
 const logger = winston.createLogger({
-  level: config.nodeEnv === 'production' ? 'info' : 'debug',
-  format: logFormat,
+  level: isProd ? 'info' : 'debug',
+  format: isProd ? prodFormat : devFormat,
+  defaultMeta: { service: 'bemore-api' },
   transports: [
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        logFormat
-      )
-    })
-  ]
+    new winston.transports.Console(),
+  ],
 });
 
 export default logger;

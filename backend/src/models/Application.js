@@ -42,6 +42,8 @@ applicationSchema.index({ submittedAt: -1 });
 applicationSchema.index({ classification: 1 });
 applicationSchema.index({ engagementSource: 1 });
 applicationSchema.index({ 'dealRoom.summitAccess': 1 });
+applicationSchema.index({ classification: 1, status: 1 }); // Admin filtering by classification + status
+applicationSchema.index({ engagementSource: 1, submittedAt: -1 }); // Source analytics
 // Compound index for status lookup endpoint
 applicationSchema.index({ refNumber: 1, 'personal.email': 1 });
 

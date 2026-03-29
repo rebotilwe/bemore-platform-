@@ -8,7 +8,7 @@ export type LayoutType = 'public' | 'admin';
 
 export interface RouteConfig {
   path: string;
-  page: () => Page;
+  page: () => Page | Promise<Page>;
   layout: LayoutType;
   guard?: () => boolean;
 }
