@@ -14,16 +14,27 @@ const POLL_CACHE_TTL = 5000; // 5 seconds
 /** In-memory vote counters per question: Map<questionId, Map<optionId|value, count>> */
 const voteCounters = new Map();
 const totalVoteCounters = new Map();
+const MAX_CACHED_QUESTIONS = 50; // LRU eviction threshold
+const counterAccessOrder = []; // Track access order for LRU
 
 /** Debounce timers for broadcast */
 const broadcastTimers = new Map();
-const BROADCAST_DEBOUNCE = 150; // ms — batches rapid votes into one SSE update
+const BROADCAST_DEBOUNCE = 150;
 
 function getOrCreateCounter(questionId) {
   if (!voteCounters.has(questionId)) {
+    // LRU eviction if over limit
+    if (voteCounters.size >= MAX_CACHED_QUESTIONS) {
+      const oldest = counterAccessOrder.shift();
+      if (oldest) { voteCounters.delete(oldest); totalVoteCounters.delete(oldest); }
+    }
     voteCounters.set(questionId, new Map());
     totalVoteCounters.set(questionId, 0);
   }
+  // Move to end of access order (most recently used)
+  const idx = counterAccessOrder.indexOf(questionId);
+  if (idx > -1) counterAccessOrder.splice(idx, 1);
+  counterAccessOrder.push(questionId);
   return voteCounters.get(questionId);
 }
 
@@ -36,9 +47,12 @@ function invalidateCounters(questionId) {
   if (questionId) {
     voteCounters.delete(questionId);
     totalVoteCounters.delete(questionId);
+    const idx = counterAccessOrder.indexOf(questionId);
+    if (idx > -1) counterAccessOrder.splice(idx, 1);
   } else {
     voteCounters.clear();
     totalVoteCounters.clear();
+    counterAccessOrder.length = 0;
   }
 }
 

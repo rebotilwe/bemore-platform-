@@ -46,6 +46,8 @@ applicationSchema.index({ classification: 1, status: 1 }); // Admin filtering by
 applicationSchema.index({ engagementSource: 1, submittedAt: -1 }); // Source analytics
 // Compound index for status lookup endpoint
 applicationSchema.index({ refNumber: 1, 'personal.email': 1 });
+// POPIA: auto-delete applications older than 24 months
+applicationSchema.index({ submittedAt: 1 }, { expireAfterSeconds: 24 * 30 * 24 * 60 * 60 });
 
 applicationSchema.pre('save', function (next) {
   this.updatedAt = new Date();

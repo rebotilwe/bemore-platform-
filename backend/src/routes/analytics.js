@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { query } from 'express-validator';
 import validate from '../middleware/validate.js';
 import auth from '../middleware/auth.js';
+import { adminLimiter } from '../config/rateLimit.js';
 import {
   dashboard, funnel, submissionTrends, tagAnalytics,
   demographics, dealRoom, eventLog,
@@ -9,7 +10,8 @@ import {
 
 const router = Router();
 
-// All analytics endpoints require admin auth
+// All analytics endpoints require admin auth + rate limiting
+router.use(adminLimiter);
 router.use(auth);
 
 router.get('/dashboard',

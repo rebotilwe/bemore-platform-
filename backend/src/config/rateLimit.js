@@ -13,13 +13,12 @@ export const healthLimiter = rateLimit({
 
 export const publicApplicationLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: { success: false, error: 'Too many applications submitted. Please try again later.' },
+  max: 30,
+  message: { success: false, error: 'Too many requests. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    return req.ip || req.connection.remoteAddress || 'unknown';
-  },
+  keyGenerator: (req) => req.ip || req.connection?.remoteAddress || 'unknown',
+  skip: () => process.env.NODE_ENV === 'test',
 });
 
 export const adminLimiter = rateLimit({

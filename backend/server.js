@@ -21,19 +21,41 @@ async function start() {
     logger.info(`Server running on port ${config.port} [${config.nodeEnv}]`);
   });
 
-  const shutdown = async (signal) => {
-    logger.info(`${signal} received — shutting down...`);
-    const forceExit = setTimeout(() => {
-      logger.error('Forced shutdown after timeout');
-      process.exit(1);
-    }, 10000);
+  // Track in-flight connections for graceful drain
+  let connections = new Set();
+  server.on('connection', (conn) => {
+    connections.add(conn);
+    conn.on('close', () => connections.delete(conn));
+  });
 
+  const shutdown = async (signal) => {
+    logger.info(`${signal} received — starting graceful shutdown...`);
+
+    // Phase 1: Stop accepting new connections
     server.close(async () => {
-      await mongoose.disconnect();
-      clearTimeout(forceExit);
+      logger.info('HTTP server closed — no new connections');
+
+      // Phase 2: Disconnect MongoDB cleanly
+      try {
+        await mongoose.disconnect();
+        logger.info('MongoDB disconnected');
+      } catch (err) {
+        logger.error('MongoDB disconnect error:', err.message);
+      }
+
       logger.info('Shutdown complete');
       process.exit(0);
     });
+
+    // Phase 3: Give in-flight requests time to finish (15s)
+    const forceExit = setTimeout(() => {
+      logger.error('Forced shutdown — destroying remaining connections');
+      for (const conn of connections) {
+        conn.destroy();
+      }
+      process.exit(1);
+    }, 15000);
+    forceExit.unref(); // Don't keep process alive just for the timer
   };
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));
