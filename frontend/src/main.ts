@@ -1,9 +1,12 @@
 import './styles/main.css';
+import { injectSpeedInsights } from '@vercel/speed-insights';
 import { router } from './router.ts';
 import { api } from './api.ts';
 import { store } from './store.ts';
 import { verifySession } from './auth.ts';
 import { ErrorBoundary } from './components/error-boundary.ts';
+
+injectSpeedInsights();
 
 new ErrorBoundary('app');
 
