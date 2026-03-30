@@ -13,7 +13,7 @@ if (isProd) {
 
 const productionOrigins = [
   'https://bemore-tawny.vercel.app',
-  'https://bemore-tawny.vercel.app',
+  'https://bemorecapital.co.za',
 ];
 
 const devOrigins = [
@@ -37,9 +37,9 @@ export const config = Object.freeze({
     max: Number(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
   },
   cors: {
-    origin: process.env.CORS_ORIGIN
-      ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()).filter(Boolean)
-      : defaultCorsOrigins,
+    origin: (!process.env.CORS_ORIGIN || process.env.CORS_ORIGIN.trim() === '*')
+      ? defaultCorsOrigins
+      : process.env.CORS_ORIGIN.split(',').map(o => o.trim()).filter(Boolean),
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
