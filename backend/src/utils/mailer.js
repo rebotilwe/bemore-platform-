@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import { config } from '../config/index.js';
 import logger from './logger.js';
 
-const PLATFORM_URL = process.env.PLATFORM_URL || 'https://bemore-tawny.vercel.app';
+const PLATFORM_URL = process.env.PLATFORM_URL || 'https://bemorecapital.co.za';
 
 let transporter = null;
 
@@ -180,8 +180,8 @@ function buildEmail(firstName, refNumber, heading, bodyHtml, buttons = []) {
     <div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;color:#333;background:#ffffff">
       <!-- Header -->
       <div style="background:#0a0a0f;padding:32px;text-align:center">
-        <h1 style="color:#c9a84c;margin:0;font-size:28px;font-weight:700;letter-spacing:2px">BeMore</h1>
-        <p style="color:#b4b4c4;margin:8px 0 0;font-size:12px;letter-spacing:3px;text-transform:uppercase">
+        <img src="${PLATFORM_URL}/be-more-group-logo.png" alt="BeMore Group" width="120" height="149" style="display:inline-block;max-width:120px;height:auto" />
+        <p style="color:#b4b4c4;margin:12px 0 0;font-size:12px;letter-spacing:3px;text-transform:uppercase">
           SME Access Initiative
         </p>
       </div>
@@ -232,7 +232,7 @@ function buildEmail(firstName, refNumber, heading, bodyHtml, buttons = []) {
         <p style="color:#666;font-size:11px;margin:0;line-height:1.6">
           BeMore Group (Pty) Ltd &times; PBSA<br>
           Sandton, Gauteng, South Africa<br>
-          <a href="${PLATFORM_URL}" style="color:#c9a84c;text-decoration:none">bemore.co.za</a>
+          <a href="${PLATFORM_URL}" style="color:#c9a84c;text-decoration:none">bemorecapital.co.za</a>
         </p>
       </div>
     </div>`;

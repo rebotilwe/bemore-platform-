@@ -54,7 +54,7 @@ export function renderAdminLayout(content: string, currentPath: string): string 
       <button class="admin-burger" id="admin-burger" aria-label="Toggle sidebar">
         <span></span><span></span><span></span>
       </button>
-      <span class="admin-brand-text display">BE<span>MORE</span></span>
+      <img src="/be-more-group-logo.png" alt="BeMore Group" class="admin-brand-logo" />
       <span class="admin-brand-badge">Admin</span>
     </div>
     <div class="admin-r">

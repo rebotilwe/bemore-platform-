@@ -17,15 +17,9 @@ nav {
 }
 
 .nav-logo {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--cream);
-}
-
-.nav-logo span {
-  color: var(--gold);
+  display: flex;
+  align-items: center;
+  text-decoration: none;
 }
 
 .nav-actions {

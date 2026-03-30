@@ -65,6 +65,18 @@
   border-bottom: 1px solid rgba(201,168,76,0.12);
 }
 
+.login-logo-wrap {
+  text-align: center;
+  margin-bottom: var(--sp-6);
+}
+
+.login-logo-img {
+  height: 80px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(201,168,76,0.2));
+}
+
 .login-logo-name {
   font-family: 'Cormorant Garamond', serif;
   font-size: var(--fs-headline-md);

@@ -29,7 +29,7 @@ info:
 servers:
   - url: http://localhost:5000/api
     description: Local development
-  - url: https://bemore-tawny.vercel.app/api
+  - url: https://bemorecapital.co.za/api
     description: Production
 
 tags:

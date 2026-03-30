@@ -3,6 +3,8 @@ const defaultCorsOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:3000',
+  'https://bemorecapital.co.za',
+  'https://bemore-tawny.vercel.app',
 ];
 
 export const config = Object.freeze({

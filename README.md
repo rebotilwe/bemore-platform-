@@ -3,7 +3,7 @@
 A **live engagement and data capture platform** for the BeMore SME Access Initiative, connecting South African property developers, landowners, student accommodation operators, and built environment professionals with institutional funding through PBSA.
 
 **Summit**: 30-31 March 2026, Sandton Convention Centre
-**Live URL**: https://bemore-tawny.vercel.app
+**Live URL**: https://bemorecapital.co.za
 
 ---
 

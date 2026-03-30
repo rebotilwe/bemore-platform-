@@ -45,6 +45,13 @@
   color: var(--cream);
 }
 
+.landing-brand-logo-img {
+  height: 64px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
 .landing-brand-label {
   font-size: var(--fs-body-xs);
   color: var(--steel);
@@ -234,6 +241,7 @@
 
   .landing-brands { gap: var(--sp-4); }
   .landing-brand-logo { font-size: 1.35rem; }
+  .landing-brand-logo-img { height: 48px; }
   .landing-brand-divider { height: 32px; }
 
   .landing-cta-primary,

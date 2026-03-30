@@ -37,6 +37,13 @@
   letter-spacing: 0.06em;
 }
 
+.qr-brand-logo {
+  height: 64px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
 .qr-brand-sub {
   display: block;
   font-size: var(--fs-body-xs);

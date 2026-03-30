@@ -2,7 +2,7 @@ import type { Page } from '../../types/index.ts';
 import { mountAdminLayout } from './layout.ts';
 import { toast } from '../../components/toast.ts';
 
-const QR_BASE_URL = 'https://bemore-tawny.vercel.app/?src=qr#/landing';
+const QR_BASE_URL = 'https://bemorecapital.co.za/?src=qr#/landing';
 const QR_API = 'https://api.qrserver.com/v1/create-qr-code/';
 
 function buildQrUrl(data: string, size = 400): string {
@@ -23,7 +23,7 @@ export const qrGeneratorPage: Page = {
       <div class="qr-content">
         <div class="qr-preview-card">
           <div class="qr-brand-header">
-            <span class="qr-brand display">BE<span class="accent">MORE</span></span>
+            <img src="/be-more-group-logo.png" alt="BeMore Group" class="qr-brand-logo" />
             <span class="qr-brand-sub">SME Access Initiative</span>
           </div>
           <div class="qr-img-wrap">
