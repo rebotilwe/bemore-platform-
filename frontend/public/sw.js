@@ -1,11 +1,12 @@
 // BeMore — Static assets only service worker
 // NEVER caches API calls, HTML navigation, or dynamic content
-const CACHE_NAME = 'bemore-static-v1';
+const CACHE_NAME = 'bemore-static-v2';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll([
       '/favicon.ico',
+      '/be-more-group-logo.png',
       '/icons/icon-192.png',
       '/icons/icon-512.png',
     ])).then(() => self.skipWaiting())
@@ -36,7 +37,8 @@ self.addEventListener('fetch', (event) => {
     url.pathname.startsWith('/icons/') ||
     url.pathname.endsWith('.woff2') ||
     url.pathname.endsWith('.woff') ||
-    url.pathname === '/favicon.ico';
+    url.pathname === '/favicon.ico' ||
+    url.pathname === '/be-more-group-logo.png';
 
   if (!isStaticAsset) return;
 

@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import { config } from '../config/index.js';
 import logger from './logger.js';
 
-const PLATFORM_URL = process.env.PLATFORM_URL || 'https://bemorecapital.co.za';
+const PLATFORM_URL = process.env.PLATFORM_URL || 'https://bemore-tawny.vercel.app';
 
 let transporter = null;
 
@@ -232,7 +232,7 @@ function buildEmail(firstName, refNumber, heading, bodyHtml, buttons = []) {
         <p style="color:#666;font-size:11px;margin:0;line-height:1.6">
           BeMore Group (Pty) Ltd &times; PBSA<br>
           Sandton, Gauteng, South Africa<br>
-          <a href="${PLATFORM_URL}" style="color:#c9a84c;text-decoration:none">bemorecapital.co.za</a>
+          <a href="${PLATFORM_URL}" style="color:#c9a84c;text-decoration:none">bemore-tawny.vercel.app</a>
         </p>
       </div>
     </div>`;

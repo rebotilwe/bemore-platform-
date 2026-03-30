@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import { config } from './config/index.js';
 import routes from './routes/index.js';
 import errorHandler from './middleware/errorHandler.js';
@@ -10,9 +11,13 @@ import logger from './utils/logger.js';
 export function createApp() {
   const app = express();
 
+  // Trust first proxy (Railway / load balancer) so req.ip is accurate for rate limiting
+  app.set('trust proxy', 1);
+
   app.use(requestLogger);
+  app.use(compression());
   app.use(express.json({ limit: '100kb' }));
-  app.use(cors({ origin: config.cors.origin }));
+  app.use(cors(config.cors));
   app.use(helmet());
 
   app.use('/api', routes);

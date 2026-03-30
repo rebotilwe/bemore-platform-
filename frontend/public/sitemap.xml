@@ -1,43 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://bemorecapital.co.za/</loc>
+    <loc>https://bemore-tawny.vercel.app/</loc>
     <lastmod>2026-03-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://bemorecapital.co.za/#/landing</loc>
+    <loc>https://bemore-tawny.vercel.app/#/landing</loc>
     <lastmod>2026-03-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
   </url>
   <url>
-    <loc>https://bemorecapital.co.za/#/gateway</loc>
+    <loc>https://bemore-tawny.vercel.app/#/gateway</loc>
     <lastmod>2026-03-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://bemorecapital.co.za/#/about</loc>
+    <loc>https://bemore-tawny.vercel.app/#/about</loc>
     <lastmod>2026-03-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bemorecapital.co.za/#/register</loc>
+    <loc>https://bemore-tawny.vercel.app/#/register</loc>
     <lastmod>2026-03-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://bemorecapital.co.za/#/mentee-meter</loc>
+    <loc>https://bemore-tawny.vercel.app/#/mentee-meter</loc>
     <lastmod>2026-03-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://bemorecapital.co.za/#/status</loc>
+    <loc>https://bemore-tawny.vercel.app/#/status</loc>
     <lastmod>2026-03-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>

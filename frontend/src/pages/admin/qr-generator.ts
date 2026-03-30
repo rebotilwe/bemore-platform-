@@ -2,7 +2,7 @@ import type { Page } from '../../types/index.ts';
 import { mountAdminLayout } from './layout.ts';
 import { toast } from '../../components/toast.ts';
 
-const QR_BASE_URL = 'https://bemorecapital.co.za/?src=qr#/landing';
+const QR_BASE_URL = 'https://bemore-tawny.vercel.app/?src=qr#/landing';
 const QR_API = 'https://api.qrserver.com/v1/create-qr-code/';
 
 function buildQrUrl(data: string, size = 400): string {

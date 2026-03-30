@@ -140,7 +140,7 @@ ADMIN_SEED_PASSWORD=<password>
 
 ## Deployment
 
-Frontend + Backend deployed to Vercel. Production URL: `https://bemorecapital.co.za`
+Frontend + Backend deployed to Vercel. Production URL: `https://bemore-tawny.vercel.app`
 
 ## Key Dependencies
 

@@ -23,10 +23,11 @@ export const publicApplicationLimiter = rateLimit({
 
 export const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 0, // 0 = no limit for admin
+  max: 300,
+  message: { success: false, error: 'Too many admin requests. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => true, // Disabled for now — admins have no rate limit
+  skip: () => process.env.NODE_ENV === 'test',
 });
 
 export const voteLimiter = rateLimit({

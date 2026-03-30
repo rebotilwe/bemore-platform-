@@ -16,12 +16,12 @@ async function init(): Promise<void> {
   // Check backend availability
   const online = await api.checkBackend();
   store.set('useApi', online);
-  console.log(online ? '✓ Connected to backend API' : '◌ Running in localStorage demo mode');
+  if (import.meta.env.DEV) console.log(online ? '✓ Connected to backend API' : '◌ Running in localStorage demo mode');
 
   // Verify existing session token
   if (store.get('token')) {
     const valid = await verifySession();
-    if (!valid) console.log('◌ Session expired — logged out');
+    if (!valid && import.meta.env.DEV) console.log('◌ Session expired — logged out');
   }
 
   // Capture engagement source from URL params (e.g., ?src=qr)

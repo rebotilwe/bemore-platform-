@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { config } from '../config/index.js';
+import logger from '../utils/logger.js';
 
 const adminSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
@@ -19,7 +20,7 @@ export async function seedAdmin() {
   if (!exists) {
     const hashed = await bcrypt.hash(config.admin.password, 10);
     await Admin.create({ email: config.admin.email, password: hashed, name: 'Admin' });
-    console.log('Admin seeded:', config.admin.email);
+    logger.info('Admin account seeded');
   }
 }
 

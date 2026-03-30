@@ -8,12 +8,17 @@ import logger from './src/utils/logger.js';
 
 const app = createApp();
 
-async function start() {
-  if (config.nodeEnv === 'production' && config.jwtSecret === 'dev-secret-change-me') {
-    logger.error('FATAL: JWT_SECRET must be set in production. Exiting.');
-    process.exit(1);
-  }
+// Catch unhandled errors at process level
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled Promise Rejection:', reason);
+});
 
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught Exception — shutting down:', err);
+  process.exit(1);
+});
+
+async function start() {
   await connectDb();
   await seedAdmin();
 

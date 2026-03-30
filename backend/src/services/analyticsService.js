@@ -1,5 +1,6 @@
 import AnalyticsEvent from '../models/AnalyticsEvent.js';
 import Application from '../models/Application.js';
+import logger from '../utils/logger.js';
 
 /**
  * Track an analytics event (fire-and-forget)
@@ -13,7 +14,7 @@ export function track(event, category, { actor, target, meta, req } = {}) {
     meta,
     ip: req?.ip,
     userAgent: req?.get('user-agent'),
-  }).catch(err => console.error('Analytics track error:', err.message));
+  }).catch(err => logger.error(`Analytics track error: ${err.message}`));
 }
 
 /**

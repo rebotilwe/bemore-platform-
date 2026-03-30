@@ -1,17 +1,36 @@
-const defaultCorsOrigins = [
+const nodeEnv = process.env.NODE_ENV || 'development';
+const isProd = nodeEnv === 'production';
+
+// Validate required env vars in production
+if (isProd) {
+  const required = ['JWT_SECRET', 'MONGODB_URI'];
+  const missing = required.filter(k => !process.env[k]);
+  if (missing.length) {
+    console.error(`FATAL: Missing required env vars in production: ${missing.join(', ')}`);
+    process.exit(1);
+  }
+}
+
+const productionOrigins = [
+  'https://bemore-tawny.vercel.app',
+  'https://bemore-tawny.vercel.app',
+];
+
+const devOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:3000',
-  'https://bemorecapital.co.za',
-  'https://bemore-tawny.vercel.app',
 ];
+
+const defaultCorsOrigins = isProd ? productionOrigins : [...devOrigins, ...productionOrigins];
 
 export const config = Object.freeze({
   port: Number(process.env.PORT) || 5000,
-  nodeEnv: process.env.NODE_ENV || 'development',
+  nodeEnv,
+  isProd,
   mongoUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/bemore',
-  jwtSecret: process.env.JWT_SECRET || 'dev-secret-change-me',
+  jwtSecret: process.env.JWT_SECRET || (isProd ? '' : 'dev-secret-change-me'),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '8h',
   rateLimit: {
     windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 900000,
@@ -19,8 +38,11 @@ export const config = Object.freeze({
   },
   cors: {
     origin: process.env.CORS_ORIGIN
-      ? (process.env.CORS_ORIGIN.trim() === '*' ? true : process.env.CORS_ORIGIN.split(',').map(o => o.trim()))
+      ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()).filter(Boolean)
       : defaultCorsOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   },
   mail: {
     host: process.env.SMTP_HOST || '',
