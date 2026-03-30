@@ -110,7 +110,7 @@ All emails include co-branding (BeMore x PBSA), reference number, CTA buttons, s
 URL param `?src=qr` captured in `sessionStorage`, attached to submissions as `engagementSource`. Admin dashboard shows source breakdown. QR generator at `/#/admin/qr`.
 
 ### Demo Mode
-Frontend auto-detects backend via `GET /api/health`. If offline, falls back to `localStorage` with full CRUD. Admin login: `admin@bemore.co.za` / `BeMore@2026!`.
+Frontend auto-detects backend via `GET /api/health`. If offline, falls back to `localStorage` with full CRUD. Admin credentials are set via environment variables.
 
 ## Design System
 

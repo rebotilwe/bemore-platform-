@@ -12,7 +12,7 @@ backend/.env.example    ← Configuration template
 ### Step 1 — Run the frontend RIGHT NOW (no backend needed)
 Open `frontend/index.html` in any browser.
 - Data saves to localStorage automatically
-- Admin login: admin@bemore.co.za / BeMore@2026!
+- Admin login: credentials set via environment variables
 - Fully functional for demos and user testing
 
 ---

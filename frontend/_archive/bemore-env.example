@@ -10,7 +10,7 @@ JWT_EXPIRES_IN=8h
 
 # ─── Admin Credentials ───────────────────────────────────────
 ADMIN_EMAIL=admin@bemore.co.za
-ADMIN_PASSWORD=BeMore@2026!
+ADMIN_PASSWORD=
 
 # ─── Email (Optional for MVP - uses Nodemailer) ──────────────
 # Use Gmail App Password or SendGrid SMTP

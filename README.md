@@ -161,7 +161,7 @@ npx vitest run
 | `SMTP_FROM` | No | `noreply@bemore.co.za` | From email address |
 | `SMTP_FROM_NAME` | No | `BeMore Group` | From display name |
 | `ADMIN_SEED_EMAIL` | No | `admin@bemore.co.za` | Default admin email |
-| `ADMIN_SEED_PASSWORD` | No | `BeMore@2026!` | Default admin password |
+| `ADMIN_SEED_PASSWORD` | **Yes** | — | Admin password (set in env) |
 
 ## API Endpoints
 

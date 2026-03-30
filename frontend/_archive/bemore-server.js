@@ -288,7 +288,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   const adminEmail = process.env.ADMIN_EMAIL || 'admin@bemore.co.za';
-  const adminPass  = process.env.ADMIN_PASSWORD || 'BeMore@2026!';
+  const adminPass  = process.env.ADMIN_PASSWORD || '';
 
   if (email !== adminEmail) {
     return res.status(401).json({ success: false, message: 'Invalid credentials' });

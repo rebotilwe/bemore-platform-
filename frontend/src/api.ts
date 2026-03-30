@@ -119,7 +119,7 @@ export const api = {
   // ── Auth ──
   async login(email: string, password: string): Promise<ApiResponse<LoginResponse>> {
     if (!store.get('useApi')) {
-      if (email === 'admin@bemore.co.za' && password === 'BeMore@2026!') {
+      if (email && password) {
         return { success: true, data: { token: 'demo_token', expiresIn: '8h' } };
       }
       return { success: false, message: 'Invalid credentials' };

@@ -17,7 +17,7 @@ export const loginPage: Page = {
         <form id="login-form" autocomplete="on">
           <div class="admin-field">
             <label for="al-email">Email</label>
-            <input id="al-email" type="email" class="fi" placeholder="admin@bemore.co.za" autocomplete="email" required />
+            <input id="al-email" type="email" class="fi" placeholder="Enter email" autocomplete="email" required />
           </div>
           <div class="admin-field">
             <label for="al-pass">Password</label>
@@ -26,7 +26,6 @@ export const loginPage: Page = {
           <div id="login-err" class="login-err" role="alert"></div>
           <button type="submit" class="btn-login">Sign In →</button>
         </form>
-        <p class="login-hint">Demo: admin@bemore.co.za / BeMore@2026!</p>
       </div>
     </section>`;
   },

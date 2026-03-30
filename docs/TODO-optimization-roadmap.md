@@ -36,7 +36,7 @@
 
 ### 1.4 Remove Hardcoded Admin Credentials
 - **Files:** `backend/src/config/index.js`, `backend/.env.example`
-- **Issue:** Default admin password `BeMore@2026!` hardcoded in config fallback
+- **Issue:** Default admin password was hardcoded in config fallback
 - **Fix:**
   - Remove default values for `JWT_SECRET` and `ADMIN_SEED_PASSWORD`
   - Require env vars — crash on startup if missing in production
