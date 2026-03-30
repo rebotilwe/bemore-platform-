@@ -8,6 +8,21 @@ export async function createApplication(data) {
   if (data.formData?.engagementSource) {
     data.engagementSource = data.formData.engagementSource;
   }
+
+  // Duplicate check: same email + userType = duplicate
+  if (data.personal?.email) {
+    const existing = await Application.findOne({
+      'personal.email': data.personal.email.toLowerCase(),
+      userType: data.userType,
+    }).select('refNumber').lean();
+
+    if (existing) {
+      const err = new Error(`An application for this email as ${data.userType} already exists (${existing.refNumber}). Use the status page to check your application.`);
+      err.status = 409;
+      throw err;
+    }
+  }
+
   const app = new Application(data);
   await app.save();
   return app;

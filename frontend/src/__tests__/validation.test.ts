@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isEmail, isPhone, minLength, required } from '../utils/validation';
+import { isEmail, isPhone, minLength, required, normalizePhone } from '../utils/validation';
 
 describe('Validation Utils', () => {
   describe('isEmail', () => {
@@ -25,12 +25,27 @@ describe('Validation Utils', () => {
       expect(isPhone('0712345678')).toBe(true);
       expect(isPhone('082 123 4567')).toBe(true);
       expect(isPhone('+27 72 123 4567')).toBe(true);
+      expect(isPhone('27821234567')).toBe(true);
+      expect(isPhone('071-234-5678')).toBe(true);
     });
 
     it('should return false for invalid phone numbers', () => {
       expect(isPhone('123')).toBe(false);
       expect(isPhone('abcdefghij')).toBe(false);
       expect(isPhone('')).toBe(false);
+      expect(isPhone('12345678901234')).toBe(false);
+      expect(isPhone('+1234567890')).toBe(false);
+      expect(isPhone('0123')).toBe(false);
+    });
+  });
+
+  describe('normalizePhone', () => {
+    it('should normalize SA numbers to +27 format', () => {
+      expect(normalizePhone('0821234567')).toBe('+27821234567');
+      expect(normalizePhone('27821234567')).toBe('+27821234567');
+      expect(normalizePhone('+27821234567')).toBe('+27821234567');
+      expect(normalizePhone('082 123 4567')).toBe('+27821234567');
+      expect(normalizePhone('+27 82 123 4567')).toBe('+27821234567');
     });
   });
 

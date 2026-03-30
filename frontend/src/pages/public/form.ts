@@ -5,7 +5,7 @@ import { FORM_STEPS } from '../../constants/form-steps.ts';
 import { toast } from '../../components/toast.ts';
 import { api } from '../../api.ts';
 import { inputVal, setError } from '../../utils/dom.ts';
-import { isEmail, minLength, required } from '../../utils/validation.ts';
+import { isEmail, isPhone, minLength, required, normalizePhone } from '../../utils/validation.ts';
 import { renderStepBasic } from './form-steps/step-basic.ts';
 import { renderStepReadiness, mountStepReadiness } from './form-steps/step-readiness.ts';
 import { renderStepFunding, mountStepFunding } from './form-steps/step-funding.ts';
@@ -189,6 +189,7 @@ function validate(): boolean {
       if (!required(inputVal(id))) { setError(id, true); ok = false; }
     });
     if (ok && !isEmail(inputVal('f-em'))) { setError('f-em', true); toast('Please enter a valid email address'); return false; }
+    if (ok && !isPhone(inputVal('f-ph'))) { setError('f-ph', true); toast('Please enter a valid SA phone number (e.g. 082 123 4567)'); return false; }
     if (!ok) toast('Please complete all required fields');
     return ok;
   }
@@ -305,8 +306,11 @@ function mountCurrentStep(): void {
   addListener(document.getElementById('btn-submit'), 'click', handleSubmit);
 }
 
+let submitting = false;
 async function handleSubmit(): Promise<void> {
+  if (submitting) return;
   if (!validate()) return;
+  submitting = true;
   const btn = document.getElementById('btn-submit') as HTMLButtonElement;
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Submitting...';
@@ -322,7 +326,7 @@ async function handleSubmit(): Promise<void> {
       firstName: get('f-fn'),
       surname: get('f-sn'),
       email: get('f-em').toLowerCase(),
-      phone: get('f-ph'),
+      phone: normalizePhone(get('f-ph')),
       companyName: get('f-co') || undefined,
     },
     formData,
@@ -340,6 +344,7 @@ async function handleSubmit(): Promise<void> {
       : msg);
     btn.disabled = false;
     btn.textContent = 'Retry Submission →';
+    submitting = false;
   }
 }
 

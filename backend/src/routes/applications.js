@@ -15,7 +15,8 @@ router.post('/', publicApplicationLimiter,
   body('personal.firstName').notEmpty().withMessage('First name required'),
   body('personal.surname').notEmpty().withMessage('Surname required'),
   body('personal.email').isEmail().withMessage('Valid email required'),
-  body('personal.phone').notEmpty().withMessage('Phone required').matches(/^[\d\s\-+()]{10,15}$/).withMessage('Phone must be 10-15 digits'),
+  body('personal.phone').notEmpty().withMessage('Phone required')
+    .matches(/^(\+?27\d{9}|0\d{9})$/).withMessage('Valid SA phone required (e.g. 0821234567 or +27821234567)'),
   body('personal.companyName').optional().isString().withMessage('Company name must be a string'),
   body('formData').optional().isObject().withMessage('formData must be an object')
     .custom((val) => {
