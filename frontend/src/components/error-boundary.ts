@@ -95,5 +95,3 @@ class ErrorBoundary {
 }
 
 export { ErrorBoundary };
-
-export const errorBoundary = new ErrorBoundary('app');

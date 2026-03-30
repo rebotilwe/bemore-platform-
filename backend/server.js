@@ -22,6 +22,10 @@ async function start() {
   await connectDb();
   await seedAdmin();
 
+  if (!config.mail.host) {
+    logger.warn('SMTP not configured — email features disabled');
+  }
+
   const server = app.listen(config.port, () => {
     logger.info(`Server running on port ${config.port} [${config.nodeEnv}]`);
   });
