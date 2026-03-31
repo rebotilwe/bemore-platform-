@@ -276,3 +276,41 @@
 
   .status-input { min-height: 48px; font-size: 16px; /* prevents iOS zoom */ }
 }
+
+/* POPIA Data Rights */
+.st-data-rights {
+  margin-top: var(--sp-8);
+  padding-top: var(--sp-6);
+  border-top: 1px solid rgba(201,168,76,0.12);
+  text-align: center;
+}
+
+.st-data-rights h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: var(--fs-title-md);
+  color: var(--cream);
+  margin-bottom: var(--sp-2);
+}
+
+.st-data-rights p {
+  font-size: var(--fs-body-sm);
+  color: var(--steel);
+  margin-bottom: var(--sp-4);
+}
+
+.st-data-btns {
+  display: flex;
+  gap: var(--sp-3);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-danger-ghost {
+  border-color: rgba(220,60,60,0.3) !important;
+  color: #dc3c3c !important;
+}
+
+.btn-danger-ghost:hover {
+  border-color: #dc3c3c !important;
+  background: rgba(220,60,60,0.08) !important;
+}

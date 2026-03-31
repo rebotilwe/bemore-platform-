@@ -26,6 +26,10 @@ async function start() {
     logger.warn('SMTP not configured — email features disabled');
   }
 
+  if (!process.env.PLATFORM_URL) {
+    logger.warn('PLATFORM_URL not set — email links will use default (bemore-tawny.vercel.app)');
+  }
+
   const server = app.listen(config.port, () => {
     logger.info(`Server running on port ${config.port} [${config.nodeEnv}]`);
   });

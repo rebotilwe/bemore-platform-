@@ -1,6 +1,7 @@
 /* ---------------------------------------------------------------
    Step 5 — Confirmation & Consent
    ---------------------------------------------------------------*/
+import { SUMMIT_CONFIG } from '../../../constants/summit-config.ts';
 
 export function renderStepConfirm(): string {
   return `
@@ -8,7 +9,7 @@ export function renderStepConfirm(): string {
 
     <div class="fg">
       <label class="flbl req">Are you available to attend the summit physically?</label>
-      <p style="font-size:var(--fs-label-md);color:var(--on-surface-low);margin-bottom:var(--sp-3);line-height:var(--lh-body)">30–31 March 2026, Sandton. Please note tickets are non-transferable.</p>
+      <p style="font-size:var(--fs-label-md);color:var(--on-surface-low);margin-bottom:var(--sp-3);line-height:var(--lh-body)">${SUMMIT_CONFIG.DATE}, ${SUMMIT_CONFIG.LOCATION}. Please note tickets are non-transferable.</p>
       <div class="rg" id="r-attend" role="radiogroup" aria-label="Summit attendance">
         <div class="ro" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span>Yes</div>
         <div class="ro" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span>No</div>

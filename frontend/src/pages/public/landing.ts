@@ -1,4 +1,5 @@
 import type { Page } from '../../types/index.ts';
+import { SUMMIT_CONFIG } from '../../constants/summit-config.ts';
 
 export const landingPage: Page = {
   render() {
@@ -32,8 +33,8 @@ export const landingPage: Page = {
 
         <!-- Summit Info -->
         <div class="landing-summit fade-up stagger-2">
-          <div class="landing-summit-date display">30 – 31 March 2026</div>
-          <div class="landing-summit-venue">Sandton Convention Centre</div>
+          <div class="landing-summit-date display">${SUMMIT_CONFIG.DATE}</div>
+          <div class="landing-summit-venue">${SUMMIT_CONFIG.VENUE}</div>
         </div>
 
         <!-- Primary CTAs -->

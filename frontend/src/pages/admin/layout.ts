@@ -34,7 +34,8 @@ const sidebarSections: SidebarSection[] = [
     items: [
       { label: 'QR Codes',   path: '/admin/qr', icon: '&#9635;' },
       { label: 'Audit Log',  path: '/admin/audit-log', icon: '&#9201;' },
-      { label: 'Admin Guide', path: '/admin/guide', icon: '&#9881;' },
+      { label: 'Settings',   path: '/admin/settings', icon: '&#9881;' },
+      { label: 'Admin Guide', path: '/admin/guide', icon: '&#10067;' },
     ],
   },
 ];

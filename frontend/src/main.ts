@@ -6,6 +6,7 @@ import { api } from './api.ts';
 import { store } from './store.ts';
 import { verifySession } from './auth.ts';
 import { ErrorBoundary } from './components/error-boundary.ts';
+import { loadSummitConfig } from './constants/summit-config.ts';
 
 inject();
 injectSpeedInsights();
@@ -30,6 +31,9 @@ async function init(): Promise<void> {
   if (source) {
     sessionStorage.setItem('bm_source', source);
   }
+
+  // Load summit config from backend (non-blocking, uses defaults on failure)
+  if (online) await loadSummitConfig();
 
   // Initialize router
   router.init();

@@ -1,6 +1,7 @@
 import type { Page } from '../../types/index.ts';
 import { store } from '../../store.ts';
 import { toast } from '../../components/toast.ts';
+import { SUMMIT_CONFIG } from '../../constants/summit-config.ts';
 
 export const successPage: Page = {
   render() {
@@ -56,7 +57,7 @@ export const successPage: Page = {
               <div class="timeline-marker">4</div>
               <div class="timeline-content">
                 <div class="timeline-label">Summit Invitation</div>
-                <div class="timeline-desc">30 – 31 March 2026 · Sandton</div>
+                <div class="timeline-desc">${SUMMIT_CONFIG.DATE} · ${SUMMIT_CONFIG.LOCATION}</div>
               </div>
             </div>
           </div>

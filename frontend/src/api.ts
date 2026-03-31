@@ -175,6 +175,14 @@ export const api = {
     return { success: true, data: { refNumber } };
   },
 
+  async exportMyData(refNumber: string, email: string): Promise<ApiResponse<unknown>> {
+    return request('POST', '/applications/data-export', { refNumber, email });
+  },
+
+  async deleteMyData(refNumber: string, email: string): Promise<ApiResponse<unknown>> {
+    return request('POST', '/applications/data-delete', { refNumber, email, confirm: 'DELETE' });
+  },
+
   async getApplications(params: FilterParams = {}): Promise<PaginatedResponse<Application>> {
     if (store.get('useApi')) {
       return request('GET', `/applications${buildQuery(params)}`);
@@ -253,6 +261,17 @@ export const api = {
 
   async getAuditLog(queryString: string): Promise<PaginatedResponse<unknown>> {
     return request('GET', `/insights/events?${queryString}`);
+  },
+
+  // ── Settings ──
+  async getSetting(key: string): Promise<ApiResponse<{ key: string; value: unknown }>> {
+    return request('GET', `/settings/public/${key}`);
+  },
+  async getAllSettings(): Promise<ApiResponse<Record<string, unknown>>> {
+    return request('GET', '/settings');
+  },
+  async updateSetting(key: string, value: unknown): Promise<ApiResponse<unknown>> {
+    return request('PUT', `/settings/${key}`, { value });
   },
 
   async bulkUpdateStatus(ids: string[], status: string): Promise<ApiResponse<{ updated: number }>> {

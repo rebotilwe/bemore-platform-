@@ -168,8 +168,47 @@ export const statusPage: Page = {
             </div>
           </div>
 
+          <div class="st-data-rights">
+            <h3>Your Data Rights (POPIA)</h3>
+            <p>You have the right to export or delete your personal data at any time.</p>
+            <div class="st-data-btns">
+              <button class="btn-ghost" id="st-export-btn">Export My Data</button>
+              <button class="btn-ghost btn-danger-ghost" id="st-delete-btn">Delete My Data</button>
+            </div>
+          </div>
+
           <button class="btn-ghost full" id="st-back-btn">← Check Another Application</button>
         </div>`;
+
+      document.getElementById('st-export-btn')?.addEventListener('click', async () => {
+        const expRes = await api.exportMyData(ref, email);
+        if (expRes.success && expRes.data) {
+          const blob = new Blob([JSON.stringify(expRes.data, null, 2)], { type: 'application/json' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `bemore-data-${ref}.json`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+          toast('Your data has been downloaded');
+        } else {
+          toast(expRes.message || 'Export failed');
+        }
+      });
+
+      document.getElementById('st-delete-btn')?.addEventListener('click', async () => {
+        if (!confirm('This will permanently delete all your application data. This action cannot be undone. Are you sure?')) return;
+        if (!confirm('Final confirmation: Type OK to delete your data permanently.')) return;
+        const delRes = await api.deleteMyData(ref, email);
+        if (delRes.success) {
+          toast('Your data has been permanently deleted');
+          formDiv.style.display = 'block';
+          resultDiv.style.display = 'none';
+          refInput.value = '';
+          emailInput.value = '';
+        } else {
+          toast(delRes.message || 'Deletion failed');
+        }
+      });
 
       document.getElementById('st-back-btn')?.addEventListener('click', () => {
         formDiv.style.display = 'block';

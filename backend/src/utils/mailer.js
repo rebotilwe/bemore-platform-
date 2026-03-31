@@ -1,8 +1,14 @@
 import nodemailer from 'nodemailer';
 import { config } from '../config/index.js';
 import logger from './logger.js';
+import EmailLog from '../models/EmailLog.js';
 
 const PLATFORM_URL = process.env.PLATFORM_URL || 'https://bemore-tawny.vercel.app';
+
+function logEmail(to, subject, template, refNumber, status, error) {
+  EmailLog.create({ to, subject, template, refNumber, status, error: error || undefined })
+    .catch(err => logger.error(`EmailLog write failed: ${err.message}`));
+}
 
 let transporter = null;
 
@@ -46,8 +52,10 @@ export async function sendSubmissionConfirmation(to, refNumber, firstName) {
         { label: 'Join Live Poll', url: `${PLATFORM_URL}/#/mentee-meter` },
       ]),
     });
+    logEmail(to, `Application Received — ${refNumber}`, 'submission_confirmation', refNumber, 'sent');
     logger.info(`Submission confirmation sent to ${to} (${refNumber})`);
   } catch (err) {
+    logEmail(to, `Application Received — ${refNumber}`, 'submission_confirmation', refNumber, 'failed', err.message);
     logger.error(`Email send failed: ${err.message}`);
   }
 }
@@ -124,8 +132,10 @@ export async function sendStatusNotification(to, refNumber, firstName, newStatus
         { label: 'Check My Status', url: `${PLATFORM_URL}/#/status` },
       ]),
     });
+    logEmail(to, `${msg.subject} — ${refNumber}`, 'status_notification', refNumber, 'sent');
     logger.info(`Status notification (${newStatus}) sent to ${to} (${refNumber})`);
   } catch (err) {
+    logEmail(to, `${msg.subject} — ${refNumber}`, 'status_notification', refNumber, 'failed', err.message);
     logger.error(`Status email failed: ${err.message}`);
   }
 }
@@ -158,8 +168,10 @@ export async function sendSummitReminder(to, refNumber, firstName) {
         { label: 'Join Live Poll', url: `${PLATFORM_URL}/#/mentee-meter` },
       ]),
     });
+    logEmail(to, `Summit Reminder — BeMore 2026 (${refNumber})`, 'summit_reminder', refNumber, 'sent');
     logger.info(`Summit reminder sent to ${to} (${refNumber})`);
   } catch (err) {
+    logEmail(to, `Summit Reminder — BeMore 2026 (${refNumber})`, 'summit_reminder', refNumber, 'failed', err.message);
     logger.error(`Summit reminder email failed: ${err.message}`);
   }
 }

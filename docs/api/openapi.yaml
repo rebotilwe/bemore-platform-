@@ -13,7 +13,11 @@ info:
     ```
 
     ## Public Endpoints
-    - `POST /api/applications` — submit an application (no auth required)
+    - `POST /api/applications` — submit an application (duplicate prevention)
+    - `POST /api/applications/lookup` — status lookup (refNumber + email)
+    - `POST /api/applications/data-export` — POPIA: export applicant data
+    - `POST /api/applications/data-delete` — POPIA: delete applicant data
+    - `GET /api/settings/public/:key` — read a public site setting
     - `GET /api/health` — health check (no auth required)
 
     ## Application Status Flow
@@ -22,7 +26,7 @@ info:
     ## Auto-Tagging
     Applications are automatically tagged on submission based on form data:
     `HIGH_VALUE`, `SHOVEL_READY`, `PIPELINE_READY`, `INSTITUTIONAL_GRADE`
-  version: 1.0.0
+  version: 2.0.0
   contact:
     name: Bukani Tech Solutions
 
@@ -39,8 +43,18 @@ tags:
     description: Admin authentication
   - name: Applications
     description: Application management
+  - name: POPIA
+    description: Data rights endpoints (export, delete)
   - name: Reports
     description: Pre-built intelligence reports
+  - name: Analytics
+    description: Analytics and audit log
+  - name: Settings
+    description: Site settings (admin-configurable)
+  - name: Emails
+    description: Email delivery logs
+  - name: Polls
+    description: Live polling management
 
 paths:
   /health:
@@ -381,6 +395,371 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /applications/data-export:
+    post:
+      tags: [POPIA]
+      summary: Export applicant data (POPIA right to access)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refNumber, email]
+              properties:
+                refNumber:
+                  type: string
+                  example: BM-A1B2C3D4
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Full application data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /applications/data-delete:
+    post:
+      tags: [POPIA]
+      summary: Permanently delete applicant data (POPIA right to erasure)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refNumber, email, confirm]
+              properties:
+                refNumber:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                confirm:
+                  type: string
+                  enum: [DELETE]
+                  description: Must be exactly "DELETE" to confirm
+      responses:
+        '200':
+          description: Data permanently deleted
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /settings/public/{key}:
+    get:
+      tags: [Settings]
+      summary: Read a public site setting
+      security: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+          example: mentimeter_id
+      responses:
+        '200':
+          description: Setting value
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      key:
+                        type: string
+                      value: {}
+
+  /settings:
+    get:
+      tags: [Settings]
+      summary: Get all site settings (admin)
+      responses:
+        '200':
+          description: All settings as key-value map
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /settings/{key}:
+    put:
+      tags: [Settings]
+      summary: Update a site setting (admin)
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [value]
+              properties:
+                value: {}
+      responses:
+        '200':
+          description: Setting updated
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /emails/{refNumber}:
+    get:
+      tags: [Emails]
+      summary: Get email delivery history for an application (admin)
+      parameters:
+        - name: refNumber
+          in: path
+          required: true
+          schema:
+            type: string
+          example: BM-A1B2C3D4
+      responses:
+        '200':
+          description: Email log entries sorted by date descending
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        to:
+                          type: string
+                        subject:
+                          type: string
+                        template:
+                          type: string
+                          enum: [submission_confirmation, status_notification, summit_reminder]
+                        refNumber:
+                          type: string
+                        status:
+                          type: string
+                          enum: [sent, failed]
+                        error:
+                          type: string
+                        sentAt:
+                          type: string
+                          format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /analytics/dashboard:
+    get:
+      tags: [Analytics]
+      summary: KPI dashboard
+      parameters:
+        - name: range
+          in: query
+          schema:
+            type: string
+            enum: [7d, 30d, 90d, 1y]
+            default: 30d
+      responses:
+        '200':
+          description: Dashboard data
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /analytics/funnel:
+    get:
+      tags: [Analytics]
+      summary: Conversion funnel
+      responses:
+        '200':
+          description: Funnel stage counts
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /analytics/trends:
+    get:
+      tags: [Analytics]
+      summary: Submission trends
+      parameters:
+        - name: granularity
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month]
+            default: day
+        - name: range
+          in: query
+          schema:
+            type: string
+            default: 30d
+      responses:
+        '200':
+          description: Trend data points
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /analytics/tags:
+    get:
+      tags: [Analytics]
+      summary: Tag distribution and co-occurrence
+      responses:
+        '200':
+          description: Tag analytics
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /analytics/demographics:
+    get:
+      tags: [Analytics]
+      summary: Demographics breakdown
+      responses:
+        '200':
+          description: Demographics data
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /analytics/deal-room:
+    get:
+      tags: [Analytics]
+      summary: Deal room analytics
+      responses:
+        '200':
+          description: Deal room metrics
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /analytics/events:
+    get:
+      tags: [Analytics]
+      summary: Audit event log (paginated)
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [application, admin, auth, report, system]
+      responses:
+        '200':
+          description: Paginated event log
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /polls:
+    get:
+      tags: [Polls]
+      summary: List polls
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Poll list
+    post:
+      tags: [Polls]
+      summary: Create a poll
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201':
+          description: Poll created
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /polls/{id}:
+    patch:
+      tags: [Polls]
+      summary: Update a poll
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Poll updated
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    delete:
+      tags: [Polls]
+      summary: Delete a poll
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Poll deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /polls/{id}/vote:
+    post:
+      tags: [Polls]
+      summary: Submit a vote (public)
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Vote recorded
+
+  /polls/{id}/results:
+    get:
+      tags: [Polls]
+      summary: Get poll results
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Poll results
         '401':
           $ref: '#/components/responses/Unauthorized'
 

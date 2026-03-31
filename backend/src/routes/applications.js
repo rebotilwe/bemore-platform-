@@ -78,6 +78,72 @@ router.post('/lookup',
   },
 );
 
+// ── POPIA: data export + deletion (public, rate-limited, requires refNumber + email) ──
+router.post('/data-export',
+  publicApplicationLimiter,
+  body('refNumber').notEmpty().withMessage('Reference number required'),
+  body('email').isEmail().withMessage('Valid email required'),
+  validate,
+  async (req, res, next) => {
+    try {
+      const { refNumber, email } = req.body;
+      const Application = (await import('../models/Application.js')).default;
+      const app = await Application.findOne({
+        refNumber: refNumber.trim().toUpperCase(),
+        'personal.email': email.trim().toLowerCase(),
+      }).select('-__v');
+
+      if (!app) {
+        return res.status(404).json({ success: false, message: 'No application found.' });
+      }
+
+      const { track } = await import('../services/analyticsService.js');
+      track('popia.data_export', 'system', {
+        actor: { type: 'applicant', email: email.trim().toLowerCase() },
+        target: { model: 'Application', id: app._id.toString(), refNumber: app.refNumber },
+        req,
+      });
+
+      res.json({ success: true, data: app.toObject() });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+router.post('/data-delete',
+  publicApplicationLimiter,
+  body('refNumber').notEmpty().withMessage('Reference number required'),
+  body('email').isEmail().withMessage('Valid email required'),
+  body('confirm').equals('DELETE').withMessage('Must send confirm: "DELETE" to proceed'),
+  validate,
+  async (req, res, next) => {
+    try {
+      const { refNumber, email } = req.body;
+      const Application = (await import('../models/Application.js')).default;
+      const app = await Application.findOneAndDelete({
+        refNumber: refNumber.trim().toUpperCase(),
+        'personal.email': email.trim().toLowerCase(),
+      });
+
+      if (!app) {
+        return res.status(404).json({ success: false, message: 'No application found.' });
+      }
+
+      const { track } = await import('../services/analyticsService.js');
+      track('popia.data_deleted', 'system', {
+        actor: { type: 'applicant', email: email.trim().toLowerCase() },
+        target: { model: 'Application', refNumber: app.refNumber },
+        req,
+      });
+
+      res.json({ success: true, message: 'Your data has been permanently deleted.' });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
 // ── Admin (order matters: static routes before :id) ──
 router.get('/stats', adminLimiter, auth, stats);
 router.get('/export/csv', adminLimiter, auth, exportCsv);

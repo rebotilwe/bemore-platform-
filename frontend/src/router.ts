@@ -40,6 +40,7 @@ const routes: RouteConfig[] = [
   { path: '/admin/qr',        page: lazy(() => import('./pages/admin/qr-generator.ts'), 'qrGeneratorPage'), layout: 'admin', guard: authGuard },
   { path: '/admin/guide',     page: lazy(() => import('./pages/admin/guide.ts'), 'guidePage'),              layout: 'admin', guard: authGuard },
   { path: '/admin/polls',     page: lazy(() => import('./pages/admin/polls.ts'), 'pollsPage'),              layout: 'admin', guard: authGuard },
+  { path: '/admin/settings',  page: lazy(() => import('./pages/admin/settings.ts'), 'settingsPage'),          layout: 'admin', guard: authGuard },
 ];
 
 let currentPage: Page | null = null;

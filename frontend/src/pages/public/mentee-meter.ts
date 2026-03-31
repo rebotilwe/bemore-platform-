@@ -1,4 +1,7 @@
 import type { Page } from '../../types/index.ts';
+import { api } from '../../api.ts';
+
+const DEFAULT_MENTI_ID = 'alhr8tvbfhhu';
 
 export const menteeMeterPage: Page = {
   render() {
@@ -21,7 +24,7 @@ export const menteeMeterPage: Page = {
         <div class="menti-embed-wrap">
           <iframe
             id="menti-iframe"
-            src="https://www.menti.com/alhr8tvbfhhu"
+            src="https://www.menti.com/${DEFAULT_MENTI_ID}"
             title="BeMore Summit Live Poll — Mentimeter"
             frameborder="0"
             allow="clipboard-write; fullscreen"
@@ -36,12 +39,20 @@ export const menteeMeterPage: Page = {
     </section>`;
   },
 
-  mount() {
-    // Nothing needed — Mentimeter handles all interactivity inside the iframe
+  async mount() {
+    // Fetch configurable Mentimeter ID from backend settings
+    try {
+      const res = await api.getSetting('mentimeter_id');
+      if (res.success && res.data?.value) {
+        const iframe = document.getElementById('menti-iframe') as HTMLIFrameElement | null;
+        if (iframe) iframe.src = `https://www.menti.com/${res.data.value}`;
+      }
+    } catch {
+      // Use default hardcoded ID
+    }
   },
 
   unmount() {
-    // Clean up iframe to stop any background connections
     const iframe = document.getElementById('menti-iframe') as HTMLIFrameElement | null;
     if (iframe) iframe.src = '';
   },

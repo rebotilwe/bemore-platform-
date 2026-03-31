@@ -4,6 +4,7 @@ A **live engagement and data capture platform** for the BeMore SME Access Initia
 
 **Summit**: 30-31 March 2026, Sandton Convention Centre
 **Live URL**: https://bemore-tawny.vercel.app
+**API**: https://bemore-production.up.railway.app
 
 ---
 
@@ -16,8 +17,9 @@ A **live engagement and data capture platform** for the BeMore SME Access Initia
 | Database | MongoDB (Mongoose ODM) |
 | Auth | JWT (bcryptjs) |
 | Email | Nodemailer (SMTP via mail.bts-app.co.za) |
-| Testing | Jest + mongodb-memory-server (backend), Vitest (frontend) |
-| Hosting | Vercel |
+| Monitoring | Vercel Analytics + Speed Insights, Winston structured logging |
+| Testing | Jest + mongodb-memory-server (backend, 55 tests), Vitest (frontend, 43 tests) |
+| Hosting | Vercel (frontend) + Railway (backend) |
 
 ## Architecture
 
@@ -25,59 +27,61 @@ A **live engagement and data capture platform** for the BeMore SME Access Initia
 BeMore/
   frontend/                        Vite + TypeScript SPA
     src/
-      pages/public/                Hero, Gateway, Form, Success, About,
+      pages/public/                Hero, Gateway, Form (5-step), Success, About,
                                    Landing (QR entry), Mentee Meter, Status
-      pages/admin/                 Dashboard, Leads, Analytics, Reports,
-                                   Deal Room, Audit Log, QR Generator, Login
-      components/                  Nav, Toast, Modal, Confirm Dialog,
-                                   Loading Button, Empty State, Error Boundary
+      pages/admin/                 Dashboard, Leads, Analytics, Reports, Deal Room,
+                                   Audit Log, QR Generator, Polls, Guide, Login
+      components/                  Nav, Toast, Modal, Confirm Dialog, Loading Button,
+                                   Empty State, Error Boundary, App Detail Modal
       styles/                      Design tokens + 29 CSS modules
       types/                       Application, API, Routes
       constants/                   Categories, funders (PBSA), status, tags,
-                                   form-steps, summit-config
-      utils/                       Validation, formatting, CSV, auto-tag, DOM
+                                   form-steps, summit-config (centralized)
+      utils/                       Validation (SA phone), formatting, CSV, auto-tag, DOM
       api.ts                       API client (live + localStorage demo mode)
       router.ts                    Hash-based SPA router with auth guards
       store.ts                     Reactive state management
       auth.ts                      JWT auth + session verification
-    public/                        SW (v5), manifest, icons, sitemap, robots
+    public/                        SW (v2), manifest, icons, sitemap, robots, logo
     index.html                     Entry with SEO, OG, Twitter, JSON-LD
 
   backend/                         Node.js + Express + MongoDB
     src/
-      config/                      Environment config, rate limiters (4 tiers)
+      config/                      Environment config (with validation), rate limiters (5 tiers), DB (retry)
       constants/                   Enums (profiles, statuses, funders)
-      models/                      Application, Admin, AnalyticsEvent
+      models/                      Application, Admin, AnalyticsEvent, EmailLog, SiteSettings
       services/                    Business logic layer
-        applicationService.js      CRUD, filtering, sorting, sanitisation
+        applicationService.js      CRUD, filtering, sorting, sanitisation, duplicate prevention
         authService.js             JWT authentication
         reportService.js           4 pre-built intelligence reports
-        analyticsService.js        7 aggregation pipelines
-      controllers/                 HTTP handlers (application, auth, analytics, report)
-      middleware/                  Auth (JWT), error handler, request logger, validate
-      routes/                      Express routers (applications, auth, health, analytics, reports)
-      utils/                       Auto-tag engine, email templates (6), logger (Winston)
-    __tests__/                     97 tests (Jest + mongodb-memory-server)
-    server.js                      Entry: DB connect, admin seed, graceful shutdown
+        analyticsService.js        7 aggregation pipelines + event tracking
+      controllers/                 HTTP handlers (application, auth, analytics, report, poll)
+      middleware/                   Auth (JWT), error handler, request logger, validate
+      routes/                      Express routers (applications, auth, health, analytics, reports, polls, settings)
+      utils/                       Auto-tag engine, email templates (6) + delivery tracking, logger (Winston)
+    __tests__/                     55 tests (Jest + mongodb-memory-server)
+    server.js                      Entry: DB connect (retry), admin seed, graceful shutdown, process error handlers
     seed.js                        Seeder (65 realistic SA applications)
 
   docs/
     api/openapi.yaml               OpenAPI 3.1 specification
+    TDS.md                         Technical Design Specification
+    PROJECT-SUMMARY.md             Project summary and status
 ```
 
 ## Features
 
 ### Public Portal
-- **Hero page** with animated landing, PBSA branding, and CTAs
+- **Hero page** with animated landing, BeMore logo, PBSA branding, and CTAs
 - **About Us** with 7 scrollable sections (overview, group structure, vision, empowerment, impact, metrics, opportunity)
 - **Gateway** for profile selection (Developer, Landowner, Investor, Operator, Professional, Aspiring)
-- **Multi-step registration** (5 steps) with validation, auto-save every 30s, profile-specific fields
+- **Multi-step registration** (5 steps) with SA phone validation, auto-save every 30s, profile-specific fields, duplicate prevention (409)
 - **Success page** with reference number, "What Happens Next" timeline, 3 CTA cards
 - **QR Landing page** co-branded (BeMore x PBSA) with direct CTAs for summit visitors
-- **Mentee Meter** page with configurable Mentimeter iframe embed for live polling
-- **Status lookup** page where applicants check their application progress (ref number + email)
+- **Mentee Meter** page with admin-configurable Mentimeter iframe embed for live polling
+- **Status lookup** page with application progress tracker + POPIA data rights (export/delete)
 - **404 page** with helpful navigation
-- **PWA** with service worker (v5), offline fallback, manifest, 9 icon sizes
+- **PWA** with service worker (v2), offline fallback, manifest, 12 icon sizes + favicon
 - **Responsive** mobile-first design with hamburger nav, safe areas, 48px touch targets
 
 ### Admin Portal
@@ -88,17 +92,23 @@ BeMore/
 - **Deal Room** with summary KPIs, PBSA assignment, search, summit access / deal room entry toggles
 - **Audit Log** with event timeline, category filters, search, event stats bar, actor badges (Admin/Applicant/System), metadata expansion, IP tracking, pagination (50/page)
 - **QR Generator** with branded QR preview, configurable source tags (qr, qr-brochure, qr-banner, qr-badge, qr-flyer), high-res download, URL copy
+- **Polls** management with Mentimeter integration, admin-configurable embed ID
+- **Admin Guide** with comprehensive documentation for all features
 - **Application Detail Modal** with full form data, status change, admin notes, classification (hot/warm/cold), follow-up tracking (due date + notes), deal room controls
 
 ### Backend
 - **Auto-tagging engine** with 20+ intelligence tags (HIGH_VALUE, PIPELINE_READY, INSTITUTIONAL_GRADE, SHOVEL_READY, etc.)
+- **Duplicate prevention** — same email + userType returns 409 with existing refNumber
 - **Analytics system** with 7 MongoDB aggregation pipelines, event tracking on all mutations
-- **Email system** with 6 templates: submission confirmation, 4 status notifications (reviewing, shortlisted, invited, funded), summit reminder. All co-branded (BeMore x PBSA) with CTA buttons
+- **Email system** with 6 templates: submission confirmation, 4 status notifications (reviewing, shortlisted, invited, funded), summit reminder. All co-branded with logo header. Every send logged to `EmailLog` collection
 - **Source tracking** via `?src=` URL parameter, captured in `sessionStorage`, persisted on submission
 - **Classification** system (hot/warm/cold/unclassified) with follow-up tracking (required, due date, notes)
-- **Enhanced health check** verifying MongoDB connectivity (returns 503 if DB down)
-- **Security** with JWT auth, input sanitisation, 4-tier rate limiting, CORS, Helmet, phone regex validation
-- **Error handling** for Mongoose validation, cast, duplicate key, JSON parse, network, JWT expiry errors
+- **Site Settings** — key-value store for admin-configurable values (Mentimeter ID, etc.)
+- **POPIA compliance** — data export + deletion endpoints, 24-month TTL auto-delete, consent capture
+- **Enhanced health check** verifying MongoDB connectivity + cached SMTP check (returns 503 if DB down)
+- **Security** — JWT auth, input sanitisation, 5-tier rate limiting, CORS (explicit origins), Helmet, trust proxy, compression, SA phone regex validation
+- **Reliability** — MongoDB connection retry (3 attempts, exponential backoff), unhandledRejection/uncaughtException handlers, graceful shutdown with connection drain
+- **Monitoring** — Vercel Analytics + Speed Insights (frontend), Winston structured JSON logging (backend), email delivery tracking
 
 ## Getting Started
 
@@ -136,11 +146,11 @@ node seed.js --force  # Clear + re-seed
 ### Run Tests
 
 ```bash
-# Backend (97 tests — Jest + mongodb-memory-server)
+# Backend (55 tests — Jest + mongodb-memory-server)
 cd backend
 npm test
 
-# Frontend (42 tests — Vitest)
+# Frontend (43 tests — Vitest)
 cd frontend
 npx vitest run
 ```
@@ -150,14 +160,15 @@ npx vitest run
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `PORT` | No | 5000 | Server port |
-| `MONGODB_URI` | Yes | `mongodb://localhost:27017/bemore` | MongoDB connection string |
-| `JWT_SECRET` | Yes (prod) | `dev-secret-change-me` | JWT signing key (32+ chars) |
+| `MONGODB_URI` | **Yes** (prod) | `mongodb://localhost:27017/bemore` | MongoDB connection string |
+| `JWT_SECRET` | **Yes** (prod) | dev fallback | JWT signing key (32+ chars) |
 | `JWT_EXPIRES_IN` | No | `8h` | Token expiry |
-| `CORS_ORIGIN` | No | localhost:3000,5173 | Allowed origins (comma-separated, or `*`) |
-| `SMTP_HOST` | No | - | SMTP host (emails disabled if empty) |
+| `CORS_ORIGIN` | No | Production origins | Comma-separated origins (omit for defaults) |
+| `PLATFORM_URL` | No | `https://bemore-tawny.vercel.app` | Platform URL for email links |
+| `SMTP_HOST` | No | — | SMTP host (emails disabled if empty) |
 | `SMTP_PORT` | No | 587 | SMTP port (465 for SSL) |
-| `SMTP_USER` | No | - | SMTP username |
-| `SMTP_PASS` | No | - | SMTP password |
+| `SMTP_USER` | No | — | SMTP username |
+| `SMTP_PASS` | No | — | SMTP password |
 | `SMTP_FROM` | No | `noreply@bemore.co.za` | From email address |
 | `SMTP_FROM_NAME` | No | `BeMore Group` | From display name |
 | `ADMIN_SEED_EMAIL` | No | `admin@bemore.co.za` | Default admin email |
@@ -165,12 +176,15 @@ npx vitest run
 
 ## API Endpoints
 
-### Public (No auth)
+### Public (No auth, rate-limited)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/health` | Health check (verifies MongoDB) |
-| POST | `/api/applications` | Submit application |
+| GET | `/api/health` | Health check (MongoDB + cached SMTP) |
+| POST | `/api/applications` | Submit application (duplicate check) |
 | POST | `/api/applications/lookup` | Status lookup (ref number + email) |
+| POST | `/api/applications/data-export` | POPIA: export applicant data as JSON |
+| POST | `/api/applications/data-delete` | POPIA: permanently delete applicant data |
+| GET | `/api/settings/public/:key` | Read a public site setting |
 
 ### Admin (JWT required)
 | Method | Endpoint | Description |
@@ -178,13 +192,16 @@ npx vitest run
 | POST | `/api/auth/login` | Admin login (10 req/15min) |
 | GET | `/api/auth/verify` | Verify token |
 | GET | `/api/applications` | List with filters, sort, pagination |
-| GET | `/api/applications/stats` | Aggregate statistics (byType, byStatus, byTag, bySource, byClassification) |
+| GET | `/api/applications/stats` | Aggregate statistics |
 | GET | `/api/applications/export/csv` | CSV export (19 columns) |
 | GET | `/api/applications/:id` | Single application |
 | PATCH | `/api/applications/:id` | Update: status, dealRoom, classification, followUp, adminNotes |
 | POST | `/api/applications/bulk-status` | Bulk status change (max 100) |
 | POST | `/api/applications/send-reminders` | Send summit reminder emails (max 100) |
-| GET | `/api/reports/:name` | Pre-built report (high-value-developers, pipeline-ready-land, institutional-grade-housing, deal-room-shortlist) |
+| GET | `/api/reports/:name` | Pre-built report |
+| GET | `/api/emails/:refNumber` | Email delivery history for an application |
+| GET | `/api/settings` | Get all site settings |
+| PUT | `/api/settings/:key` | Update a site setting |
 
 ### Analytics (JWT required)
 | Method | Endpoint | Description |
@@ -197,13 +214,23 @@ npx vitest run
 | GET | `/api/analytics/deal-room` | Deal room analytics |
 | GET | `/api/analytics/events` | Audit event log (paginated, filterable) |
 
+### Polls (JWT required for management, public for voting)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/polls` | List polls |
+| POST | `/api/polls` | Create poll |
+| PATCH | `/api/polls/:id` | Update poll |
+| DELETE | `/api/polls/:id` | Delete poll |
+| POST | `/api/polls/:id/vote` | Submit vote (public) |
+| GET | `/api/polls/:id/results` | Get poll results |
+
 ## Application Data Model
 
 ```
 Application {
   refNumber          BM-XXXXXXXX (auto-generated, unique)
   userType           developer | landowner | investor | student | professional | aspiring
-  personal           { firstName, surname, email, phone, companyName? }
+  personal           { firstName, surname, email, phone (+27 normalized), companyName? }
   formData           Mixed (5-step form: readiness, funding, project, consent)
   tags               [] auto-generated: HIGH_VALUE, PIPELINE_READY, INSTITUTIONAL_GRADE, etc.
   status             new -> reviewing -> shortlisted -> invited -> funded
@@ -212,7 +239,7 @@ Application {
   followUp           { required, dueDate, notes, completedAt }
   dealRoom           { summitAccess, dealRoomEntry, funders: ['PBSA'] }
   adminNotes         String
-  submittedAt        Date
+  submittedAt        Date (TTL: 24 months — POPIA)
   updatedAt          Date
 }
 ```
@@ -220,6 +247,7 @@ Application {
 ## Design System
 
 - **Theme**: Dark luxury editorial — gold (`#c9a84c`) on near-black (`#0a0a0f`)
+- **Logo**: BeMore Group logo (orange/gold "B" mark with "Be More" text)
 - **Fonts**: Cormorant Garamond (display), DM Sans (body), DM Mono (data)
 - **Spacing**: 4px base scale (`--sp-1` to `--sp-24`)
 - **Breakpoints**: 600px (SM), 905px (MD), 1240px (LG)
@@ -231,37 +259,44 @@ Application {
 
 | Template | Trigger | Includes |
 |----------|---------|----------|
-| Submission Confirmation | User submits form | Ref number, "Check My Status" + "Join Live Poll" buttons |
+| Submission Confirmation | User submits form | Logo, ref number, "Check My Status" + "Join Live Poll" buttons |
 | Under Review | Admin sets reviewing | 5-day timeline, status check link |
 | Shortlisted | Admin sets shortlisted | PBSA partner mention, status check link |
 | Summit Invitation | Admin sets invited | Full event details (date, venue, dress code) |
 | Funding Confirmed | Admin sets funded | Partnership confirmed, onboarding next steps |
 | Summit Reminder | Admin triggers send-reminders | Event details, check-in instructions, Live Poll link |
 
-All emails: co-branded header (BeMore x PBSA), reference number box, gold CTA buttons, summit info card, footer.
+All emails: logo header, co-branded bar (BeMore x PBSA), reference number box, gold CTA buttons, summit info card, footer. Every send tracked in `EmailLog` collection.
 
-## Deployment
+## Security & Production Hardening
 
-Frontend and backend deployed to Vercel.
-
-```bash
-# Frontend
-cd frontend && vercel --prod
-
-# Backend
-cd backend && vercel --prod
-```
-
-Set environment variables in Vercel project settings.
+- **Env validation**: App exits if `JWT_SECRET` or `MONGODB_URI` missing in production
+- **CORS**: Explicit origin allowlist — `bemore-tawny.vercel.app` + `bemorecapital.co.za` (no wildcard)
+- **Trust proxy**: Enabled for accurate IP rate limiting behind Railway/Vercel proxy
+- **Rate limiting**: 5 tiers — health (200/min), public (100/15min), admin (300/15min), auth (10/15min), vote (60/15min)
+- **Compression**: gzip on all API responses
+- **Security headers**: X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy strict-origin-when-cross-origin, Permissions-Policy (camera/mic/geo disabled)
+- **Cache headers**: Hashed `/assets/*` get immutable 1-year cache, icons get 24h cache
+- **MongoDB retry**: 3 attempts with exponential backoff (2s/4s/8s)
+- **Graceful shutdown**: SIGTERM/SIGINT drain in-flight requests (15s timeout), disconnect MongoDB
+- **Process handlers**: unhandledRejection logged, uncaughtException triggers shutdown
+- **Structured logging**: Winston JSON only — no console.log in production paths
 
 ## POPIA Compliance
 
 - Explicit consent captured at registration (T&Cs + POPIA checkboxes)
-- Data retention: 24 months from submission date
-- Deletion requests: info@bts-app.co.za (processed within 30 days)
-- Consent withdrawal supported (application removed from Programme)
+- Data retention: 24 months from submission date (MongoDB TTL index)
+- **Self-service data export**: `POST /api/applications/data-export` (refNumber + email → JSON download)
+- **Self-service data deletion**: `POST /api/applications/data-delete` (refNumber + email + confirm → permanent delete)
 - PII not exposed in public API responses (status lookup returns limited fields)
 - Admin notes and classification are admin-only, never exposed to applicants
+- All data rights actions logged to audit trail
+
+## Deployment
+
+- **Frontend**: Vercel (auto-deploy from `main` branch). Config: `frontend/vercel.json`
+- **Backend**: Railway (`bemore-production.up.railway.app`). API proxied via Vercel rewrites at `/api/*`
+- **Domain**: `bemore-tawny.vercel.app` (primary), `bemorecapital.co.za` (alias)
 
 ## Licence
 
