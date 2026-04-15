@@ -25,7 +25,7 @@ async function checkSmtp() {
       secure: config.mail.port === 465,
       auth: { user: config.mail.user, pass: config.mail.pass },
     });
-    await Promise.race([t.verify(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 3000))]);
+    await Promise.race([t.verify(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))]);
     t.close();
     smtpCache = { status: 'ok', checkedAt: Date.now() };
   } catch {

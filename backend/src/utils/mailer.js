@@ -19,6 +19,9 @@ function getTransporter() {
       port: config.mail.port,
       secure: config.mail.port === 465,
       auth: { user: config.mail.user, pass: config.mail.pass },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     });
     logger.info(`Mail transporter created: ${config.mail.host}:${config.mail.port}`);
   }
