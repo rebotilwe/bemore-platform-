@@ -53,13 +53,13 @@ export const successPage: Page = {
                 <div class="timeline-desc">Qualifying applicants notified</div>
               </div>
             </div>
-            <div class="timeline-step">
+            ${SUMMIT_CONFIG.ACTIVE ? `<div class="timeline-step">
               <div class="timeline-marker">4</div>
               <div class="timeline-content">
                 <div class="timeline-label">Summit Invitation</div>
                 <div class="timeline-desc">${SUMMIT_CONFIG.DATE} · ${SUMMIT_CONFIG.LOCATION}</div>
               </div>
-            </div>
+            </div>` : ''}
           </div>
         </div>
 

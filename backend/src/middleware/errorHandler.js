@@ -18,7 +18,7 @@ export default function errorHandler(err, req, res, _next) {
 
   // Mongoose cast error (invalid ObjectId etc.)
   if (err.name === 'CastError') {
-    return res.status(400).json({ success: false, message: `Invalid ${err.path}: ${err.value}` });
+    return res.status(400).json({ success: false, message: `Invalid value for ${err.path}` });
   }
 
   // MongoDB duplicate key

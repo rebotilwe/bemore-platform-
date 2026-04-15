@@ -41,7 +41,7 @@ export const config = Object.freeze({
       ? defaultCorsOrigins
       : process.env.CORS_ORIGIN.split(',').map(o => o.trim()).filter(Boolean),
     credentials: true,
-    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   },
   mail: {

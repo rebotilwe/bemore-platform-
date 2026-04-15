@@ -74,13 +74,17 @@ export async function getPollById(id) {
   return Poll.findById(id);
 }
 
+const POLL_UPDATE_FIELDS = ['title', 'description', 'questions'];
+
 export async function updatePoll(id, data) {
   const poll = await Poll.findById(id);
   if (!poll) return null;
   if (poll.status !== 'draft') {
     throw Object.assign(new Error('Can only edit polls in draft status'), { status: 400 });
   }
-  Object.assign(poll, data);
+  for (const key of POLL_UPDATE_FIELDS) {
+    if (data[key] !== undefined) poll[key] = data[key];
+  }
   await poll.save();
   return poll;
 }
@@ -227,9 +231,9 @@ export async function castVote(pollId, questionId, voteData, sessionId, ip) {
       responseData.textResponse = voteData.textResponse.trim().slice(0, 200);
       break;
     case 'rating': {
-      const val = Number(voteData.ratingValue);
-      if (!val || val < 1 || val > question.settings.ratingMax) {
-        throw Object.assign(new Error(`ratingValue must be 1-${question.settings.ratingMax}`), { status: 400 });
+      const val = parseInt(voteData.ratingValue, 10);
+      if (isNaN(val) || val < 1 || val > question.settings.ratingMax) {
+        throw Object.assign(new Error(`ratingValue must be integer 1-${question.settings.ratingMax}`), { status: 400 });
       }
       responseData.ratingValue = val;
       break;

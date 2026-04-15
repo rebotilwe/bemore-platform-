@@ -14,7 +14,7 @@ router.post('/', publicApplicationLimiter,
   body('personal').isObject().withMessage('Personal info required'),
   body('personal.firstName').notEmpty().withMessage('First name required'),
   body('personal.surname').notEmpty().withMessage('Surname required'),
-  body('personal.email').isEmail().withMessage('Valid email required'),
+  body('personal.email').isEmail().withMessage('Valid email required').isLength({ max: 254 }).withMessage('Email too long'),
   body('personal.phone').notEmpty().withMessage('Phone required')
     .matches(/^(\+?27\d{9}|0\d{9})$/).withMessage('Valid SA phone required (e.g. 0821234567 or +27821234567)'),
   body('personal.companyName').optional().isString().withMessage('Company name must be a string'),

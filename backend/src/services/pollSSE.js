@@ -80,13 +80,18 @@ export function broadcast(pollId, eventName, data) {
   const set = clients.get(pollId);
   if (!set || set.size === 0) return;
 
-  const message = `event: ${eventName}\ndata: ${JSON.stringify(data)}\n\n`;
+  let message;
+  try {
+    message = `event: ${eventName}\ndata: ${JSON.stringify(data)}\n\n`;
+  } catch {
+    return; // Unserializable data — skip broadcast
+  }
 
   for (const client of set) {
     try {
       client.write(message);
     } catch {
-      // Client disconnected, will be cleaned up by 'close' event
+      removeClient(pollId, client);
     }
   }
 }

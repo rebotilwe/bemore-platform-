@@ -221,5 +221,14 @@ export function exportPdfReport(apps: Application[], config: ReportConfig): void
   if (win) {
     win.document.write(html);
     win.document.close();
+  } else {
+    // Popup blocked — fall back to download as HTML
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${config.title.replace(/\s+/g, '-').toLowerCase()}-report.html`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 }

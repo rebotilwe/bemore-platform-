@@ -29,10 +29,10 @@ export const heroPage: Page = {
             <a class="btn-ghost" href="#/about">Learn More</a>
           </div>
           <div class="hero-stats fade-up stagger-4">
-            <div class="stat-item">
-              <div class="stat-num display">30–31</div>
-              <div class="stat-label">Mar 2026 Summit</div>
-            </div>
+            ${SUMMIT_CONFIG.ACTIVE ? `<div class="stat-item">
+              <div class="stat-num display">${SUMMIT_CONFIG.DATE_SHORT.split(' ')[1] || '30–31'}</div>
+              <div class="stat-label">${SUMMIT_CONFIG.DATE_SHORT.split(' ')[0] || 'Mar'} Summit</div>
+            </div>` : ''}
             <div class="stat-item">
               <div class="stat-num display">PBSA</div>
               <div class="stat-label">Lead Funding Partner</div>

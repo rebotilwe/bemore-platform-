@@ -278,6 +278,10 @@ export const api = {
     return request('POST', '/applications/bulk-status', { ids, status });
   },
 
+  async sendReminders(ids: string[]): Promise<ApiResponse<{ sent: number }>> {
+    return request('POST', '/applications/send-reminders', { ids });
+  },
+
   async getReport(name: ReportName): Promise<ApiResponse<ReportData>> {
     if (store.get('useApi')) return request('GET', `/reports/${name}`);
     const apps = localStore.get();

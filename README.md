@@ -18,7 +18,7 @@ A **live engagement and data capture platform** for the BeMore SME Access Initia
 | Auth | JWT (bcryptjs) |
 | Email | Nodemailer (SMTP via mail.bts-app.co.za) |
 | Monitoring | Vercel Analytics + Speed Insights, Winston structured logging |
-| Testing | Jest + mongodb-memory-server (backend, 55 tests), Vitest (frontend, 43 tests) |
+| Testing | Jest + mongodb-memory-server (backend, 71 tests), Vitest (frontend, 43 tests) |
 | Hosting | Vercel (frontend) + Railway (backend) |
 
 ## Architecture
@@ -31,13 +31,14 @@ BeMore/
                                    Landing (QR entry), Mentee Meter, Status
       pages/admin/                 Dashboard, Leads, Analytics, Reports, Deal Room,
                                    Audit Log, QR Generator, Polls, Guide, Login
-      components/                  Nav, Toast, Modal, Confirm Dialog, Loading Button,
-                                   Empty State, Error Boundary, App Detail Modal
+      components/                  Nav, Toast, Confirm Dialog, Loading Button,
+                                   Empty State, Error Boundary, App Detail Modal, Poll Results Chart
       styles/                      Design tokens + 29 CSS modules
       types/                       Application, API, Routes
       constants/                   Categories, funders (PBSA), status, tags,
                                    form-steps, summit-config (centralized)
-      utils/                       Validation (SA phone), formatting, CSV, auto-tag, DOM
+      utils/                       Validation (SA phone), formatting, CSV, auto-tag, DOM, PDF report
+      services/                    poll-sse (Server-Sent Events client)
       api.ts                       API client (live + localStorage demo mode)
       router.ts                    Hash-based SPA router with auth guards
       store.ts                     Reactive state management
@@ -49,7 +50,7 @@ BeMore/
     src/
       config/                      Environment config (with validation), rate limiters (5 tiers), DB (retry)
       constants/                   Enums (profiles, statuses, funders)
-      models/                      Application, Admin, AnalyticsEvent, EmailLog, SiteSettings
+      models/                      Application, Admin, AnalyticsEvent, EmailLog, Poll, PollResponse, SiteSettings
       services/                    Business logic layer
         applicationService.js      CRUD, filtering, sorting, sanitisation, duplicate prevention
         authService.js             JWT authentication
@@ -59,7 +60,7 @@ BeMore/
       middleware/                   Auth (JWT), error handler, request logger, validate
       routes/                      Express routers (applications, auth, health, analytics, reports, polls, settings)
       utils/                       Auto-tag engine, email templates (6) + delivery tracking, logger (Winston)
-    __tests__/                     55 tests (Jest + mongodb-memory-server)
+    __tests__/                     71 tests (Jest + mongodb-memory-server)
     server.js                      Entry: DB connect (retry), admin seed, graceful shutdown, process error handlers
     seed.js                        Seeder (65 realistic SA applications)
 
@@ -86,13 +87,14 @@ BeMore/
 
 ### Admin Portal
 - **Dashboard** with KPI cards (hover animations), conversion funnel, profile breakdown, engagement source tracking, lead classification breakdown, top tags, quick actions, recent applications
-- **Leads Management** with search, filter by type/status, sortable table columns (name, type, status, date), card + table views, shortlist toggle, bulk status change, CSV export with 19 columns
+- **Leads Management** with search, filter by type/status, sortable table columns (name, type, status, date), card + table views, shortlist toggle, bulk status change, bulk send summit reminders, CSV export with 16 columns
 - **Analytics** with conversion funnel, submission trends (day/week/month), tag distribution + co-occurrence, demographics, deal room metrics, date range selector
-- **Reports** with 4 pre-built reports (High Value, Pipeline Ready, Institutional Grade, Deal Room Shortlist) with results table and export
+- **Reports** with 4 pre-built intelligence reports (High Value, Pipeline Ready, Institutional Grade, Deal Room Shortlist) with results table, PDF export (print-ready), and CSV export
 - **Deal Room** with summary KPIs, PBSA assignment, search, summit access / deal room entry toggles
 - **Audit Log** with event timeline, category filters, search, event stats bar, actor badges (Admin/Applicant/System), metadata expansion, IP tracking, pagination (50/page)
 - **QR Generator** with branded QR preview, configurable source tags (qr, qr-brochure, qr-banner, qr-badge, qr-flyer), high-res download, URL copy
-- **Polls** management with Mentimeter integration, admin-configurable embed ID
+- **Polls** with built-in live polling system (multiple-choice, rating, word-cloud, open-text), real-time SSE updates, admin control panel (activate/pause/close), detailed results with charts, Mentimeter integration fallback
+- **Settings** page for summit config toggle, Mentimeter embed ID, and platform-wide settings
 - **Admin Guide** with comprehensive documentation for all features
 - **Application Detail Modal** with full form data, status change, admin notes, classification (hot/warm/cold), follow-up tracking (due date + notes), deal room controls
 
@@ -103,7 +105,8 @@ BeMore/
 - **Email system** with 6 templates: submission confirmation, 4 status notifications (reviewing, shortlisted, invited, funded), summit reminder. All co-branded with logo header. Every send logged to `EmailLog` collection
 - **Source tracking** via `?src=` URL parameter, captured in `sessionStorage`, persisted on submission
 - **Classification** system (hot/warm/cold/unclassified) with follow-up tracking (required, due date, notes)
-- **Site Settings** — key-value store for admin-configurable values (Mentimeter ID, etc.)
+- **Site Settings** — key-value store for admin-configurable values (Mentimeter ID, summit config, etc.) with write whitelist
+- **Summit config toggle** — `summit_config` setting controls all summit-specific content (banners, dates, venue) across public pages. Togglable via admin settings
 - **POPIA compliance** — data export + deletion endpoints, 24-month TTL auto-delete, consent capture
 - **Enhanced health check** verifying MongoDB connectivity + cached SMTP check (returns 503 if DB down)
 - **Security** — JWT auth, input sanitisation, 5-tier rate limiting, CORS (explicit origins), Helmet, trust proxy, compression, SA phone regex validation
@@ -113,7 +116,7 @@ BeMore/
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 20+
 - MongoDB (local or Atlas)
 
 ### Frontend
@@ -146,7 +149,7 @@ node seed.js --force  # Clear + re-seed
 ### Run Tests
 
 ```bash
-# Backend (55 tests — Jest + mongodb-memory-server)
+# Backend (71 tests — Jest + mongodb-memory-server)
 cd backend
 npm test
 
@@ -221,8 +224,12 @@ npx vitest run
 | POST | `/api/polls` | Create poll |
 | PATCH | `/api/polls/:id` | Update poll |
 | DELETE | `/api/polls/:id` | Delete poll |
-| POST | `/api/polls/:id/vote` | Submit vote (public) |
-| GET | `/api/polls/:id/results` | Get poll results |
+| GET | `/api/polls/active` | Get active poll + question (public) |
+| POST | `/api/polls/:id/vote` | Submit vote (public, deduplicated) |
+| GET | `/api/polls/:id/live` | SSE stream for live results (public) |
+| PATCH | `/api/polls/:id/status` | Set poll status (draft/active/paused/closed) |
+| PATCH | `/api/polls/:id/activate` | Set active question index |
+| GET | `/api/polls/:id/results` | Detailed poll results |
 
 ## Application Data Model
 
@@ -281,6 +288,11 @@ All emails: logo header, co-branded bar (BeMore x PBSA), reference number box, g
 - **Graceful shutdown**: SIGTERM/SIGINT drain in-flight requests (15s timeout), disconnect MongoDB
 - **Process handlers**: unhandledRejection logged, uncaughtException triggers shutdown
 - **Structured logging**: Winston JSON only — no console.log in production paths
+- **CSV formula injection**: Both backend and frontend CSV exports prefix `=+\-@` cells
+- **Settings whitelist**: Admin PUT `/settings/:key` enforces allowed keys
+- **Poll prototype pollution**: Whitelist-based field assignment on poll updates
+- **Date aggregations**: MongoDB `$dateToString` uses `Africa/Johannesburg` timezone
+- **Input validation**: Classification validated in sanitizeUpdate, email max 254 chars, CastError values not leaked
 
 ## POPIA Compliance
 

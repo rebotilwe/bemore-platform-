@@ -8,6 +8,12 @@ import { track } from '../services/analyticsService.js';
 
 const router = Router();
 
+const ALLOWED_SETTINGS = [
+  'mentimeterEmbedId', 'mentimeter_id', 'summit_config',
+  'summitDate', 'summitVenue', 'summitBannerUrl',
+  'registrationOpen', 'maintenanceMode', 'platformAnnouncement',
+];
+
 // Public: get specific setting (e.g., mentimeter ID)
 router.get('/public/:key', async (req, res) => {
   const value = await getSetting(req.params.key);
@@ -27,6 +33,9 @@ router.put('/:key',
   body('value').exists().withMessage('Value is required'),
   validate,
   async (req, res) => {
+    if (!ALLOWED_SETTINGS.includes(req.params.key)) {
+      return res.status(400).json({ success: false, message: `Unknown setting key: "${req.params.key}"` });
+    }
     await setSetting(req.params.key, req.body.value);
 
     track('settings.updated', 'admin', {

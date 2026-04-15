@@ -1,5 +1,5 @@
 export function isEmail(v: string): boolean {
-  return /\S+@\S+\.\S+/.test(v);
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
 }
 
 /**

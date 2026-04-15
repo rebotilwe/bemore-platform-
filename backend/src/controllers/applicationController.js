@@ -121,8 +121,12 @@ export async function exportCsv(req, res, next) {
         a.formData?.estimatedValue || '', a.formData?.projectStage || '', a.formData?.landStatus || '',
         (a.tags || []).join('; '),
         a.followUp?.required ? 'Yes' : 'No', a.followUp?.dueDate || '', a.followUp?.notes || '',
-        a.adminNotes || '', a.submittedAt,
-      ].map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',');
+        a.adminNotes || '', a.submittedAt ? new Date(a.submittedAt).toISOString().split('T')[0] : '',
+      ].map(v => {
+        let s = String(v ?? '').replace(/"/g, '""');
+        if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; // Prevent CSV formula injection
+        return `"${s}"`;
+      }).join(',');
       res.write(row + '\n');
       count++;
     }

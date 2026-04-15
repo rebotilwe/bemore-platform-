@@ -33,7 +33,7 @@ export async function getDashboard(dateRange) {
     Application.countDocuments(),
     Application.aggregate([
       { $match: { submittedAt: { $gte: start, $lte: end } } },
-      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$submittedAt' } }, count: { $sum: 1 } } },
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$submittedAt', timezone: 'Africa/Johannesburg' } }, count: { $sum: 1 } } },
       { $sort: { _id: 1 } },
     ]),
     AnalyticsEvent.aggregate([
@@ -105,7 +105,7 @@ export async function getSubmissionTrends(granularity = 'day', dateRange) {
     { $match: { submittedAt: { $gte: start, $lte: end } } },
     {
       $group: {
-        _id: { $dateToString: { format: dateFormat, date: '$submittedAt' } },
+        _id: { $dateToString: { format: dateFormat, date: '$submittedAt', timezone: 'Africa/Johannesburg' } },
         count: { $sum: 1 },
         types: { $push: '$userType' },
       },
@@ -237,7 +237,9 @@ export async function getDealRoomAnalytics() {
 /**
  * Event log — paginated activity feed
  */
-export async function getEventLog({ page = 1, limit = 50, category, event, startDate, endDate }) {
+export async function getEventLog({ page: rawPage = 1, limit: rawLimit = 50, category, event, startDate, endDate }) {
+  const page = Math.max(1, parseInt(rawPage, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(rawLimit, 10) || 50));
   const filter = {};
   if (category) filter.category = category;
   if (event) filter.event = event;

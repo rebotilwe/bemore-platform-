@@ -14,30 +14,38 @@ export interface PollSSEHandlers {
 
 let source: EventSource | null = null;
 
+function safeParse(raw: string): unknown | null {
+  try { return JSON.parse(raw); }
+  catch { return null; }
+}
+
 export function connect(pollId: string, handlers: PollSSEHandlers): void {
   disconnect();
 
   source = new EventSource(`${API_URL}/polls/${pollId}/live`);
 
   source.addEventListener('results', (e) => {
-    handlers.onResults?.(JSON.parse(e.data));
+    const data = safeParse(e.data);
+    if (data) handlers.onResults?.(data);
   });
 
   source.addEventListener('question-change', (e) => {
-    handlers.onQuestionChange?.(JSON.parse(e.data));
+    const data = safeParse(e.data);
+    if (data) handlers.onQuestionChange?.(data);
   });
 
   source.addEventListener('poll-status', (e) => {
-    handlers.onPollStatus?.(JSON.parse(e.data));
+    const data = safeParse(e.data);
+    if (data) handlers.onPollStatus?.(data);
   });
 
   source.addEventListener('connected', (e) => {
-    handlers.onConnected?.(JSON.parse(e.data));
+    const data = safeParse(e.data);
+    if (data) handlers.onConnected?.(data);
   });
 
   source.onerror = () => {
     // EventSource auto-reconnects — no action needed
-    // But we could show a "reconnecting..." indicator
   };
 }
 

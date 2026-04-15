@@ -23,6 +23,8 @@ const adminPages = [
   { name: '13-admin-auditlog', url: '/#/admin/audit-log', wait: 2000 },
   { name: '14-admin-qr', url: '/#/admin/qr', wait: 1500 },
   { name: '15-admin-guide', url: '/#/admin/guide', wait: 1500 },
+  { name: '18-admin-polls', url: '/#/admin/polls', wait: 2000 },
+  { name: '21-admin-settings', url: '/#/admin/settings', wait: 1500 },
 ];
 
 async function run() {
@@ -34,14 +36,14 @@ async function run() {
   // Public pages
   for (const p of pages) {
     console.log(`Capturing ${p.name}...`);
-    await page.goto(`${BASE}${p.url}`, { waitUntil: 'networkidle' });
+    await page.goto(`${BASE}${p.url}`, { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(p.wait);
     await page.screenshot({ path: `${OUT}/${p.name}.png`, fullPage: true });
   }
 
   // Login to admin
   console.log('Logging into admin...');
-  await page.goto(`${BASE}/#/admin/login`, { waitUntil: 'networkidle' });
+  await page.goto(`${BASE}/#/admin/login`, { waitUntil: 'domcontentloaded', timeout: 15000 });
   await page.waitForTimeout(500);
   await page.fill('input[type="email"]', process.env.ADMIN_EMAIL || 'admin@bemore.co.za');
   await page.fill('input[type="password"]', process.env.ADMIN_PASS || '');
@@ -51,7 +53,7 @@ async function run() {
   // Admin pages
   for (const p of adminPages) {
     console.log(`Capturing ${p.name}...`);
-    await page.goto(`${BASE}${p.url}`, { waitUntil: 'networkidle' });
+    await page.goto(`${BASE}${p.url}`, { waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(p.wait);
     await page.screenshot({ path: `${OUT}/${p.name}.png`, fullPage: true });
   }
@@ -60,11 +62,11 @@ async function run() {
   console.log('Capturing mobile views...');
   await page.setViewportSize({ width: 390, height: 844 });
 
-  await page.goto(`${BASE}/#/`, { waitUntil: 'networkidle' });
+  await page.goto(`${BASE}/#/`, { waitUntil: 'domcontentloaded', timeout: 15000 });
   await page.waitForTimeout(1000);
   await page.screenshot({ path: `${OUT}/16-mobile-hero.png`, fullPage: true });
 
-  await page.goto(`${BASE}/#/landing`, { waitUntil: 'networkidle' });
+  await page.goto(`${BASE}/#/landing`, { waitUntil: 'domcontentloaded', timeout: 15000 });
   await page.waitForTimeout(1000);
   await page.screenshot({ path: `${OUT}/17-mobile-landing.png`, fullPage: true });
 

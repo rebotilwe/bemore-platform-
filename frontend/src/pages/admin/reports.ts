@@ -181,26 +181,29 @@ function bindResults(): void {
   });
 
   document.getElementById('rpt-export-pdf')?.addEventListener('click', () => {
-    if (reportApps.length) {
-      const meta = REPORTS.find(r => r.name === activeReport);
-      if (meta) {
-        exportPdfReport(reportApps, { title: meta.title, description: meta.description, color: meta.color });
-        toast(`${meta.title} PDF generated`);
-      }
+    if (!reportApps.length) return;
+    const meta = REPORTS.find(r => r.name === activeReport);
+    if (!meta) return;
+    try {
+      exportPdfReport(reportApps, { title: meta.title, description: meta.description, color: meta.color });
+      toast(`${meta.title} PDF generated`);
+    } catch {
+      toast('Failed to generate PDF');
     }
   });
 
   document.getElementById('rpt-export')?.addEventListener('click', () => {
     const btn = document.getElementById('rpt-export') as HTMLButtonElement;
-    if (reportApps.length) {
-      setButtonLoading(btn, true, 'Exporting...');
-      const meta = REPORTS.find(r => r.name === activeReport);
-      setTimeout(() => {
-        exportCsv(reportApps, `bemore-${activeReport}-${new Date().toISOString().split('T')[0]}.csv`);
-        toast(`${meta?.title ?? 'Report'} exported`);
-        setButtonLoading(btn, false);
-      }, 300);
+    if (!reportApps.length) return;
+    const meta = REPORTS.find(r => r.name === activeReport);
+    setButtonLoading(btn, true, 'Exporting...');
+    try {
+      exportCsv(reportApps, `bemore-${activeReport}-${new Date().toISOString().split('T')[0]}.csv`);
+      toast(`${meta?.title ?? 'Report'} exported`);
+    } catch {
+      toast('Failed to export CSV');
     }
+    setButtonLoading(btn, false);
   });
 
   // Click row/card → detail modal

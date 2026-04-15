@@ -80,6 +80,10 @@ export function sanitizeUpdate(body) {
     throw Object.assign(new Error('Invalid status'), { status: 400 });
   }
 
+  if (updates.classification && !['hot', 'warm', 'cold', 'unclassified'].includes(updates.classification)) {
+    throw Object.assign(new Error('Invalid classification'), { status: 400 });
+  }
+
   if (updates.dealRoom?.funders) {
     if (!updates.dealRoom.funders.every(f => FUNDER_NAMES.includes(f))) {
       throw Object.assign(new Error('Invalid funder name'), { status: 400 });

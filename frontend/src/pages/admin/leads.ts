@@ -32,6 +32,7 @@ let totalCount = 0;
 let selectedIds = new Set<string>();
 let sortField = 'submittedAt';
 let sortDir: 'asc' | 'desc' = 'desc';
+let searchTimer: ReturnType<typeof setTimeout>;
 
 function sortIcon(field: string): string {
   if (field !== sortField) return '<span class="sort-icon">&#8597;</span>';
@@ -80,6 +81,7 @@ function renderBulkBar(): string {
       ${statusOpts}
     </select>
     <button class="btn-action" id="bulk-apply">Apply</button>
+    <button class="btn-action" id="bulk-remind" style="background:var(--gold);color:var(--ink)">Send Reminders</button>
     <button class="btn-ghost bulk-clear" id="bulk-clear">Clear</button>
   </div>`;
 }
@@ -340,6 +342,27 @@ function bindBulkActions(): void {
     });
   });
 
+  // Send summit reminders
+  document.getElementById('bulk-remind')?.addEventListener('click', async () => {
+    if (!selectedIds.size) { toast('No leads selected'); return; }
+
+    const count = selectedIds.size;
+    showBulkStatusConfirm(count, async () => {
+      const btn = document.getElementById('bulk-remind') as HTMLButtonElement;
+      setButtonLoading(btn, true, `Sending ${count}...`);
+
+      const res = await api.sendReminders([...selectedIds]);
+      if (res.success) {
+        toast(`Summit reminders sent to ${res.data?.sent ?? count} applicant${(res.data?.sent ?? count) !== 1 ? 's' : ''}`);
+        selectedIds.clear();
+        updateBulkBar();
+      } else {
+        toast(res.message || 'Failed to send reminders');
+      }
+      setButtonLoading(btn, false);
+    });
+  });
+
   // Clear selection
   document.getElementById('bulk-clear')?.addEventListener('click', () => {
     selectedIds.clear();
@@ -390,7 +413,6 @@ export const leadsPage: Page = {
       loadLeads();
     });
 
-    let searchTimer: ReturnType<typeof setTimeout>;
     document.getElementById('leads-search')?.addEventListener('input', (e) => {
       clearTimeout(searchTimer);
       searchTimer = setTimeout(() => {
@@ -416,5 +438,8 @@ export const leadsPage: Page = {
     });
 
     loadLeads();
+  },
+  unmount() {
+    clearTimeout(searchTimer);
   },
 };

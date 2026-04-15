@@ -32,10 +32,10 @@ export const landingPage: Page = {
         </p>
 
         <!-- Summit Info -->
-        <div class="landing-summit fade-up stagger-2">
+        ${SUMMIT_CONFIG.ACTIVE ? `<div class="landing-summit fade-up stagger-2">
           <div class="landing-summit-date display">${SUMMIT_CONFIG.DATE}</div>
           <div class="landing-summit-venue">${SUMMIT_CONFIG.VENUE}</div>
-        </div>
+        </div>` : ''}
 
         <!-- Primary CTAs -->
         <div class="landing-ctas fade-up stagger-3">
