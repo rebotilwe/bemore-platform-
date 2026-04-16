@@ -16,9 +16,10 @@ function fullRow(key: string, value: string | undefined | null): string {
   return `<div class="detail-row full"><div class="detail-key">${key}</div><div class="detail-val">${value}</div></div>`;
 }
 
-function listRow(key: string, values: string[] | undefined): string {
-  if (!values?.length) return '';
-  const chips = values.map(v => `<span class="tag-badge">${v}</span>`).join(' ');
+function listRow(key: string, values: string | string[] | undefined): string {
+  const arr = Array.isArray(values) ? values : values ? [values] : [];
+  if (!arr.length) return '';
+  const chips = arr.map(v => `<span class="tag-badge">${v}</span>`).join(' ');
   return `<div class="detail-row"><div class="detail-key">${key}</div><div class="detail-val">${chips}</div></div>`;
 }
 
