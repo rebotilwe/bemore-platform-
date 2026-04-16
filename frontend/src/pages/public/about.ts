@@ -357,7 +357,7 @@ export const aboutPage: Page = {
           <p class="about-cta-sub">
             Join the BeMore SME Access Initiative and connect with institutional funding partners.
           </p>
-          <a class="btn-primary" href="#/gateway">Apply Now →</a>
+          <a class="btn-primary" href="#/gateway" data-track="About — Apply Now">Apply Now →</a>
         </div>
       </div>
 

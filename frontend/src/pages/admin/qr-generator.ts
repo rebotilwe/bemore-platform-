@@ -17,7 +17,7 @@ export const qrGeneratorPage: Page = {
     <div class="qr-page">
       <div class="qr-header">
         <h2 class="admin-main-title">QR Code Generator</h2>
-        <p class="qr-header-sub">Generate scannable QR codes for summit materials, print collateral, and event signage.</p>
+        <p class="qr-header-sub">Generate scannable QR codes for print collateral, marketing materials, and event signage.</p>
       </div>
 
       <div class="qr-content">

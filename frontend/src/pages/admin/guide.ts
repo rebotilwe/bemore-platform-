@@ -39,7 +39,7 @@ const GUIDE_SECTIONS = [
         <div class="guide-step">
           <div class="guide-step-num">5</div>
           <div class="guide-step-body">
-            <h4>Print QR Codes for the Summit</h4>
+            <h4>Print QR Codes for Events</h4>
             <p>Visit <a href="#/admin/qr">QR Codes</a> to generate branded QR codes. Choose different source tags (brochure, banner, badge) so you can track which materials drive the most scans.</p>
           </div>
         </div>
@@ -73,15 +73,15 @@ const GUIDE_SECTIONS = [
           <div class="guide-pipe-info">
             <strong>Shortlisted</strong>
             <p>This applicant qualifies. They receive a congratulations email. They now appear in the <a href="#/admin/deal-room">Deal Room</a>.</p>
-            <div class="guide-pipe-action">Action: Assign PBSA funder, grant summit access</div>
+            <div class="guide-pipe-action">Action: Assign PBSA funder, grant deal room access</div>
           </div>
         </div>
         <div class="guide-pipe-stage">
           <div class="guide-pipe-dot" style="background:var(--green)"></div>
           <div class="guide-pipe-info">
             <strong>Invited</strong>
-            <p>Formally invited to the summit. They receive full event details (date, venue, dress code).</p>
-            <div class="guide-pipe-action">Action: Confirm deal room entry, send summit reminder if needed</div>
+            <p>Formally invited to participate. They receive full details via email.</p>
+            <div class="guide-pipe-action">Action: Confirm deal room entry, send reminder if needed</div>
           </div>
         </div>
         <div class="guide-pipe-stage">
@@ -137,7 +137,7 @@ const GUIDE_SECTIONS = [
       <div class="guide-class-grid">
         <div class="guide-class-card hot">
           <div class="guide-class-label">HOT</div>
-          <p>High-value, shovel-ready, institutional-grade. Contact within 24 hours. Likely summit invitee and deal room candidate.</p>
+          <p>High-value, shovel-ready, institutional-grade. Contact within 24 hours. Likely invitee and deal room candidate.</p>
         </div>
         <div class="guide-class-card warm">
           <div class="guide-class-label">WARM</div>
@@ -152,7 +152,7 @@ const GUIDE_SECTIONS = [
       <h4 style="margin-top:var(--sp-6)">Follow-Up Tracker</h4>
       <p>In the detail modal, toggle "Follow-Up Required", set a due date, and add notes. Use this to ensure no promising lead falls through the cracks.</p>
       <div class="guide-tip">
-        <strong>Pro Tip:</strong> After the summit, filter leads by classification on the Dashboard's "Lead Classification" card to quickly identify your hottest prospects for post-event follow-up.
+        <strong>Pro Tip:</strong> Filter leads by classification on the Dashboard's "Lead Classification" card to quickly identify your hottest prospects for post-event follow-up.
       </div>`,
   },
   {
@@ -160,17 +160,13 @@ const GUIDE_SECTIONS = [
     icon: '&#9670;',
     title: 'Deal Room Management',
     content: `
-      <p class="guide-intro">The Deal Room is your command centre for summit-ready leads. Only shortlisted, invited, and funded applications appear here.</p>
+      <p class="guide-intro">The Deal Room is your command centre for qualified leads. Only shortlisted, invited, and funded applications appear here.</p>
 
-      <h4>Summit Access vs Deal Room Entry</h4>
+      <h4>Deal Room Access</h4>
       <div class="guide-feature-grid">
         <div class="guide-feature">
-          <h4>Summit Access</h4>
-          <p>Grants the applicant entry to the BeMore Summit event (30-31 March). Toggle the checkbox on each deal card.</p>
-        </div>
-        <div class="guide-feature">
           <h4>Deal Room Entry</h4>
-          <p>Grants access to the exclusive deal room sessions where applicants present to funding partners. More selective than general summit access.</p>
+          <p>Grants access to the exclusive deal room sessions where applicants present to funding partners. Toggle the checkbox on each deal card.</p>
         </div>
       </div>
 
@@ -207,7 +203,7 @@ const GUIDE_SECTIONS = [
         <div class="guide-report" style="border-color:#e8a47a">
           <h4 style="color:#e8a47a">Deal Room Shortlist</h4>
           <p>All applicants with <strong>shortlisted</strong> or <strong>invited</strong> status — your active deal pipeline.</p>
-          <div class="guide-report-use">Use for: Summit preparation and deal room scheduling</div>
+          <div class="guide-report-use">Use for: Deal room scheduling and pipeline review</div>
         </div>
       </div>
 
@@ -237,7 +233,7 @@ const GUIDE_SECTIONS = [
         </div>
         <div class="guide-feature">
           <h4>Demographics</h4>
-          <p>Understand your pipeline composition: estimated project values, previous funding experience, and land status. Use this to tailor your summit agenda.</p>
+          <p>Understand your pipeline composition: estimated project values, previous funding experience, and land status. Use this to tailor your engagement strategy.</p>
         </div>
         <div class="guide-feature">
           <h4>Engagement Sources</h4>
@@ -245,7 +241,7 @@ const GUIDE_SECTIONS = [
         </div>
         <div class="guide-feature">
           <h4>Deal Room Metrics</h4>
-          <p>Track how many applicants have summit access vs deal room entry. Monitor PBSA assignment rates across the pipeline.</p>
+          <p>Track how many applicants have deal room entry. Monitor PBSA assignment rates across the pipeline.</p>
         </div>
       </div>`,
   },
@@ -288,7 +284,7 @@ const GUIDE_SECTIONS = [
       </div>
 
       <div class="guide-tip">
-        <strong>Pro Tip:</strong> After the summit, check the Dashboard's "Engagement Sources" card to see exactly how many applications came from each material type.
+        <strong>Pro Tip:</strong> Check the Dashboard's "Engagement Sources" card to see exactly how many applications came from each material type.
       </div>`,
   },
   {
@@ -314,7 +310,7 @@ const GUIDE_SECTIONS = [
         </div>
         <div class="guide-feature">
           <h4>System Events</h4>
-          <p>Email notifications sent, summit reminders dispatched. Verify that communications were delivered.</p>
+          <p>Email notifications sent, reminders dispatched. Verify that communications were delivered.</p>
         </div>
       </div>
 
@@ -345,7 +341,7 @@ const GUIDE_SECTIONS = [
         </div>
         <div class="guide-email">
           <div class="guide-email-trigger">Status → Invited</div>
-          <div class="guide-email-subject">Summit Invitation</div>
+          <div class="guide-email-subject">Invitation</div>
           <p>Formal invitation with full event details: 30-31 March, Sandton Convention Centre, dress code.</p>
         </div>
         <div class="guide-email">
@@ -355,7 +351,7 @@ const GUIDE_SECTIONS = [
         </div>
         <div class="guide-email">
           <div class="guide-email-trigger">Manual Send</div>
-          <div class="guide-email-subject">Summit Reminder</div>
+          <div class="guide-email-subject">Reminder</div>
           <p>Sent via the send-reminders API. Use for last-minute reminders before the event.</p>
         </div>
       </div>

@@ -2,12 +2,13 @@ import type { Page, ProfileCategory } from '../../types/index.ts';
 import { CATEGORIES } from '../../constants/categories.ts';
 import { store } from '../../store.ts';
 import { navigate } from '../../router.ts';
+import { tracker } from '../../services/tracker.ts';
 
 export const gatewayPage: Page = {
   render() {
     const total = CATEGORIES.length;
     const cards = CATEGORIES.map((c, i) => `
-      <div class="gc" data-profile="${c.slug}" tabindex="0" role="button" aria-label="${c.title}">
+      <div class="gc" data-profile="${c.slug}" data-track="Gateway — ${c.title}" tabindex="0" role="button" aria-label="${c.title}">
         <div class="gc-num">${String(i + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}</div>
         <div class="gc-ico" aria-hidden="true">${c.icon}</div>
         <div class="gc-title">${c.title}</div>
@@ -31,6 +32,7 @@ export const gatewayPage: Page = {
       const handler = () => {
         const profile = card.dataset.profile;
         if (profile) {
+          tracker.trackEvent('form_funnel', 'profile_selected', profile);
           store.set('selectedProfile', profile as ProfileCategory);
           store.set('currentStep', 1);
           store.set('formData', {});

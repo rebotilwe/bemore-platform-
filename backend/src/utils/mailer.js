@@ -14,16 +14,28 @@ let transporter = null;
 
 function getTransporter() {
   if (!transporter && config.mail.host) {
+    if (!config.mail.user || !config.mail.pass) {
+      logger.warn('SMTP credentials missing — emails will not be sent. Set SMTP_USER and SMTP_PASS env vars.');
+      return null;
+    }
     transporter = nodemailer.createTransport({
       host: config.mail.host,
       port: config.mail.port,
       secure: config.mail.port === 465,
       auth: { user: config.mail.user, pass: config.mail.pass },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000,
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 30000,
+      tls: { rejectUnauthorized: false },
     });
-    logger.info(`Mail transporter created: ${config.mail.host}:${config.mail.port}`);
+    logger.info(`Mail transporter created: ${config.mail.host}:${config.mail.port} (user: ${config.mail.user})`);
+
+    // Verify connection on startup (non-blocking)
+    transporter.verify().then(() => {
+      logger.info('SMTP connection verified — emails ready');
+    }).catch(err => {
+      logger.error(`SMTP verification failed: ${err.code || err.message}. Emails may not send.`);
+    });
   }
   return transporter;
 }
@@ -91,18 +103,14 @@ const STATUS_MESSAGES = {
     `,
   },
   invited: {
-    subject: 'Summit Invitation — BeMore 2026',
-    heading: 'You\'re Invited to the BeMore Summit',
+    subject: 'You\'re Invited — BeMore SME Access Initiative',
+    heading: 'You\'re Invited',
     body: `
-      You have been formally <strong>invited</strong> to the BeMore SME Access Initiative Summit.
+      You have been formally <strong>invited</strong> to participate in the BeMore SME Access Initiative.
       <br><br>
-      <strong>Event Details:</strong><br>
-      &bull; Date: 30 &ndash; 31 March 2026<br>
-      &bull; Venue: Sandton Convention Centre<br>
-      &bull; Dress Code: Smart Casual<br>
-      <br>
-      Please confirm your attendance by replying to this email. Watch for your personal
-      invitation with full event details and agenda.
+      Our team will be in touch with full details and next steps.
+      <br><br>
+      Please confirm your attendance by replying to this email.
     `,
   },
   funded: {
@@ -144,7 +152,7 @@ export async function sendStatusNotification(to, refNumber, firstName, newStatus
 }
 
 // ══════════════════════════════════════════════════════════════
-//  3. SUMMIT REMINDER (callable from admin)
+//  3. REMINDER (callable from admin)
 // ══════════════════════════════════════════════════════════════
 export async function sendSummitReminder(to, refNumber, firstName) {
   const t = getTransporter();
@@ -154,28 +162,23 @@ export async function sendSummitReminder(to, refNumber, firstName) {
     await t.sendMail({
       from: fromAddress(),
       to,
-      subject: `Summit Reminder — BeMore 2026 (${refNumber})`,
-      html: buildEmail(firstName, refNumber, 'Summit Reminder', `
-        This is a friendly reminder about the upcoming <strong>BeMore SME Access Initiative Summit</strong>.
+      subject: `Reminder — BeMore SME Access Initiative (${refNumber})`,
+      html: buildEmail(firstName, refNumber, 'Reminder', `
+        This is a friendly reminder about your application to the <strong>BeMore SME Access Initiative</strong>.
         <br><br>
-        <strong>Event Details:</strong><br>
-        &bull; Date: 30 &ndash; 31 March 2026<br>
-        &bull; Venue: Sandton Convention Centre, Sandton<br>
-        &bull; Time: Registration from 08:00<br>
-        <br>
-        Please ensure you arrive on time. Bring this email or your reference number for check-in.
+        Please check your application status using the link below, and don't hesitate to reach out if you have any questions.
         <br><br>
-        We look forward to seeing you there!
+        We look forward to engaging with you!
       `, [
+        { label: 'Check My Status', url: `${PLATFORM_URL}/#/status` },
         { label: 'View Platform', url: PLATFORM_URL },
-        { label: 'Join Live Poll', url: `${PLATFORM_URL}/#/mentee-meter` },
       ]),
     });
-    logEmail(to, `Summit Reminder — BeMore 2026 (${refNumber})`, 'summit_reminder', refNumber, 'sent');
-    logger.info(`Summit reminder sent to ${to} (${refNumber})`);
+    logEmail(to, `Reminder — BeMore (${refNumber})`, 'reminder', refNumber, 'sent');
+    logger.info(`Reminder sent to ${to} (${refNumber})`);
   } catch (err) {
-    logEmail(to, `Summit Reminder — BeMore 2026 (${refNumber})`, 'summit_reminder', refNumber, 'failed', err.message);
-    logger.error(`Summit reminder email failed: ${err.message}`);
+    logEmail(to, `Reminder — BeMore (${refNumber})`, 'reminder', refNumber, 'failed', err.message);
+    logger.error(`Reminder email failed: ${err.message}`);
   }
 }
 
@@ -224,16 +227,6 @@ function buildEmail(firstName, refNumber, heading, bodyHtml, buttons = []) {
 
         <!-- CTA Buttons -->
         ${buttonHtml}
-
-        <!-- Summit Card -->
-        <div style="background:#0a0a0f;border-radius:8px;padding:20px;text-align:center;margin:24px 0">
-          <p style="color:#c9a84c;font-size:14px;font-weight:600;letter-spacing:1px;margin:0 0 4px">
-            BeMore Summit 2026
-          </p>
-          <p style="color:#b4b4c4;margin:0;font-size:13px">
-            30 &ndash; 31 March 2026 &middot; Sandton Convention Centre
-          </p>
-        </div>
 
         <!-- Footer note -->
         <p style="color:#8a8a9a;font-size:12px;margin-top:32px;line-height:1.6">

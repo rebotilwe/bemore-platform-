@@ -2,6 +2,7 @@ import type {
   ApiResponse, PaginatedResponse, StatsData, LoginResponse, ReportData,
   Application, SubmitPayload, UpdatePayload, FilterParams, ReportName,
   AnalyticsDashboard, FunnelData, TrendData, TagAnalytics, DemographicsData, DealRoomAnalytics,
+  TrafficOverview, TrafficTrends, ReferrerData, DeviceData, HourlyData, FormFunnelData, ClickData,
 } from './types/index.ts';
 import { store, localStore } from './store.ts';
 import { autoTag } from './utils/auto-tag.ts';
@@ -259,6 +260,29 @@ export const api = {
   },
   async getAnalyticsDealRoom(): Promise<ApiResponse<DealRoomAnalytics>> {
     return request('GET', '/insights/deal-room');
+  },
+
+  // ── Traffic Analytics ──
+  async getTrafficOverview(range = '30d'): Promise<ApiResponse<TrafficOverview>> {
+    return request('GET', `/insights/traffic?range=${range}`);
+  },
+  async getTrafficTrends(granularity = 'day', range = '30d'): Promise<ApiResponse<TrafficTrends>> {
+    return request('GET', `/insights/traffic/trends?granularity=${granularity}&range=${range}`);
+  },
+  async getTrafficReferrers(range = '30d'): Promise<ApiResponse<ReferrerData>> {
+    return request('GET', `/insights/traffic/referrers?range=${range}`);
+  },
+  async getTrafficDevices(range = '30d'): Promise<ApiResponse<DeviceData>> {
+    return request('GET', `/insights/traffic/devices?range=${range}`);
+  },
+  async getTrafficHours(range = '30d'): Promise<ApiResponse<HourlyData>> {
+    return request('GET', `/insights/traffic/hours?range=${range}`);
+  },
+  async getTrafficFormFunnel(range = '30d'): Promise<ApiResponse<FormFunnelData>> {
+    return request('GET', `/insights/traffic/form-funnel?range=${range}`);
+  },
+  async getTrafficClicks(range = '30d'): Promise<ApiResponse<ClickData>> {
+    return request('GET', `/insights/traffic/clicks?range=${range}`);
   },
 
   async getAuditLog(queryString: string): Promise<PaginatedResponse<unknown>> {

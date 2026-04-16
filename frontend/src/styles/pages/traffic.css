@@ -1,0 +1,104 @@
+/* ═══════════════════════════════════════════════════
+   TRAFFIC DASHBOARD — extends analytics base styles
+   ═══════════════════════════════════════════════════ */
+
+/* Granularity buttons (scoped to traffic page to avoid clash) */
+.tf-gran {
+  padding: var(--sp-1) var(--sp-3);
+  background: var(--ink-soft);
+  border: none;
+  color: var(--steel);
+  font-family: 'DM Sans', sans-serif;
+  font-size: var(--fs-overline);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--dur-short);
+}
+
+.tf-gran:hover {
+  color: var(--cream);
+}
+
+.tf-gran.active {
+  background: rgba(201,168,76,0.15);
+  color: var(--gold);
+  font-weight: 600;
+}
+
+/* Funnel dropoff indicator */
+.tf-dropoff {
+  color: var(--red, #e57373);
+  font-size: var(--fs-overline);
+}
+
+/* ── Heatmap ── */
+.heatmap-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: var(--sp-2);
+}
+
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: 48px repeat(24, 1fr);
+  gap: 2px;
+  min-width: 600px;
+}
+
+.heatmap-corner {
+  /* Empty top-left cell */
+}
+
+.heatmap-hour-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--steel);
+  text-align: center;
+  padding-bottom: var(--sp-1);
+}
+
+.heatmap-day-label {
+  font-family: 'DM Mono', monospace;
+  font-size: var(--fs-label-sm);
+  color: var(--steel-light);
+  display: flex;
+  align-items: center;
+  padding-right: var(--sp-2);
+}
+
+.heatmap-cell {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  min-height: 16px;
+  cursor: default;
+  transition: transform var(--dur-short);
+  position: relative;
+}
+
+.heatmap-cell:hover {
+  transform: scale(1.15);
+  z-index: 1;
+  outline: 1px solid var(--gold);
+}
+
+/* ═══ Responsive ═══ */
+@media (min-width: 600px) {
+  .heatmap-cell {
+    min-height: 20px;
+  }
+
+  .heatmap-hour-label {
+    font-size: 10px;
+  }
+}
+
+@media (min-width: 905px) {
+  .heatmap-cell {
+    min-height: 28px;
+  }
+
+  .heatmap-grid {
+    min-width: auto;
+  }
+}

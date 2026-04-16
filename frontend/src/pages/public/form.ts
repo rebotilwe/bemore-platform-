@@ -11,6 +11,7 @@ import { renderStepReadiness, mountStepReadiness } from './form-steps/step-readi
 import { renderStepFunding, mountStepFunding } from './form-steps/step-funding.ts';
 import { renderStepProject } from './form-steps/step-project.ts';
 import { renderStepConfirm, mountStepConfirm } from './form-steps/step-confirm.ts';
+import { tracker } from '../../services/tracker.ts';
 
 const TOTAL = 5;
 
@@ -132,7 +133,13 @@ function renderStepContent(): string {
    ══════════════════════════════════════════════ */
 
 function goToStep(newStep: number): void {
+  const prevStep = getStep();
   saveCurrentStepData();
+  // Track step completion when advancing
+  if (newStep > prevStep) {
+    const stepLabel = FORM_STEPS[prevStep - 1]?.title || `Step ${prevStep}`;
+    tracker.trackEvent('form_funnel', 'form_step_complete', stepLabel, prevStep);
+  }
   store.set('currentStep', newStep);
   // Re-render just the form content area — NOT the whole page
   const body = document.querySelector('.form-body');
@@ -154,9 +161,9 @@ function goToStep(newStep: number): void {
   prog.innerHTML = renderProgress();
 
   foot.innerHTML = `
-    ${step > 1 ? '<button class="btn-secondary" id="btn-prev">← Previous</button>' : ''}
-    ${!isLast ? '<button class="btn-primary" id="btn-next">Continue →</button>' : ''}
-    ${isLast ? '<button class="btn-primary" id="btn-submit">Submit Application →</button>' : ''}`;
+    ${step > 1 ? '<button class="btn-secondary" id="btn-prev" data-track="Form — Previous">← Previous</button>' : ''}
+    ${!isLast ? '<button class="btn-primary" id="btn-next" data-track="Form — Continue">Continue →</button>' : ''}
+    ${isLast ? '<button class="btn-primary" id="btn-submit" data-track="Form — Submit">Submit Application →</button>' : ''}`;
 
   if (stepLbl) stepLbl.textContent = `STEP ${step + 1} OF ${TOTAL + 1}`;
   if (backBtn) {
@@ -214,7 +221,6 @@ function validate(): boolean {
     return true;
   }
   if (step === 5) {
-    if (!getRadioVal('r-attend')) { toast('Please confirm your summit attendance'); return false; }
     if (!document.getElementById('consent-tc')?.classList.contains('sel')) { toast('Please accept the Terms & Conditions'); return false; }
     if (!document.getElementById('consent-popia')?.classList.contains('sel')) { toast('Please provide POPIA consent'); return false; }
     return true;
@@ -244,7 +250,6 @@ function collectAllFormData(): Record<string, unknown> {
     previousFunding: getRad('r-prevfund'),
     projectDescription: get('t-project'),
     whyChooseYou: get('t-why'),
-    summitAttendance: getRad('r-attend'),
     tcAccepted: true, popiaConsent: true,
   };
 
@@ -333,6 +338,7 @@ async function handleSubmit(): Promise<void> {
   });
 
   if (result.success && result.data) {
+    tracker.trackEvent('form_funnel', 'form_submitted', store.get('selectedProfile') || '', TOTAL);
     store.set('formData', { refNumber: result.data.refNumber });
     store.set('currentStep', 1);
     navigate('/success');
@@ -372,7 +378,7 @@ export const formPage: Page = {
     return `
     <section class="form-view">
       <div class="form-bar">
-        <button class="btn-ghost" id="form-back">${step === 1 ? '← Change Profile' : '← Back'}</button>
+        <button class="btn-ghost" id="form-back" data-track="Form — Back">${step === 1 ? '← Change Profile' : '← Back'}</button>
         <span class="form-step-lbl mono">STEP ${step + 1} OF ${TOTAL + 1}</span>
       </div>
       <div class="form-prog"><div class="prog-steps">${renderProgress()}</div></div>
@@ -384,15 +390,17 @@ export const formPage: Page = {
       <div class="form-foot">
         <p class="form-note"><strong>🔒 Secure</strong> · SSL Encrypted · POPIA Compliant · <span id="save-indicator" class="save-indicator">Progress auto-saved</span></p>
         <div class="form-btns">
-          ${step > 1 ? '<button class="btn-secondary" id="btn-prev">← Previous</button>' : ''}
-          ${!isLast ? '<button class="btn-primary" id="btn-next">Continue →</button>' : ''}
-          ${isLast ? '<button class="btn-primary" id="btn-submit">Submit Application →</button>' : ''}
+          ${step > 1 ? '<button class="btn-secondary" id="btn-prev" data-track="Form — Previous">← Previous</button>' : ''}
+          ${!isLast ? '<button class="btn-primary" id="btn-next" data-track="Form — Continue">Continue →</button>' : ''}
+          ${isLast ? '<button class="btn-primary" id="btn-submit" data-track="Form — Submit">Submit Application →</button>' : ''}
         </div>
       </div>
     </section>`;
   },
   mount() {
     cleanupFns = [];
+    // Track form start
+    tracker.trackEvent('form_funnel', 'form_start', store.get('selectedProfile') || '', 1);
     // Back button (goes to gateway or previous step)
     addListener(document.getElementById('form-back'), 'click', () => {
       if (getStep() === 1) navigate('/gateway');

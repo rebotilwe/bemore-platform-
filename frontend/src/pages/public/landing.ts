@@ -1,5 +1,5 @@
 import type { Page } from '../../types/index.ts';
-import { SUMMIT_CONFIG } from '../../constants/summit-config.ts';
+import { store } from '../../store.ts';
 
 export const landingPage: Page = {
   render() {
@@ -31,35 +31,29 @@ export const landingPage: Page = {
           built environment professionals with institutional funding.
         </p>
 
-        <!-- Summit Info -->
-        ${SUMMIT_CONFIG.ACTIVE ? `<div class="landing-summit fade-up stagger-2">
-          <div class="landing-summit-date display">${SUMMIT_CONFIG.DATE}</div>
-          <div class="landing-summit-venue">${SUMMIT_CONFIG.VENUE}</div>
-        </div>` : ''}
-
         <!-- Primary CTAs -->
         <div class="landing-ctas fade-up stagger-3">
-          <a class="landing-cta-primary" href="#/gateway">
+          <a class="landing-cta-primary" href="#/gateway" data-track="Landing — Start Application">
             <span class="landing-cta-icon">&#9654;</span>
             <span class="landing-cta-text">
               <span class="landing-cta-title">Start Your Application</span>
               <span class="landing-cta-desc">Submit your profile for merit-based review</span>
             </span>
           </a>
-          <a class="landing-cta-secondary" href="#/mentee-meter">
+          ${store.get('pollsEnabled') ? `<a class="landing-cta-secondary" href="#/mentee-meter" data-track="Landing — Join Live Session">
             <span class="landing-cta-icon">&#9881;</span>
             <span class="landing-cta-text">
               <span class="landing-cta-title">Join Live Session</span>
               <span class="landing-cta-desc">Engage with the Mentee Meter live poll</span>
             </span>
-          </a>
+          </a>` : ''}
         </div>
 
         <!-- Quick Links -->
         <div class="landing-links fade-up stagger-4">
-          <a class="landing-link" href="#/about">About BeMore</a>
+          <a class="landing-link" href="#/about" data-track="Landing — About">About BeMore</a>
           <span class="landing-link-sep" aria-hidden="true">&middot;</span>
-          <a class="landing-link" href="#/">Explore Platform</a>
+          <a class="landing-link" href="#/" data-track="Landing — Explore">Explore Platform</a>
         </div>
       </div>
 

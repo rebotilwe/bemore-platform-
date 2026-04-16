@@ -342,7 +342,7 @@ function bindBulkActions(): void {
     });
   });
 
-  // Send summit reminders
+  // Send reminders
   document.getElementById('bulk-remind')?.addEventListener('click', async () => {
     if (!selectedIds.size) { toast('No leads selected'); return; }
 
@@ -353,7 +353,7 @@ function bindBulkActions(): void {
 
       const res = await api.sendReminders([...selectedIds]);
       if (res.success) {
-        toast(`Summit reminders sent to ${res.data?.sent ?? count} applicant${(res.data?.sent ?? count) !== 1 ? 's' : ''}`);
+        toast(`Reminders sent to ${res.data?.sent ?? count} applicant${(res.data?.sent ?? count) !== 1 ? 's' : ''}`);
         selectedIds.clear();
         updateBulkBar();
       } else {

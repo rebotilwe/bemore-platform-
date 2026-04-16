@@ -174,9 +174,8 @@ export function renderAppDetail(app: Application): string {
         ${fullRow('Project Description', fd.projectDescription as string)}
         ${fullRow('Why Should BeMore Choose You', fd.whyChooseYou as string)}
 
-        ${sectionLabel('Summit & Consent')}
+        ${sectionLabel('Consent')}
         <div class="detail-grid">
-          ${row('Summit Attendance', fd.summitAttendance as string)}
           ${row('T&Cs Accepted', fd.tcAccepted ? 'Yes' : 'No')}
           ${row('POPIA Consent', fd.popiaConsent ? 'Yes' : 'No')}
         </div>
@@ -192,7 +191,6 @@ export function renderAppDetail(app: Application): string {
 
         ${sectionLabel('Deal Room')}
         <div class="detail-grid">
-          ${row('Summit Access', app.dealRoom?.summitAccess ? 'Yes — Granted' : 'No')}
           ${row('Deal Room Entry', app.dealRoom?.dealRoomEntry ? 'Yes — Granted' : 'No')}
         </div>
         ${funders ? `<div class="detail-row"><div class="detail-key">Assigned Funders</div><div class="detail-val">${funders}</div></div>` : ''}

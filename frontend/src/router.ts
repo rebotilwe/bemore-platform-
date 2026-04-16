@@ -1,5 +1,6 @@
 import type { Page, RouteConfig } from './types/index.ts';
 import { authGuard, verifySession } from './auth.ts';
+import { tracker } from './services/tracker.ts';
 
 // Public pages — eagerly loaded (small, always needed)
 import { heroPage } from './pages/public/hero.ts';
@@ -40,6 +41,7 @@ const routes: RouteConfig[] = [
   { path: '/admin/qr',        page: lazy(() => import('./pages/admin/qr-generator.ts'), 'qrGeneratorPage'), layout: 'admin', guard: authGuard },
   { path: '/admin/guide',     page: lazy(() => import('./pages/admin/guide.ts'), 'guidePage'),              layout: 'admin', guard: authGuard },
   { path: '/admin/polls',     page: lazy(() => import('./pages/admin/polls.ts'), 'pollsPage'),              layout: 'admin', guard: authGuard },
+  { path: '/admin/traffic',   page: lazy(() => import('./pages/admin/traffic.ts'), 'trafficPage'),             layout: 'admin', guard: authGuard },
   { path: '/admin/settings',  page: lazy(() => import('./pages/admin/settings.ts'), 'settingsPage'),          layout: 'admin', guard: authGuard },
 ];
 
@@ -112,6 +114,9 @@ async function render(): Promise<void> {
     }
 
     if (page.mount) page.mount();
+
+    // Track page view (fire-and-forget)
+    tracker.trackPageView(path);
   } catch (err) {
     console.error('Page render error:', err);
     app.innerHTML = `

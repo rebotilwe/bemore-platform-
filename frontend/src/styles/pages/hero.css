@@ -267,20 +267,6 @@ nav {
   margin-top: 4px;
 }
 
-.summit-banner {
-  position: absolute;
-  top: -12px;
-  right: var(--sp-8);
-  padding: 8px 18px;
-  background: var(--gold);
-  border-radius: var(--r-sm);
-  font-size: var(--fs-label-sm);
-  font-weight: 600;
-  color: var(--ink);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
 /* Mobile */
 @media (max-width: 599px) {
   nav {

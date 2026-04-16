@@ -6,7 +6,8 @@ import { api } from './api.ts';
 import { store } from './store.ts';
 import { verifySession } from './auth.ts';
 import { ErrorBoundary } from './components/error-boundary.ts';
-import { loadSummitConfig } from './constants/summit-config.ts';
+
+import { tracker } from './services/tracker.ts';
 
 inject();
 injectSpeedInsights();
@@ -32,8 +33,17 @@ async function init(): Promise<void> {
     sessionStorage.setItem('bm_source', source);
   }
 
-  // Load summit config from backend (non-blocking, uses defaults on failure)
-  if (online) await loadSummitConfig();
+  // Load feature flags from backend (non-blocking)
+  if (online) {
+    api.getSetting('polls_enabled').then(res => {
+      if (res.success && res.data?.value !== undefined) {
+        store.set('pollsEnabled', res.data.value === true || res.data.value === 'true');
+      }
+    }).catch(() => {});
+  }
+
+  // Initialize tracker (visitor/session IDs, UTM capture, click listener)
+  tracker.init();
 
   // Initialize router
   router.init();

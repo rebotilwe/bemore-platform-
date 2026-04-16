@@ -40,6 +40,16 @@ export const voteLimiter = rateLimit({
   skip: () => process.env.NODE_ENV === 'test',
 });
 
+export const trackingLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  message: { success: false, error: 'Too many tracking requests. Please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.ip || req.connection?.remoteAddress || 'unknown',
+  skip: () => process.env.NODE_ENV === 'test',
+});
+
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,

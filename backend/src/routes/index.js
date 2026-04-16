@@ -6,6 +6,7 @@ import reportsRouter from './reports.js';
 import analyticsRouter from './analytics.js';
 import pollsRouter from './polls.js';
 import settingsRouter from './settings.js';
+import trackingRouter from './tracking.js';
 import authMiddleware from '../middleware/auth.js';
 import { adminLimiter } from '../config/rateLimit.js';
 import EmailLog from '../models/EmailLog.js';
@@ -20,6 +21,7 @@ router.use('/analytics', analyticsRouter);
 router.use('/insights', analyticsRouter);
 router.use('/polls', pollsRouter);
 router.use('/settings', settingsRouter);
+router.use('/track', trackingRouter);
 
 // Email logs (admin)
 router.get('/emails/:refNumber', adminLimiter, authMiddleware, async (req, res) => {

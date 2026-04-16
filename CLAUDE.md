@@ -36,11 +36,11 @@ BeMore/
 │   ├── server.js             # Entry: connect DB (retry), seed admin, graceful shutdown, unhandled error handlers
 │   ├── src/
 │   │   ├── app.js            # Express app factory (trust proxy, compression, CORS, helmet)
-│   │   ├── config/           # index.js (env validation), rateLimit.js (5 limiters), db.js (retry logic)
-│   │   ├── models/           # Application, Admin, AnalyticsEvent, EmailLog, Poll, PollResponse, SiteSettings
-│   │   ├── controllers/      # application, auth, analytics, report, poll
-│   │   ├── services/         # applicationService (duplicate check), authService, analyticsService, reportService, pollService, pollSSE
-│   │   ├── routes/           # applications (POPIA endpoints), auth, health, analytics, reports, polls, settings
+│   │   ├── config/           # index.js (env validation), rateLimit.js (6 limiters), db.js (retry logic)
+│   │   ├── models/           # Application, Admin, AnalyticsEvent, EmailLog, Poll, PollResponse, SiteSettings, PageView, TrackingEvent
+│   │   ├── controllers/      # application, auth, analytics, report, poll, traffic
+│   │   ├── services/         # applicationService (duplicate check), authService, analyticsService, reportService, pollService, pollSSE, trafficService
+│   │   ├── routes/           # applications (POPIA endpoints), auth, health, analytics, reports, polls, settings, tracking
 │   │   ├── middleware/       # auth (JWT), errorHandler, requestLogger, validate
 │   │   └── utils/            # autoTag, mailer (nodemailer + EmailLog tracking), logger (winston)
 │   └── __tests__/            # Jest + mongodb-memory-server (71 tests)
@@ -83,13 +83,15 @@ cd frontend && npx vitest run -t "pattern"
 ### Routing (Frontend)
 Hash-based SPA router (`/#/path`). Routes defined in `src/router.ts`:
 - **Public**: `/`, `/gateway`, `/register`, `/about`, `/success`, `/landing`, `/mentee-meter`, `/status`
-- **Admin** (auth guarded): `/admin/login`, `/admin/dashboard`, `/admin/leads`, `/admin/analytics`, `/admin/reports`, `/admin/deal-room`, `/admin/audit-log`, `/admin/qr`, `/admin/polls`, `/admin/guide`, `/admin/settings`
+- **Admin** (auth guarded): `/admin/login`, `/admin/dashboard`, `/admin/leads`, `/admin/analytics`, `/admin/traffic`, `/admin/reports`, `/admin/deal-room`, `/admin/audit-log`, `/admin/qr`, `/admin/polls`, `/admin/guide`, `/admin/settings`
 
 ### API (Backend)
 - **Public**: `POST /api/applications`, `POST /api/applications/lookup`, `POST /api/applications/data-export`, `POST /api/applications/data-delete`, `GET /api/health`, `GET /api/settings/public/:key`
 - **Admin** (JWT): `GET/PATCH /api/applications`, `GET /api/applications/stats`, `GET /api/applications/export/csv`, `POST /api/applications/bulk-status`, `POST /api/applications/send-reminders`, `GET /api/reports/:name`, `POST /api/auth/login`, `GET /api/auth/verify`, `GET/PUT /api/settings`, `GET /api/emails/:refNumber`
 - **Analytics** (JWT): `GET /api/analytics/{dashboard,funnel,trends,tags,demographics,deal-room,events}` (also aliased at `/api/insights/*`)
 - **Polls** (mixed): `GET /api/polls/active` (public), `POST /api/polls/:id/vote` (public), `GET /api/polls/:id/live` (SSE, public), `GET/POST/PATCH/DELETE /api/polls` (JWT), `PATCH /api/polls/:id/status` (JWT), `PATCH /api/polls/:id/activate` (JWT), `GET /api/polls/:id/results` (JWT)
+- **Tracking** (public, rate-limited): `POST /api/track/pageview`, `POST /api/track/event`, `POST /api/track/heartbeat`
+- **Traffic** (JWT): `GET /api/insights/traffic`, `GET /api/insights/traffic/{trends,referrers,devices,hours,form-funnel,clicks}`
 - **Reports** (JWT): `GET /api/reports/{high-value-developers,pipeline-ready-land,institutional-grade-housing,deal-room-shortlist}`
 
 ### Application Data Model
@@ -138,6 +140,9 @@ Key-value store (`SiteSettings` model) for admin-configurable values (e.g., Ment
 
 ### Summit Config Toggle
 `summit_config` setting (JSON object with `active`, `date`, `venue`, etc.) controls summit-specific content across hero, landing, success, and form-confirm pages. Toggle via `/#/admin/settings`. When `active: false`, all summit banners, dates, and venue references are hidden.
+
+### Site Traffic Analytics
+Client-side tracker (`frontend/src/services/tracker.ts`) tracks page views, sessions, form funnel steps, and CTA clicks. Tracking is fire-and-forget using `sendBeacon`/`fetch` to `POST /api/track/*` endpoints. Data stored in `PageView` and `TrackingEvent` MongoDB collections (1-year TTL). Server-side UA parsing via `ua-parser-js`. Admin dashboard at `/#/admin/traffic` shows KPIs, trends, top pages, form funnel, traffic sources, device breakdown, hourly heatmap, and top CTAs. Public pages use `data-track` attributes on CTA elements for click tracking via delegated event listener.
 
 ### Demo Mode
 Frontend auto-detects backend via `GET /api/health`. If offline, falls back to `localStorage` with full CRUD. Admin credentials are set via environment variables.

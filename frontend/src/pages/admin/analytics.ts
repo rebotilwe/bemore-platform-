@@ -3,35 +3,8 @@ import type { FunnelData, TrendData, TagAnalytics, DemographicsData, DealRoomAna
 import { api } from '../../api.ts';
 import { CATEGORY_LABELS } from '../../constants/categories.ts';
 import { mountAdminLayout } from './layout.ts';
-
-// ── Chart helpers ──
-
-function barChart(items: { label: string; value: number; color?: string }[]): string {
-  if (!items.length) return '<p class="an-empty">No data</p>';
-  const max = Math.max(...items.map(i => i.value), 1);
-  return `<div class="bar-chart">${items.map(i => {
-    const pct = Math.round((i.value / max) * 100);
-    const color = i.color || 'var(--gold)';
-    return `
-      <div class="bar-row">
-        <div class="bar-label">${i.label}</div>
-        <div class="bar-track">
-          <div class="bar-fill" style="width:${pct}%;background:${color}"></div>
-        </div>
-        <div class="bar-value">${i.value}</div>
-      </div>`;
-  }).join('')}</div>`;
-}
-
-function donutStat(value: number, label: string, color: string): string {
-  return `
-    <div class="an-donut">
-      <div class="an-donut-ring" style="--donut-color:${color}">
-        <span class="an-donut-val display">${value}</span>
-      </div>
-      <div class="an-donut-lbl">${label}</div>
-    </div>`;
-}
+import { barChart, donutStat, renderTrendChart } from '../../components/charts.ts';
+import type { TrendPoint } from '../../components/charts.ts';
 
 // ── Section renderers ──
 
@@ -106,34 +79,13 @@ function renderFunnel(data: FunnelData): string {
   </div>`;
 }
 
+function trendDataToPoints(data: TrendData): TrendPoint[] {
+  return data.data.map(d => ({ period: d.period, value: d.total }));
+}
+
 function renderTrends(data: TrendData): string {
   const total = data.data.reduce((s, d) => s + d.total, 0);
-  const max = Math.max(...data.data.map(d => d.total), 1);
-
-  let chart = '<p class="an-empty">No submissions in this period.</p>';
-  if (data.data.length) {
-    const barW = Math.max(Math.floor(100 / data.data.length) - 1, 2);
-    chart = `
-    <div class="trend-chart">
-      <div class="trend-y-axis">
-        <span>${max}</span>
-        <span>${Math.round(max / 2)}</span>
-        <span>0</span>
-      </div>
-      <div class="trend-bars">
-        ${data.data.map(d => {
-          const pct = Math.round((d.total / max) * 100);
-          const label = d.period.length > 5 ? d.period.slice(5) : d.period;
-          return `<div class="trend-bar-wrap" style="width:${barW}%">
-            <div class="trend-bar" style="height:${Math.max(pct, 3)}%" title="${d.period}: ${d.total}">
-              ${d.total > 0 ? `<span class="trend-bar-tip">${d.total}</span>` : ''}
-            </div>
-            <div class="trend-bar-lbl">${label}</div>
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`;
-  }
+  const chart = renderTrendChart(trendDataToPoints(data));
 
   return `
   <div class="an-section">
@@ -227,6 +179,13 @@ function renderDealRoom(data: DealRoomAnalytics): string {
 // ── Page ──
 
 let currentRange = '30d';
+let cleanupFns: (() => void)[] = [];
+
+function addCleanup(el: Element | null, event: string, handler: EventListener): void {
+  if (!el) return;
+  el.addEventListener(event, handler);
+  cleanupFns.push(() => el.removeEventListener(event, handler));
+}
 
 export const analyticsPage: Page = {
   render() {
@@ -250,17 +209,24 @@ export const analyticsPage: Page = {
 
   mount() {
     mountAdminLayout();
+    cleanupFns = [];
     currentRange = '30d';
     loadAnalytics();
 
     document.querySelectorAll('.an-range').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      const handler = (e: Event) => {
         currentRange = (e.currentTarget as HTMLButtonElement).dataset.range || '30d';
         document.querySelectorAll('.an-range').forEach(b => b.classList.remove('active'));
         (e.currentTarget as HTMLElement).classList.add('active');
         loadAnalytics();
-      });
+      };
+      addCleanup(btn, 'click', handler);
     });
+  },
+
+  unmount() {
+    cleanupFns.forEach(fn => fn());
+    cleanupFns = [];
   },
 };
 
@@ -311,34 +277,7 @@ async function loadAnalytics(): Promise<void> {
       const res = await api.getAnalyticsTrends(gran, currentRange);
       if (res.success && res.data) {
         const total = res.data.data.reduce((s, d) => s + d.total, 0);
-        const max = Math.max(...res.data.data.map(d => d.total), 1);
-        if (!res.data.data.length) {
-          area.innerHTML = '<p class="an-empty">No submissions in this period.</p>';
-          return;
-        }
-        const barW = Math.max(Math.floor(100 / res.data.data.length) - 1, 2);
-        area.innerHTML = `
-        <div class="trend-chart">
-          <div class="trend-y-axis">
-            <span>${max}</span>
-            <span>${Math.round(max / 2)}</span>
-            <span>0</span>
-          </div>
-          <div class="trend-bars">
-            ${res.data.data.map(d => {
-              const pct = Math.round((d.total / max) * 100);
-              const label = d.period.length > 5 ? d.period.slice(5) : d.period;
-              return `<div class="trend-bar-wrap" style="width:${barW}%">
-                <div class="trend-bar" style="height:${Math.max(pct, 3)}%" title="${d.period}: ${d.total}">
-                  ${d.total > 0 ? `<span class="trend-bar-tip">${d.total}</span>` : ''}
-                </div>
-                <div class="trend-bar-lbl">${label}</div>
-              </div>`;
-            }).join('')}
-          </div>
-        </div>`;
-
-        // Update total stat
+        area.innerHTML = renderTrendChart(trendDataToPoints(res.data));
         const statEl = area.closest('.an-card')?.querySelector('.an-card-stat');
         if (statEl) statEl.textContent = `${total} total`;
       }

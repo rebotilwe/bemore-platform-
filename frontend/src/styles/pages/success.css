@@ -106,36 +106,6 @@
   opacity: 1;
 }
 
-.summit-box {
-  padding: var(--sp-6);
-  background: rgba(201,168,76,0.04);
-  border: 1px dashed rgba(201,168,76,0.25);
-  border-left: 3px solid var(--gold);
-  border-radius: var(--r-md);
-  margin-bottom: var(--sp-8);
-  text-align: left;
-}
-
-.summit-box h4 {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: var(--fs-headline-sm);
-  color: var(--gold);
-  margin-bottom: var(--sp-2);
-}
-
-.summit-box p {
-  font-size: var(--fs-body-sm);
-  color: var(--steel-light);
-}
-
-.summit-box .accent {
-  color: var(--gold);
-  font-size: var(--fs-label-md);
-  margin-top: var(--sp-2);
-  display: block;
-  font-style: italic;
-}
-
 /* Source badge */
 .success-source-badge {
   display: inline-block;

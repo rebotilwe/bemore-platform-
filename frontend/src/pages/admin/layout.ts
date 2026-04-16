@@ -24,6 +24,7 @@ const sidebarSections: SidebarSection[] = [
     label: 'Intelligence',
     items: [
       { label: 'Analytics',    path: '/admin/analytics', icon: '&#9650;' },
+      { label: 'Site Traffic', path: '/admin/traffic', icon: '&#9672;' },
       { label: 'Reports',      path: '/admin/reports', icon: '&#9670;' },
       { label: 'Deal Room',    path: '/admin/deal-room', icon: '&#9733;' },
       { label: 'Mentee Meter', path: '/admin/polls', icon: '&#9879;' },

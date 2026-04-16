@@ -13,7 +13,7 @@ const STATUS_DESCRIPTIONS: Record<string, string> = {
   new: 'Your application has been received and is in the queue for review.',
   reviewing: 'Our team is actively reviewing your profile against our merit-based criteria.',
   shortlisted: 'Congratulations! You have been shortlisted for the BeMore SME Access Initiative.',
-  invited: 'You have been formally invited to the BeMore Summit. Check your email for details.',
+  invited: 'You have been formally invited to the BeMore initiative. Check your email for details.',
   funded: 'Your funding partnership has been confirmed. Our team will be in touch with next steps.',
 };
 
@@ -55,14 +55,14 @@ export const statusPage: Page = {
             <label class="status-label" for="st-email">Email Address</label>
             <input id="st-email" class="status-input" type="email" placeholder="you@example.co.za" />
           </div>
-          <button class="btn-primary full" id="st-lookup-btn">Check Status</button>
+          <button class="btn-primary full" id="st-lookup-btn" data-track="Status — Check Status">Check Status</button>
         </div>
 
         <!-- Results (hidden initially) -->
         <div class="status-result" id="status-result" style="display:none"></div>
 
         <div class="status-links fade-up stagger-4">
-          <a class="btn-ghost" href="#/">← Back to Home</a>
+          <a class="btn-ghost" href="#/" data-track="Status — Back Home">← Back to Home</a>
         </div>
       </div>
     </section>`;
@@ -126,10 +126,6 @@ export const statusPage: Page = {
               <div class="st-info-label">Submitted</div>
               <div class="st-info-val">${formatDate(d.submittedAt)}</div>
             </div>
-            ${d.summitAccess ? `<div class="st-info">
-              <div class="st-info-label">Summit Access</div>
-              <div class="st-info-val" style="color:var(--green)">Granted</div>
-            </div>` : ''}
           </div>
 
           <div class="st-status-msg">

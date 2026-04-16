@@ -1,4 +1,10 @@
+import { store } from '../store.ts';
+
 export function renderNav(_currentPath: string): string {
+  const pollLink = store.get('pollsEnabled')
+    ? '<a class="nav-link" href="#/mentee-meter" data-track="Nav — Live Poll">Live Poll</a>'
+    : '';
+
   return `
     <nav id="main-nav" role="navigation" aria-label="Main navigation">
       <a class="nav-logo" href="#/"><img src="/be-more-group-logo.png" alt="BeMore Group" class="nav-logo-img" /></a>
@@ -6,10 +12,10 @@ export function renderNav(_currentPath: string): string {
         <span></span><span></span><span></span>
       </button>
       <div class="nav-actions" id="nav-actions">
-        <a class="nav-link" href="#/about">About Us</a>
-        <a class="nav-link" href="#/mentee-meter">Live Poll</a>
-        <a class="nav-link" href="#/status">My Status</a>
-        <a class="nav-link" href="#/gateway">Apply Now</a>
+        <a class="nav-link" href="#/about" data-track="Nav — About Us">About Us</a>
+        ${pollLink}
+        <a class="nav-link" href="#/status" data-track="Nav — My Status">My Status</a>
+        <a class="nav-link" href="#/gateway" data-track="Nav — Apply Now">Apply Now</a>
       </div>
     </nav>`;
 }

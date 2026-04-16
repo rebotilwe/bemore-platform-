@@ -79,6 +79,46 @@ export interface DemographicsData {
   byLandStatus: TypeCount[];
 }
 
+// ── Traffic analytics types ──
+export interface TrafficOverview {
+  pageViews: number;
+  uniqueVisitors: number;
+  uniqueSessions: number;
+  avgDuration: number;
+  bounceRate: number;
+  topPages: TypeCount[];
+  dateRange: { start: string; end: string };
+}
+
+export interface TrafficTrends {
+  granularity: string;
+  data: { period: string; views: number; uniqueVisitors: number }[];
+  dateRange: { start: string; end: string };
+}
+
+export interface ReferrerData {
+  referrers: TypeCount[];
+  utmSources: TypeCount[];
+}
+
+export interface DeviceData {
+  byDeviceType: TypeCount[];
+  byBrowser: TypeCount[];
+  byOS: TypeCount[];
+}
+
+export interface HourlyData {
+  data: { _id: { day: number; hour: number }; count: number }[];
+}
+
+export interface FormFunnelData {
+  steps: TypeCount[];
+}
+
+export interface ClickData {
+  clicks: TypeCount[];
+}
+
 export interface DealRoomAnalytics {
   summitAccess: number;
   dealRoomEntry: number;

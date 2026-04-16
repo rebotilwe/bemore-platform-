@@ -1,7 +1,7 @@
 import type { Page } from '../../types/index.ts';
 import { store } from '../../store.ts';
 import { toast } from '../../components/toast.ts';
-import { SUMMIT_CONFIG } from '../../constants/summit-config.ts';
+
 
 export const successPage: Page = {
   render() {
@@ -53,13 +53,6 @@ export const successPage: Page = {
                 <div class="timeline-desc">Qualifying applicants notified</div>
               </div>
             </div>
-            ${SUMMIT_CONFIG.ACTIVE ? `<div class="timeline-step">
-              <div class="timeline-marker">4</div>
-              <div class="timeline-content">
-                <div class="timeline-label">Summit Invitation</div>
-                <div class="timeline-desc">${SUMMIT_CONFIG.DATE} · ${SUMMIT_CONFIG.LOCATION}</div>
-              </div>
-            </div>` : ''}
           </div>
         </div>
 
@@ -72,11 +65,11 @@ export const successPage: Page = {
               <div class="next-step-label">Submit Another Deal</div>
               <div class="next-step-desc">Register a different profile or project</div>
             </a>
-            <a class="next-step-card" href="#/mentee-meter">
+            ${store.get('pollsEnabled') ? `<a class="next-step-card" href="#/mentee-meter">
               <div class="next-step-icon">&#9881;</div>
               <div class="next-step-label">Live Poll</div>
               <div class="next-step-desc">Join the Mentee Meter live session</div>
-            </a>
+            </a>` : ''}
             <a class="next-step-card" href="#/about">
               <div class="next-step-icon">&#9733;</div>
               <div class="next-step-label">Explore the Platform</div>
@@ -86,8 +79,8 @@ export const successPage: Page = {
         </div>
 
         <div class="success-actions fade-up stagger-4" style="display:flex;gap:12px;flex-wrap:wrap">
-          <a class="btn-primary" href="#/status" style="flex:1">Check My Status</a>
-          <a class="btn-ghost" href="#/" style="flex:1">← Return to Homepage</a>
+          <a class="btn-primary" href="#/status" style="flex:1" data-track="Success — Check Status">Check My Status</a>
+          <a class="btn-ghost" href="#/" style="flex:1" data-track="Success — Return Home">← Return to Homepage</a>
         </div>
       </div>
     </section>`;

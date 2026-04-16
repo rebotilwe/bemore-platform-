@@ -5,7 +5,8 @@ export type {
 
 export type {
   ApiResponse, PaginatedResponse, StatsData, LoginResponse, ReportData, TypeCount,
-  AnalyticsDashboard, FunnelData, TrendData, TagAnalytics, DemographicsData, DealRoomAnalytics
+  AnalyticsDashboard, FunnelData, TrendData, TagAnalytics, DemographicsData, DealRoomAnalytics,
+  TrafficOverview, TrafficTrends, ReferrerData, DeviceData, HourlyData, FormFunnelData, ClickData,
 } from './api.ts';
 
 export type { Page, LayoutType, RouteConfig } from './routes.ts';

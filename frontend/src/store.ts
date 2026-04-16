@@ -14,6 +14,7 @@ export interface AppState {
   filters: { userType: string; status: string; search: string; page: number };
   loading: boolean;
   modalOpen: boolean;
+  pollsEnabled: boolean;
 }
 
 type StateKey = keyof AppState;
@@ -38,6 +39,7 @@ class Store {
       filters: { userType: 'all', status: 'all', search: '', page: 1 },
       loading: false,
       modalOpen: false,
+      pollsEnabled: true,
     };
   }
 

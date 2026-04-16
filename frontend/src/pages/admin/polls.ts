@@ -339,15 +339,16 @@ async function openControlPanel(pollId: string): Promise<void> {
   if (!container) return;
   container.innerHTML = '<div class="skeleton skeleton-card"></div>';
 
-  const res = await (api as ApiCall).getPollResults(pollId);
+  const [res, pollRes] = await Promise.all([
+    (api as ApiCall).getPollResults(pollId),
+    (api as ApiCall).getPolls(),
+  ]);
   if (!res.success || !res.data) { toast('Failed to load poll'); loadPollList(); return; }
 
   const data = res.data as Record<string, unknown>;
   controlPoll = data.poll as Record<string, unknown>;
   const results = (data.results as Array<Record<string, unknown>>) || [];
 
-  // Get viewer count
-  const pollRes = await (api as ApiCall).getPolls();
   const fullPoll = ((pollRes.data || []) as Record<string, unknown>[]).find(p => (p._id as string) === pollId);
   if (fullPoll) controlPoll = { ...controlPoll, ...fullPoll };
 
@@ -550,7 +551,7 @@ export const pollsPage: Page = {
     <div class="polls-page">
       <div class="polls-header">
         <h2 class="admin-main-title">Mentee Meter</h2>
-        <p class="polls-header-sub">Create and manage live polls for the summit.</p>
+        <p class="polls-header-sub">Create and manage live polls for engagement sessions.</p>
       </div>
       <div id="polls-content">
         <div class="skeleton skeleton-card"></div>

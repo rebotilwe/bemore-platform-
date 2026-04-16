@@ -9,8 +9,8 @@ import { track } from '../services/analyticsService.js';
 const router = Router();
 
 const ALLOWED_SETTINGS = [
-  'mentimeterEmbedId', 'mentimeter_id', 'summit_config',
-  'summitDate', 'summitVenue', 'summitBannerUrl',
+  'mentimeterEmbedId', 'mentimeter_id',
+  'polls_enabled',
   'registrationOpen', 'maintenanceMode', 'platformAnnouncement',
 ];
 
