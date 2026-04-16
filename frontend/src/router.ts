@@ -1,5 +1,5 @@
 import type { Page, RouteConfig } from './types/index.ts';
-import { authGuard } from './auth.ts';
+import { authGuard, verifySession } from './auth.ts';
 
 // Public pages — eagerly loaded (small, always needed)
 import { heroPage } from './pages/public/hero.ts';
@@ -78,9 +78,17 @@ async function render(): Promise<void> {
     return;
   }
 
-  if (route.guard && !route.guard()) {
-    navigate('/admin/login');
-    return;
+  if (route.guard) {
+    if (!route.guard()) {
+      navigate('/admin/login');
+      return;
+    }
+    // Verify token is still valid with the backend before loading admin pages
+    const valid = await verifySession();
+    if (!valid) {
+      navigate('/admin/login');
+      return;
+    }
   }
 
   if (currentPage?.unmount) currentPage.unmount();
