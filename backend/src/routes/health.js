@@ -24,6 +24,7 @@ async function checkSmtp() {
       port: config.mail.port,
       secure: config.mail.port === 465,
       auth: { user: config.mail.user, pass: config.mail.pass },
+      tls: { rejectUnauthorized: false },
     });
     await Promise.race([t.verify(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))]);
     t.close();
