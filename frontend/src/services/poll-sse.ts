@@ -3,7 +3,7 @@
  * Uses the native EventSource API — zero dependencies.
  */
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+const API_URL = '/api';
 
 export interface PollSSEHandlers {
   onResults?: (data: unknown) => void;

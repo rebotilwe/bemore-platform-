@@ -30,7 +30,7 @@ export const SUMMIT_CONFIG = {
 export async function loadSummitConfig(): Promise<void> {
   if (SUMMIT_CONFIG._loaded) return;
   try {
-    const API_URL = import.meta.env.VITE_API_URL || '/api';
+    const API_URL = '/api';
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 3000);
     const res = await fetch(`${API_URL}/settings/public/summit_config`, {

@@ -7,7 +7,9 @@ import { store, localStore } from './store.ts';
 import { autoTag } from './utils/auto-tag.ts';
 import { generateRefNumber } from './utils/format.ts';
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+// Always use relative /api path — Vercel rewrites it to the Railway backend.
+// Using the Railway URL directly causes CORS preflight failures.
+const API_URL = '/api';
 
 const REQUEST_TIMEOUT = 15000; // 15 seconds
 const RETRY_DELAY = 2000;
