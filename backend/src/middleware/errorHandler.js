@@ -45,10 +45,13 @@ export default function errorHandler(err, req, res, _next) {
     return res.status(401).json({ success: false, message: 'Invalid authentication token' });
   }
 
-  // Default server error
-  res.status(err.status || 500).json({
+  // Client errors (4xx) — always show the message
+  const status = err.status || 500;
+  const isClientError = status >= 400 && status < 500;
+
+  res.status(status).json({
     success: false,
-    message: config.nodeEnv === 'production' ? 'Server error' : err.message,
+    message: isClientError || !config.isProd ? err.message : 'Server error',
     requestId: req.requestId,
   });
 }
