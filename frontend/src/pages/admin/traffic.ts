@@ -58,11 +58,11 @@ function renderKPIs(data: TrafficOverview): string {
       <div class="an-kpi-card-lbl">Sessions</div>
     </div>
     <div class="an-kpi-card">
-      <div class="an-kpi-card-val display">${formatDuration(data.avgDuration)}</div>
+      <div class="an-kpi-card-val display">${formatDuration(data.avgDuration ?? 0)}</div>
       <div class="an-kpi-card-lbl">Avg Duration</div>
     </div>
     <div class="an-kpi-card">
-      <div class="an-kpi-card-val display">${data.bounceRate}%</div>
+      <div class="an-kpi-card-val display">${data.bounceRate ?? 0}%</div>
       <div class="an-kpi-card-lbl">Bounce Rate</div>
     </div>
   </div>`;

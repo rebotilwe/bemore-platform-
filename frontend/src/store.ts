@@ -39,7 +39,7 @@ class Store {
       filters: { userType: 'all', status: 'all', search: '', page: 1 },
       loading: false,
       modalOpen: false,
-      pollsEnabled: true,
+      pollsEnabled: false,
     };
   }
 

@@ -33,13 +33,20 @@ async function init(): Promise<void> {
     sessionStorage.setItem('bm_source', source);
   }
 
-  // Load feature flags from backend (non-blocking)
+  // Load feature flags before rendering (fast — single key lookup)
   if (online) {
-    api.getSetting('polls_enabled').then(res => {
-      if (res.success && res.data?.value !== undefined) {
-        store.set('pollsEnabled', res.data.value === true || res.data.value === 'true');
+    try {
+      const flagRes = await api.getSetting('polls_enabled');
+      if (flagRes.success && flagRes.data?.value !== undefined) {
+        store.set('pollsEnabled', flagRes.data.value === true || flagRes.data.value === 'true');
+      } else {
+        store.set('pollsEnabled', true); // Default to enabled if not set
       }
-    }).catch(() => {});
+    } catch {
+      store.set('pollsEnabled', true); // Default to enabled on error
+    }
+  } else {
+    store.set('pollsEnabled', true); // Demo mode — show everything
   }
 
   // Initialize tracker (visitor/session IDs, UTM capture, click listener)

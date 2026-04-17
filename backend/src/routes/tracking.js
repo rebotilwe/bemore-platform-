@@ -24,9 +24,13 @@ function parseUA(uaString) {
 
 // POST /api/track/pageview
 router.post('/pageview',
-  body('sessionId').isString().notEmpty(),
-  body('visitorId').isString().notEmpty(),
-  body('path').isString().notEmpty(),
+  body('sessionId').isString().notEmpty().isLength({ max: 64 }),
+  body('visitorId').isString().notEmpty().isLength({ max: 64 }),
+  body('path').isString().notEmpty().isLength({ max: 500 }),
+  body('referrer').optional().isString().isLength({ max: 2000 }),
+  body('utmSource').optional().isString().isLength({ max: 200 }),
+  body('utmMedium').optional().isString().isLength({ max: 200 }),
+  body('utmCampaign').optional().isString().isLength({ max: 200 }),
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -57,10 +61,12 @@ router.post('/pageview',
 
 // POST /api/track/event
 router.post('/event',
-  body('sessionId').isString().notEmpty(),
-  body('visitorId').isString().notEmpty(),
+  body('sessionId').isString().notEmpty().isLength({ max: 64 }),
+  body('visitorId').isString().notEmpty().isLength({ max: 64 }),
   body('category').isIn(['click', 'form_funnel', 'interaction', 'scroll', 'download']),
-  body('action').isString().notEmpty(),
+  body('action').isString().notEmpty().isLength({ max: 200 }),
+  body('label').optional().isString().isLength({ max: 500 }),
+  body('path').optional().isString().isLength({ max: 500 }),
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -69,15 +75,22 @@ router.post('/event',
 
     const ua = req.headers['user-agent'] || '';
 
+    // Limit meta to a shallow object with max 1KB serialized
+    let meta = {};
+    if (req.body.meta && typeof req.body.meta === 'object') {
+      const raw = JSON.stringify(req.body.meta);
+      if (raw.length <= 1024) meta = req.body.meta;
+    }
+
     TrackingEvent.create({
       sessionId: req.body.sessionId,
       visitorId: req.body.visitorId,
       category: req.body.category,
       action: req.body.action,
-      label: req.body.label || '',
+      label: (req.body.label || '').slice(0, 500),
       value: req.body.value || 0,
-      path: req.body.path || '',
-      meta: req.body.meta || {},
+      path: (req.body.path || '').slice(0, 500),
+      meta,
       ip: req.ip || '',
       userAgent: ua,
     }).catch(err => logger.error('Failed to save tracking event', { error: err.message }));
@@ -88,8 +101,8 @@ router.post('/event',
 
 // POST /api/track/heartbeat — update page view duration
 router.post('/heartbeat',
-  body('sessionId').isString().notEmpty(),
-  body('path').isString().notEmpty(),
+  body('sessionId').isString().notEmpty().isLength({ max: 64 }),
+  body('path').isString().notEmpty().isLength({ max: 500 }),
   body('duration').isNumeric(),
   (req, res) => {
     const errors = validationResult(req);

@@ -12,10 +12,21 @@ let utmSource = '';
 let utmMedium = '';
 let utmCampaign = '';
 
+function generateId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for older browsers
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
 function getOrCreateId(storageKey: string, storage: Storage): string {
   let id = storage.getItem(storageKey);
   if (!id) {
-    id = crypto.randomUUID();
+    id = generateId();
     storage.setItem(storageKey, id);
   }
   return id;
