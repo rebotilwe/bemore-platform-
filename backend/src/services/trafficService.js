@@ -102,36 +102,12 @@ export async function getReferrerBreakdown(range) {
   const { start, end } = parseDateRange(range);
   const match = { timestamp: { $gte: start, $lte: end } };
 
-  const [referrers, utmSources] = await Promise.all([
+  const [rawReferrers, utmSources] = await Promise.all([
     PageView.aggregate([
       { $match: { ...match, referrer: { $ne: '' } } },
-      {
-        $project: {
-          domain: {
-            $let: {
-              vars: {
-                ref: '$referrer',
-              },
-              in: {
-                $cond: [
-                  { $regexMatch: { input: '$$ref', regex: /^https?:\/\/([^/]+)/ } },
-                  {
-                    $arrayElemAt: [
-                      { $regexFind: { input: '$$ref', regex: /^https?:\/\/([^/]+)/ } },
-                      0,
-                    ],
-                  },
-                  '$$ref',
-                ],
-              },
-            },
-          },
-        },
-      },
-      // Simplified: just group by full referrer domain
       { $group: { _id: '$referrer', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
-      { $limit: 10 },
+      { $limit: 20 },
     ]),
 
     PageView.aggregate([
@@ -142,17 +118,19 @@ export async function getReferrerBreakdown(range) {
     ]),
   ]);
 
-  // Extract domain from referrer URLs
-  const referrerDomains = referrers.map(r => {
-    try {
-      const url = new URL(r._id);
-      return { _id: url.hostname, count: r.count };
-    } catch {
-      return { _id: r._id, count: r.count };
-    }
-  });
+  // Extract domain from referrer URLs and merge duplicates
+  const domainMap = new Map();
+  for (const r of rawReferrers) {
+    let domain = r._id;
+    try { domain = new URL(r._id).hostname; } catch { /* use raw value */ }
+    domainMap.set(domain, (domainMap.get(domain) || 0) + r.count);
+  }
+  const referrers = [...domainMap.entries()]
+    .map(([domain, count]) => ({ _id: domain, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
 
-  return { referrers: referrerDomains, utmSources };
+  return { referrers, utmSources };
 }
 
 /**
