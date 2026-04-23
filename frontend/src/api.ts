@@ -16,6 +16,11 @@ const REQUEST_TIMEOUT = 15000; // 15 seconds
 const RETRY_DELAY = 2000;
 const MAX_RETRIES = 1; // 1 retry for GET on network error
 
+// Read CSRF token from sessionStorage (set on login)
+function getCsrfToken(): string | null {
+  return sessionStorage.getItem('bm_csrf');
+}
+
 async function fetchWithTimeout(url: string, opts: RequestInit, timeout = REQUEST_TIMEOUT): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
@@ -27,10 +32,19 @@ async function fetchWithTimeout(url: string, opts: RequestInit, timeout = REQUES
   }
 }
 
+// State-changing methods that need CSRF protection
+const CSRF_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const token = store.get('token');
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  // Add CSRF token for state-changing requests (JWT is in HttpOnly cookie)
+  if (CSRF_METHODS.includes(method.toUpperCase())) {
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken;
+    }
+  }
 
   const opts: RequestInit = { method, headers, body: body ? JSON.stringify(body) : undefined };
   let res: Response | undefined;
@@ -54,9 +68,10 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
   if (!res.ok) {
     // Auto-logout on expired/invalid token
-    if (res.status === 401 && store.get('token') && !path.includes('/auth/login')) {
-      store.set('token', '');
+    if (res.status === 401 && store.get('isAuthenticated') && !path.includes('/auth/login')) {
       store.set('isAuthenticated', false);
+      store.set('adminEmail', null);
+      sessionStorage.removeItem('bm_csrf');
       window.location.hash = '/admin/login';
     }
 
@@ -130,8 +145,13 @@ export const api = {
     return request('POST', '/auth/login', { email, password });
   },
 
+  async logout(): Promise<void> {
+    if (!store.get('useApi')) return;
+    try { await request('POST', '/auth/logout'); } catch { /* ignore */ }
+  },
+
   async verifyToken(): Promise<boolean> {
-    if (!store.get('useApi')) return !!store.get('token');
+    if (!store.get('useApi')) return store.get('isAuthenticated');
     try {
       const r = await request<ApiResponse<unknown>>('GET', '/auth/verify');
       return r.success;

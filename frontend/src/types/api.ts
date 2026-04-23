@@ -36,6 +36,7 @@ export interface StatsData {
 export interface LoginResponse {
   token: string;
   expiresIn: string;
+  csrfToken?: string;
 }
 
 export interface ReportData {
