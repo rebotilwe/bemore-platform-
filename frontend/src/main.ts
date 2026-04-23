@@ -46,10 +46,10 @@ async function init(): Promise<void> {
       if (flagRes.success && flagRes.data?.value !== undefined) {
         store.set('pollsEnabled', flagRes.data.value === true || flagRes.data.value === 'true');
       } else {
-        store.set('pollsEnabled', true); // Default to enabled if not set
+        store.set('pollsEnabled', false); // Default to disabled if not set
       }
     } catch {
-      store.set('pollsEnabled', true); // Default to enabled on error
+      store.set('pollsEnabled', false); // Default to disabled on error
     }
   } else {
     store.set('pollsEnabled', true); // Demo mode — show everything
