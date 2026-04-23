@@ -11,8 +11,6 @@ export function renderStepConfirm(): string {
       <ol>
         <li><strong>Purpose:</strong> The Programme, in partnership with PBSA, is designed to identify, support, and showcase emerging property developers by providing access to mentorship, deal preparation support, and potential exposure to funding institutions. Participation <strong>does not guarantee funding, partnership, or investment</strong>.</li>
         <li><strong>Eligibility:</strong> All information provided must be <strong>true, accurate, and complete</strong>. You must have the authority to submit the project. BeMore reserves the right to disqualify any application found to contain misleading or false information.</li>
-        <li><strong>Selection:</strong> Submission does <strong>not guarantee selection</strong>. A panel will shortlist applicants based on viability, impact, and readiness. Decisions are <strong>final and not subject to appeal</strong>.</li>
-        <li><strong>Pitch Participation:</strong> Shortlisted applicants may be invited to present their projects to funding institutions and partners (Dragon's Den format).</li>
         <li><strong>Intellectual Property:</strong> You retain ownership of your project and IP. By participating, you grant BeMore a non-exclusive right to review, discuss, and evaluate the submission.</li>
         <li><strong>No Financial Guarantee:</strong> The Programme does not constitute financial advice, investment solicitation, or a guarantee of funding or deal closure.</li>
         <li><strong>Use of Information:</strong> Your information may be used for programme evaluation, engagement with potential funding partners, and internal analysis.</li>

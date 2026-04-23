@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { config } from '../config/index.js';
 import logger from './logger.js';
 import EmailLog from '../models/EmailLog.js';
@@ -10,6 +11,22 @@ function logEmail(to, subject, template, refNumber, status, error) {
     .catch(err => logger.error(`EmailLog write failed: ${err.message}`));
 }
 
+// ══════════════════════════════════════════════════════════════
+//  RESEND CONFIGURATION
+// ══════════════════════════════════════════════════════
+let resendClient = null;
+
+function getResendClient() {
+  if (!resendClient && config.mail.resendApiKey) {
+    resendClient = new Resend(config.mail.resendApiKey);
+    logger.info(`Resend client initialized`);
+  }
+  return resendClient;
+}
+
+// ══════════════════════════════════════════════════════
+//  SMTP CONFIGURATION (legacy fallback)
+// ══════════════════════════════════════════════════════════════
 let transporter = null;
 
 function getTransporter() {
@@ -41,37 +58,90 @@ function getTransporter() {
 }
 
 function fromAddress() {
-  return `"${config.mail.fromName}" <${config.mail.from}>`;
+  // Sanitize fromName to prevent email header injection (strip CR/LF)
+  const safeName = (config.mail.fromName || 'BeMore').replace(/[\r\n\t]/g, '');
+  return `"${safeName}" <${config.mail.from}>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  EMAIL SEND WRAPPER (Resend with SMTP fallback)
+// ══════════════════════════════════════════════════════════════
+async function sendEmail({ to, subject, html, text }) {
+  const resend = getResendClient();
+  const transporter = getTransporter();
+
+  // Try Resend first if API key is configured
+  if (resend) {
+    try {
+      const { data, error } = await resend.emails.send({
+        from: config.mail.fromName && config.mail.from
+          ? `${config.mail.fromName} <${config.mail.from}>`
+          : 'BeMore <onboarding@resend.dev>',
+        to: Array.isArray(to) ? to : [to],
+        subject,
+        html,
+        text,
+      });
+
+      if (error) {
+        logger.error(`Resend error: ${JSON.stringify(error)}`);
+        // Fall through to try SMTP
+      } else {
+        logger.info(`Email sent via Resend: ${data?.id}`);
+        return { success: true, provider: 'resend', id: data?.id };
+      }
+    } catch (err) {
+      logger.error(`Resend exception: ${err.message}`);
+    }
+  }
+
+  // Fallback to SMTP
+  if (transporter) {
+    try {
+      await transporter.sendMail({
+        from: fromAddress(),
+        to,
+        subject,
+        html,
+        text,
+      });
+      logger.info(`Email sent via SMTP`);
+      return { success: true, provider: 'smtp' };
+    } catch (err) {
+      logger.error(`SMTP send failed: ${err.message}`);
+      return { success: false, error: err.message, provider: 'smtp' };
+    }
+  }
+
+  // Neither provider available
+  logger.error('No email provider configured (neither Resend nor SMTP available)');
+  return { success: false, error: 'No email provider configured' };
 }
 
 // ══════════════════════════════════════════════════════════════
 //  1. SUBMISSION CONFIRMATION
 // ══════════════════════════════════════════════════════════════
 export async function sendSubmissionConfirmation(to, refNumber, firstName) {
-  const t = getTransporter();
-  if (!t) return;
+  const html = buildEmail(firstName, refNumber, 'Application Received', `
+    Thank you for submitting your application to the <strong>BeMore SME Access Initiative</strong>.
+    <br><br>
+    Our team will review your profile against our merit-based criteria and be in touch within <strong>5 business days</strong>.
+    <br><br>
+    You can check your application status at any time using the link below.
+  `, [
+    { label: 'Check My Status', url: `${PLATFORM_URL}/#/status` },
+    { label: 'Join Live Poll', url: `${PLATFORM_URL}/#/mentee-meter` },
+  ]);
 
-  try {
-    await t.sendMail({
-      from: fromAddress(),
-      to,
-      subject: `Application Received — ${refNumber}`,
-      html: buildEmail(firstName, refNumber, 'Application Received', `
-        Thank you for submitting your application to the <strong>BeMore SME Access Initiative</strong>.
-        <br><br>
-        Our team will review your profile against our merit-based criteria and be in touch within <strong>5 business days</strong>.
-        <br><br>
-        You can check your application status at any time using the link below.
-      `, [
-        { label: 'Check My Status', url: `${PLATFORM_URL}/#/status` },
-        { label: 'Join Live Poll', url: `${PLATFORM_URL}/#/mentee-meter` },
-      ]),
-    });
-    logEmail(to, `Application Received — ${refNumber}`, 'submission_confirmation', refNumber, 'sent');
+  const result = await sendEmail({
+    to,
+    subject: `Application Received — ${refNumber}`,
+    html,
+  });
+
+  logEmail(to, `Application Received — ${refNumber}`, 'submission_confirmation', refNumber, result.success ? 'sent' : 'failed', result.error);
+  if (result.success) {
     logger.info(`Submission confirmation sent to ${to} (${refNumber})`);
-  } catch (err) {
-    logEmail(to, `Application Received — ${refNumber}`, 'submission_confirmation', refNumber, 'failed', err.message);
-    logger.error(`Email send failed: ${err.message}`);
   }
 }
 
@@ -128,57 +198,49 @@ const STATUS_MESSAGES = {
 };
 
 export async function sendStatusNotification(to, refNumber, firstName, newStatus) {
-  const t = getTransporter();
-  if (!t) return;
-
   const msg = STATUS_MESSAGES[newStatus];
   if (!msg) return;
 
-  try {
-    await t.sendMail({
-      from: fromAddress(),
-      to,
-      subject: `${msg.subject} — ${refNumber}`,
-      html: buildEmail(firstName, refNumber, msg.heading, msg.body, [
-        { label: 'Check My Status', url: `${PLATFORM_URL}/#/status` },
-      ]),
-    });
-    logEmail(to, `${msg.subject} — ${refNumber}`, 'status_notification', refNumber, 'sent');
+  const html = buildEmail(firstName, refNumber, msg.heading, msg.body, [
+    { label: 'Check My Status', url: `${PLATFORM_URL}/#/status` },
+  ]);
+
+  const result = await sendEmail({
+    to,
+    subject: `${msg.subject} — ${refNumber}`,
+    html,
+  });
+
+  logEmail(to, `${msg.subject} — ${refNumber}`, 'status_notification', refNumber, result.success ? 'sent' : 'failed', result.error);
+  if (result.success) {
     logger.info(`Status notification (${newStatus}) sent to ${to} (${refNumber})`);
-  } catch (err) {
-    logEmail(to, `${msg.subject} — ${refNumber}`, 'status_notification', refNumber, 'failed', err.message);
-    logger.error(`Status email failed: ${err.message}`);
   }
 }
 
 // ══════════════════════════════════════════════════════════════
 //  3. REMINDER (callable from admin)
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════
 export async function sendSummitReminder(to, refNumber, firstName) {
-  const t = getTransporter();
-  if (!t) return;
+  const html = buildEmail(firstName, refNumber, 'Reminder', `
+    This is a friendly reminder about your application to the <strong>BeMore SME Access Initiative</strong>.
+    <br><br>
+    Please check your application status using the link below, and don't hesitate to reach out if you have any questions.
+    <br><br>
+    We look forward to engaging with you!
+  `, [
+    { label: 'Check My Status', url: `${PLATFORM_URL}/#/status` },
+    { label: 'View Platform', url: PLATFORM_URL },
+  ]);
 
-  try {
-    await t.sendMail({
-      from: fromAddress(),
-      to,
-      subject: `Reminder — BeMore SME Access Initiative (${refNumber})`,
-      html: buildEmail(firstName, refNumber, 'Reminder', `
-        This is a friendly reminder about your application to the <strong>BeMore SME Access Initiative</strong>.
-        <br><br>
-        Please check your application status using the link below, and don't hesitate to reach out if you have any questions.
-        <br><br>
-        We look forward to engaging with you!
-      `, [
-        { label: 'Check My Status', url: `${PLATFORM_URL}/#/status` },
-        { label: 'View Platform', url: PLATFORM_URL },
-      ]),
-    });
-    logEmail(to, `Reminder — BeMore (${refNumber})`, 'reminder', refNumber, 'sent');
+  const result = await sendEmail({
+    to,
+    subject: `Reminder — BeMore SME Access Initiative (${refNumber})`,
+    html,
+  });
+
+  logEmail(to, `Reminder — BeMore (${refNumber})`, 'reminder', refNumber, result.success ? 'sent' : 'failed', result.error);
+  if (result.success) {
     logger.info(`Reminder sent to ${to} (${refNumber})`);
-  } catch (err) {
-    logEmail(to, `Reminder — BeMore (${refNumber})`, 'reminder', refNumber, 'failed', err.message);
-    logger.error(`Reminder email failed: ${err.message}`);
   }
 }
 

@@ -6,7 +6,7 @@
 import type { Application } from '../types/index.ts';
 import { CATEGORY_LABELS } from '../constants/categories.ts';
 import { STATUS_LABELS } from '../constants/status.ts';
-import { formatDate } from './format.ts';
+import { formatDate, esc } from './format.ts';
 
 interface ReportConfig {
   title: string;
@@ -48,7 +48,7 @@ export function exportPdfReport(apps: Application[], config: ReportConfig): void
   const topTags = Object.entries(tagCounts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8)
-    .map(([tag, count]) => `<span style="display:inline-block;padding:3px 10px;margin:2px;background:#f5f0e5;border-radius:4px;font-size:11px;color:#333">${tag} <strong>${count}</strong></span>`)
+    .map(([tag, count]) => `<span style="display:inline-block;padding:3px 10px;margin:2px;background:#f5f0e5;border-radius:4px;font-size:11px;color:#333">${esc(tag)} <strong>${count}</strong></span>`)
     .join('');
 
   // Application rows
@@ -63,13 +63,13 @@ export function exportPdfReport(apps: Application[], config: ReportConfig): void
     const bg = i % 2 === 0 ? '#fff' : '#faf8f4';
 
     return `<tr style="background:${bg}">
-      <td style="font-weight:600">${name}</td>
-      <td style="font-size:11px;color:#666">${app.refNumber}</td>
-      <td>${type}</td>
-      <td>${company}</td>
-      <td>${value}</td>
-      <td style="font-size:10px">${tags}</td>
-      <td>${status}</td>
+      <td style="font-weight:600">${esc(name)}</td>
+      <td style="font-size:11px;color:#666">${esc(app.refNumber)}</td>
+      <td>${esc(type)}</td>
+      <td>${esc(company)}</td>
+      <td>${esc(value)}</td>
+      <td style="font-size:10px">${esc(tags)}</td>
+      <td>${esc(status)}</td>
       <td style="font-size:11px">${date}</td>
     </tr>`;
   }).join('');
@@ -80,22 +80,22 @@ export function exportPdfReport(apps: Application[], config: ReportConfig): void
     const type = (CATEGORY_LABELS as Record<string, string>)[app.userType] || app.userType;
     const status = (STATUS_LABELS as Record<string, string>)[app.status] || app.status;
     const fd = (app.formData as Record<string, unknown>) || {};
-    const tags = (app.tags || []).map(t => `<span style="display:inline-block;padding:2px 8px;margin:1px;background:#f5f0e5;border-radius:3px;font-size:10px">${t}</span>`).join(' ');
+    const tags = (app.tags || []).map(t => `<span style="display:inline-block;padding:2px 8px;margin:1px;background:#f5f0e5;border-radius:3px;font-size:10px">${esc(t)}</span>`).join(' ');
 
     return `
     <div style="page-break-inside:avoid;border:1px solid #e0d9c8;border-radius:8px;padding:16px;margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
         <div>
-          <strong style="font-size:14px">${i + 1}. ${name}</strong>
-          <span style="margin-left:8px;font-size:11px;color:#888">${app.refNumber}</span>
+          <strong style="font-size:14px">${i + 1}. ${esc(name)}</strong>
+          <span style="margin-left:8px;font-size:11px;color:#888">${esc(app.refNumber)}</span>
         </div>
         <span style="padding:2px 10px;border-radius:4px;font-size:11px;font-weight:600;background:${status === 'Funded' ? '#d4edda' : status === 'Invited' ? '#cce5ff' : status === 'Shortlisted' ? '#fff3cd' : '#f0f0f0'};color:#333">${status}</span>
       </div>
       <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <tr><td style="color:#888;width:120px;padding:2px 0">Profile</td><td>${type}</td><td style="color:#888;width:120px">Company</td><td>${app.personal?.companyName || '-'}</td></tr>
-        <tr><td style="color:#888;padding:2px 0">Email</td><td>${app.personal?.email || '-'}</td><td style="color:#888">Phone</td><td>${app.personal?.phone || '-'}</td></tr>
-        <tr><td style="color:#888;padding:2px 0">Est. Value</td><td>${fd.estimatedValue || '-'}</td><td style="color:#888">Land Status</td><td>${fd.landStatus || '-'}</td></tr>
-        <tr><td style="color:#888;padding:2px 0">Project Stage</td><td>${fd.projectStage || '-'}</td><td style="color:#888">Seeking</td><td>${Array.isArray(fd.seeking) ? (fd.seeking as string[]).join(', ') : fd.seeking || '-'}</td></tr>
+        <tr><td style="color:#888;width:120px;padding:2px 0">Profile</td><td>${esc(type)}</td><td style="color:#888;width:120px">Company</td><td>${esc(app.personal?.companyName || '-')}</td></tr>
+        <tr><td style="color:#888;padding:2px 0">Email</td><td>${esc(app.personal?.email || '-')}</td><td style="color:#888">Phone</td><td>${esc(app.personal?.phone || '-')}</td></tr>
+        <tr><td style="color:#888;padding:2px 0">Est. Value</td><td>${esc(fd.estimatedValue as string || '-')}</td><td style="color:#888">Land Status</td><td>${esc(fd.landStatus as string || '-')}</td></tr>
+        <tr><td style="color:#888;padding:2px 0">Project Stage</td><td>${esc(fd.projectStage as string || '-')}</td><td style="color:#888">Seeking</td><td>${esc(Array.isArray(fd.seeking) ? (fd.seeking as string[]).join(', ') : (fd.seeking as string) || '-')}</td></tr>
       </table>
       ${tags ? `<div style="margin-top:6px">${tags}</div>` : ''}
     </div>`;

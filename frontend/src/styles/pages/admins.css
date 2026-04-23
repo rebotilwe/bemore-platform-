@@ -1,0 +1,74 @@
+/* Admins Page */
+.admins-actions {
+  margin-bottom: var(--sp-6);
+}
+
+.admins-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.admin-card {
+  background: var(--ink-soft);
+  border: 1px solid rgba(249,245,238,0.06);
+  border-radius: var(--r-md);
+  padding: var(--sp-4) var(--sp-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  transition: border-color var(--dur-short) var(--ease-std);
+}
+
+.admin-card:hover {
+  border-color: rgba(249,245,238,0.12);
+}
+
+.admin-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-card-email {
+  font-family: 'DM Mono', monospace;
+  font-size: var(--fs-body-md);
+  color: var(--cream);
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.admin-card-name {
+  font-size: var(--fs-body-sm);
+  color: var(--steel);
+  margin-top: var(--sp-1);
+}
+
+.admin-card-date {
+  font-size: var(--fs-body-xs);
+  color: var(--steel);
+  margin-top: var(--sp-1);
+  opacity: 0.7;
+}
+
+.admin-card-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .admin-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-card-actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: var(--sp-3);
+    padding-top: var(--sp-3);
+    border-top: 1px solid rgba(249,245,238,0.06);
+  }
+}

@@ -350,4 +350,18 @@ export const api = {
   async deletePoll(id: string): Promise<ApiResponse<unknown>> {
     return request('DELETE', `/polls/${id}`);
   },
+
+  // ── Admins ──
+  async getAdmins(): Promise<ApiResponse<unknown[]>> {
+    return request('GET', '/admins');
+  },
+  async createAdmin(data: { email: string; password: string; name?: string }): Promise<ApiResponse<unknown>> {
+    return request('POST', '/admins', data);
+  },
+  async updateAdmin(id: string, data: { email?: string; password?: string; name?: string }): Promise<ApiResponse<unknown>> {
+    return request('PATCH', `/admins/${id}`, data);
+  },
+  async deleteAdmin(id: string): Promise<ApiResponse<unknown>> {
+    return request('DELETE', `/admins/${id}`);
+  },
 };

@@ -215,9 +215,8 @@ function validate(): boolean {
     return true;
   }
   if (step === 4) {
-    setError('t-project', false); setError('t-why', false);
+    setError('t-project', false);
     if (!minLength(inputVal('t-project'), 50)) { setError('t-project', true); toast('Please describe your project (min 50 characters)'); return false; }
-    if (!minLength(inputVal('t-why'), 50)) { setError('t-why', true); toast('Please explain why BeMore should choose you (min 50 characters)'); return false; }
     return true;
   }
   if (step === 5) {
@@ -249,7 +248,6 @@ function collectAllFormData(): Record<string, unknown> {
     seeking: getChk('c-seeking'),
     previousFunding: getRad('r-prevfund'),
     projectDescription: get('t-project'),
-    whyChooseYou: get('t-why'),
     tcAccepted: true, popiaConsent: true,
   };
 

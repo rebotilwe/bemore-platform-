@@ -40,7 +40,6 @@ function buildFormData(type) {
     seeking: pickN(SEEKING, 1, 3),
     previousFunding: pick(PREV_FUNDING),
     projectDescription: `This is a ${pick(['mixed-use', 'residential', 'student accommodation', 'affordable housing', 'social infrastructure'])} development project in ${pick(['Johannesburg', 'Cape Town', 'Durban', 'Pretoria', 'Polokwane', 'Bloemfontein', 'Nelspruit', 'East London'])}. The project aims to deliver ${50 + Math.floor(Math.random() * 450)} units and create ${20 + Math.floor(Math.random() * 200)} construction jobs. We have secured planning approval and are ready to proceed with the next phase of development.`,
-    whyChooseYou: `Our team has ${2 + Math.floor(Math.random() * 15)} years of experience in property development. We have a proven track record of delivering projects on time and within budget. Our commitment to community empowerment and HDI inclusion aligns with the BeMore mandate.`,
     summitAttendance: pick(ATTENDANCE),
     tcAccepted: true,
     popiaConsent: true,

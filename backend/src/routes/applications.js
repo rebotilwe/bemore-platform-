@@ -1,10 +1,14 @@
 import { Router } from 'express';
 import { body, query, param } from 'express-validator';
+import validator from 'validator';
 import validate from '../middleware/validate.js';
 import auth from '../middleware/auth.js';
 import { publicApplicationLimiter, adminLimiter } from '../config/rateLimit.js';
 import { PROFILE_CATEGORIES, APPLICATION_STATUSES, SORTABLE_FIELDS, FUNDER_NAMES } from '../constants/enums.js';
 import { submit, list, getOne, update, stats, exportCsv, bulkUpdateStatus, sendReminders } from '../controllers/applicationController.js';
+
+// Sanitize HTML to prevent XSS in name fields
+const sanitizeName = (val) => val ? validator.escape(String(val).trim().slice(0, 100)) : val;
 
 const router = Router();
 
@@ -12,9 +16,16 @@ const router = Router();
 router.post('/', publicApplicationLimiter,
   body('userType').isIn(PROFILE_CATEGORIES).withMessage('Invalid profile category'),
   body('personal').isObject().withMessage('Personal info required'),
-  body('personal.firstName').notEmpty().withMessage('First name required'),
-  body('personal.surname').notEmpty().withMessage('Surname required'),
-  body('personal.email').isEmail().withMessage('Valid email required').isLength({ max: 254 }).withMessage('Email too long'),
+  body('personal.firstName').notEmpty().withMessage('First name required')
+    .isLength({ max: 100 }).withMessage('First name max 100 characters')
+    .customSanitizer(sanitizeName)
+    .matches(/^[^<>{}[\]\\^`"|~]*$/).withMessage('Invalid characters in first name'),
+  body('personal.surname').notEmpty().withMessage('Surname required')
+    .isLength({ max: 100 }).withMessage('Surname max 100 characters')
+    .customSanitizer(sanitizeName)
+    .matches(/^[^<>{}[\]\\^`"|~]*$/).withMessage('Invalid characters in surname'),
+  body('personal.email').isEmail().withMessage('Valid email required').isLength({ max: 254 }).withMessage('Email too long')
+    .normalizeEmail(),
   body('personal.phone').notEmpty().withMessage('Phone required')
     .matches(/^(\+?27\d{9}|0\d{9})$/).withMessage('Valid SA phone required (e.g. 0821234567 or +27821234567)'),
   body('personal.companyName').optional().isString().withMessage('Company name must be a string'),
@@ -22,11 +33,11 @@ router.post('/', publicApplicationLimiter,
     .custom((val) => {
       // Reject deeply nested or oversized formData
       const str = JSON.stringify(val);
-      if (str.length > 50000) throw new Error('formData too large');
+      if (str.length > 10000) throw new Error('formData too large');
       // Whitelist known top-level keys
       const allowed = new Set([
         'landStatus', 'projectStage', 'estimatedValue', 'seeking', 'previousFunding',
-        'projectDescription', 'whyChooseYou', 'summitAttendance', 'tcAccepted', 'popiaConsent',
+        'projectDescription', 'summitAttendance', 'tcAccepted', 'popiaConsent',
         'yearsExperience', 'developmentTypes', 'landSize', 'zoningStatus', 'isServiced',
         'ownershipStructure', 'investmentFocus', 'investmentTicket', 'bedCount', 'occupancyRate',
         'universityPartnership', 'assetType', 'profession', 'registrationStatus', 'projectScale',
@@ -63,7 +74,7 @@ router.post('/lookup',
         success: true,
         data: {
           refNumber: app.refNumber,
-          firstName: app.personal.firstName,
+          firstName: validator.escape(app.personal.firstName),
           userType: app.userType,
           status: app.status,
           tags: app.tags,

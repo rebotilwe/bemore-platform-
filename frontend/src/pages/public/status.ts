@@ -3,7 +3,7 @@ import { api } from '../../api.ts';
 import { toast } from '../../components/toast.ts';
 import { CATEGORY_LABELS } from '../../constants/categories.ts';
 import { STATUS_LABELS } from '../../constants/status.ts';
-import { formatDate } from '../../utils/format.ts';
+import { formatDate, esc } from '../../utils/format.ts';
 
 const STATUS_TIMELINE: Record<string, number> = {
   new: 1, reviewing: 2, shortlisted: 3, invited: 4, funded: 5,
@@ -106,21 +106,21 @@ export const statusPage: Page = {
       resultDiv.style.display = 'block';
       resultDiv.innerHTML = `
         <div class="st-card fade-up">
-          <div class="st-greeting display">Welcome back, <span class="accent">${d.firstName}</span></div>
+          <div class="st-greeting display">Welcome back, <span class="accent">${esc(d.firstName)}</span></div>
 
           <div class="st-ref-row">
             <span class="st-ref-label">Reference</span>
-            <span class="st-ref-val mono">${d.refNumber}</span>
+            <span class="st-ref-val mono">${esc(d.refNumber)}</span>
           </div>
 
           <div class="st-info-grid">
             <div class="st-info">
               <div class="st-info-label">Profile</div>
-              <div class="st-info-val">${typeLbl}</div>
+              <div class="st-info-val">${esc(typeLbl)}</div>
             </div>
             <div class="st-info">
               <div class="st-info-label">Current Status</div>
-              <div class="st-info-val accent">${statusLbl}</div>
+              <div class="st-info-val accent">${esc(statusLbl)}</div>
             </div>
             <div class="st-info">
               <div class="st-info-label">Submitted</div>
@@ -129,7 +129,7 @@ export const statusPage: Page = {
           </div>
 
           <div class="st-status-msg">
-            <p>${statusDesc}</p>
+            <p>${esc(statusDesc)}</p>
           </div>
 
           <div class="st-timeline-title">Application Progress</div>
@@ -140,7 +140,7 @@ export const statusPage: Page = {
           ${d.tags?.length ? `
           <div class="st-tags-section">
             <div class="st-tags-title">Intelligence Tags</div>
-            <div class="st-tags">${d.tags.map(t => `<span class="tag-badge">${t}</span>`).join(' ')}</div>
+            <div class="st-tags">${d.tags.map(t => `<span class="tag-badge">${esc(t)}</span>`).join(' ')}</div>
           </div>` : ''}
 
           <div class="st-next-steps">

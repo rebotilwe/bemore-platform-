@@ -220,6 +220,31 @@
   color: var(--red);
 }
 
+/* Danger button */
+.btn-danger {
+  min-height: var(--touch-min);
+  padding: var(--sp-4) var(--sp-8);
+  background: transparent;
+  border: 1px solid rgba(220,53,69,0.5);
+  color: var(--red);
+  font-family: 'DM Sans', sans-serif;
+  font-size: var(--fs-label-md);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: all var(--dur-short) var(--ease-std);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+}
+
+.btn-danger:hover {
+  background: rgba(220,53,69,0.15);
+  border-color: var(--red);
+}
+
 /* Export button */
 .export-btn {
   margin-left: auto;

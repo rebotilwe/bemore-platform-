@@ -4,7 +4,7 @@ import { toast } from '../../components/toast.ts';
 import { CATEGORY_LABELS } from '../../constants/categories.ts';
 import { STATUS_LABELS, STATUS_CSS } from '../../constants/status.ts';
 import { FUNDERS } from '../../constants/funders.ts';
-import { formatDate } from '../../utils/format.ts';
+import { formatDate, esc } from '../../utils/format.ts';
 import { mountAdminLayout } from './layout.ts';
 import { renderAppDetail, openModal } from '../../components/app-detail-modal.ts';
 
@@ -63,31 +63,31 @@ function renderCard(app: Application): string {
   const summitChecked = app.dealRoom?.summitAccess ? ' checked' : '';
   const dealRoomChecked = app.dealRoom?.dealRoomEntry ? ' checked' : '';
   const activeFunders = app.dealRoom?.funders ?? [];
-  const tags = (app.tags ?? []).slice(0, 3).map(t => `<span class="tag-badge">${t}</span>`).join('');
+  const tags = (app.tags ?? []).slice(0, 3).map(t => `<span class="tag-badge">${esc(t)}</span>`).join('');
   const value = (app.formData as Record<string, unknown>)?.estimatedValue as string || '';
   const date = app.submittedAt ? formatDate(app.submittedAt) : '';
 
   const funderChips = FUNDERS.map(f => {
     const on = activeFunders.includes(f) ? ' on' : '';
-    return `<button class="funder-chip${on}" data-app="${app._id}" data-funder="${f}">${f}</button>`;
+    return `<button class="funder-chip${on}" data-app="${app._id}" data-funder="${esc(f)}">${esc(f)}</button>`;
   }).join('');
 
   return `
   <div class="dr-card" data-app-id="${app._id}">
     <div class="dr-card-top">
       <div class="dr-card-info">
-        <div class="dr-card-name" data-id="${app._id}">${name}</div>
+        <div class="dr-card-name" data-id="${app._id}">${esc(name)}</div>
         <div class="dr-card-meta">
-          <span class="dr-card-ref">${app.refNumber}</span>
-          <span class="tag ${typeCls}">${typeLbl}</span>
-          <span class="tag ${statusCls}">${statusLbl}</span>
+          <span class="dr-card-ref">${esc(app.refNumber)}</span>
+          <span class="tag ${typeCls}">${esc(typeLbl)}</span>
+          <span class="tag ${statusCls}">${esc(statusLbl)}</span>
         </div>
       </div>
     </div>
     <div class="dr-card-details">
-      ${app.personal?.email ? `<div class="dr-detail"><span class="dr-detail-key">Email</span><span class="dr-detail-val">${app.personal.email}</span></div>` : ''}
-      ${app.personal?.companyName ? `<div class="dr-detail"><span class="dr-detail-key">Company</span><span class="dr-detail-val">${app.personal.companyName}</span></div>` : ''}
-      ${value ? `<div class="dr-detail"><span class="dr-detail-key">Value</span><span class="dr-detail-val">${value}</span></div>` : ''}
+      ${app.personal?.email ? `<div class="dr-detail"><span class="dr-detail-key">Email</span><span class="dr-detail-val">${esc(app.personal.email)}</span></div>` : ''}
+      ${app.personal?.companyName ? `<div class="dr-detail"><span class="dr-detail-key">Company</span><span class="dr-detail-val">${esc(app.personal.companyName)}</span></div>` : ''}
+      ${value ? `<div class="dr-detail"><span class="dr-detail-key">Value</span><span class="dr-detail-val">${esc(value)}</span></div>` : ''}
       ${date ? `<div class="dr-detail"><span class="dr-detail-key">Submitted</span><span class="dr-detail-val">${date}</span></div>` : ''}
     </div>
     ${tags ? `<div class="dr-card-tags">${tags}</div>` : ''}

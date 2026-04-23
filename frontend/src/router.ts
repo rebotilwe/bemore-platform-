@@ -43,6 +43,7 @@ const routes: RouteConfig[] = [
   { path: '/admin/polls',     page: lazy(() => import('./pages/admin/polls.ts'), 'pollsPage'),              layout: 'admin', guard: authGuard },
   { path: '/admin/traffic',   page: lazy(() => import('./pages/admin/traffic.ts'), 'trafficPage'),             layout: 'admin', guard: authGuard },
   { path: '/admin/settings',  page: lazy(() => import('./pages/admin/settings.ts'), 'settingsPage'),          layout: 'admin', guard: authGuard },
+  { path: '/admin/admins',   page: lazy(() => import('./pages/admin/admins.ts'), 'adminsPage'),            layout: 'admin', guard: authGuard },
 ];
 
 let currentPage: Page | null = null;

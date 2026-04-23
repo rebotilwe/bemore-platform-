@@ -2,25 +2,25 @@ import type { Application, ApplicationStatus, Classification } from '../types/in
 import { CATEGORY_LABELS } from '../constants/categories.ts';
 import { STATUS_LABELS, STATUS_CSS } from '../constants/status.ts';
 import { APPLICATION_STATUSES } from '../constants/status.ts';
-import { formatDate } from '../utils/format.ts';
+import { formatDate, esc } from '../utils/format.ts';
 import { api } from '../api.ts';
 import { toast } from './toast.ts';
 
 function row(key: string, value: string | undefined | null): string {
   if (!value) return '';
-  return `<div class="detail-row"><div class="detail-key">${key}</div><div class="detail-val">${value}</div></div>`;
+  return `<div class="detail-row"><div class="detail-key">${esc(key)}</div><div class="detail-val">${esc(value)}</div></div>`;
 }
 
 function fullRow(key: string, value: string | undefined | null): string {
   if (!value) return '';
-  return `<div class="detail-row full"><div class="detail-key">${key}</div><div class="detail-val">${value}</div></div>`;
+  return `<div class="detail-row full"><div class="detail-key">${esc(key)}</div><div class="detail-val">${esc(value)}</div></div>`;
 }
 
 function listRow(key: string, values: string | string[] | undefined): string {
   const arr = Array.isArray(values) ? values : values ? [values] : [];
   if (!arr.length) return '';
-  const chips = arr.map(v => `<span class="tag-badge">${v}</span>`).join(' ');
-  return `<div class="detail-row"><div class="detail-key">${key}</div><div class="detail-val">${chips}</div></div>`;
+  const chips = arr.map(v => `<span class="tag-badge">${esc(v)}</span>`).join(' ');
+  return `<div class="detail-row"><div class="detail-key">${esc(key)}</div><div class="detail-val">${chips}</div></div>`;
 }
 
 function sectionLabel(label: string): string {
@@ -67,13 +67,13 @@ export function renderAppDetail(app: Application): string {
   const typeLbl = (CATEGORY_LABELS as Record<string, string>)[app.userType] || app.userType;
   const statusLbl = (STATUS_LABELS as Record<string, string>)[app.status] || app.status;
   const statusCls = (STATUS_CSS as Record<string, string>)[app.status] || '';
-  const tags = (app.tags ?? []).map(t => `<span class="tag-badge">${t}</span>`).join(' ');
-  const funders = (app.dealRoom?.funders ?? []).map(f => `<span class="tag-badge">${f}</span>`).join(' ');
+  const tags = (app.tags ?? []).map(t => `<span class="tag-badge">${esc(t)}</span>`).join(' ');
+  const funders = (app.dealRoom?.funders ?? []).map(f => `<span class="tag-badge">${esc(f)}</span>`).join(' ');
   const fd = (app.formData as Record<string, unknown>) ?? {};
 
   // Engagement source
   const sourceTag = app.engagementSource && app.engagementSource !== 'direct'
-    ? `<span class="tag-badge tag-source">${app.engagementSource.toUpperCase()}</span>`
+    ? `<span class="tag-badge tag-source">${esc(app.engagementSource.toUpperCase())}</span>`
     : '';
 
   // Classification options
@@ -96,9 +96,9 @@ export function renderAppDetail(app: Application): string {
     <div class="modal-card" data-app-id="${app._id}">
       <div class="modal-header">
         <div>
-          <div class="modal-title">${name}</div>
+          <div class="modal-title">${esc(name)}</div>
           <div class="modal-sub-row">
-            <span class="lead-card-ref">${app.refNumber}</span>
+            <span class="lead-card-ref">${esc(app.refNumber)}</span>
             <span class="tag ${statusCls}" id="modal-status-badge">${statusLbl}</span>
             ${sourceTag}
           </div>
@@ -119,7 +119,7 @@ export function renderAppDetail(app: Application): string {
           <div class="modal-action-row">
             <div class="modal-action-group" style="flex:1">
               <label class="modal-action-lbl" for="modal-notes">Admin Notes</label>
-              <textarea class="modal-action-textarea" id="modal-notes" rows="3" placeholder="Add notes about this application...">${app.adminNotes || ''}</textarea>
+              <textarea class="modal-action-textarea" id="modal-notes" rows="3" placeholder="Add notes about this application...">${esc(app.adminNotes)}</textarea>
             </div>
             <button class="btn-action" id="modal-save-notes">Save Notes</button>
           </div>
@@ -139,7 +139,7 @@ export function renderAppDetail(app: Application): string {
                 </label>
                 <input type="date" id="modal-followup-date" class="modal-action-select" value="${followUp.dueDate ? followUp.dueDate.split('T')[0] : ''}" style="flex:1;min-width:140px" />
               </div>
-              <textarea class="modal-action-textarea" id="modal-followup-notes" rows="2" placeholder="Follow-up notes..." style="margin-top:8px">${followUp.notes || ''}</textarea>
+              <textarea class="modal-action-textarea" id="modal-followup-notes" rows="2" placeholder="Follow-up notes..." style="margin-top:8px">${esc(followUp.notes)}</textarea>
             </div>
             <button class="btn-action" id="modal-save-followup">Save</button>
           </div>
@@ -172,8 +172,6 @@ export function renderAppDetail(app: Application): string {
 
         ${sectionLabel('Project Narrative')}
         ${fullRow('Project Description', fd.projectDescription as string)}
-        ${fullRow('Why Should BeMore Choose You', fd.whyChooseYou as string)}
-
         ${sectionLabel('Consent')}
         <div class="detail-grid">
           ${row('T&Cs Accepted', fd.tcAccepted ? 'Yes' : 'No')}

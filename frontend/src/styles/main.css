@@ -29,6 +29,7 @@
 @import './pages/dashboard.css';
 @import './pages/qr-generator.css';
 @import './pages/settings.css';
+@import './pages/admins.css';
 @import './pages/mentee-meter.css';
 @import './pages/landing.css';
 @import './pages/status.css';

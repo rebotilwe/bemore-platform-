@@ -167,11 +167,11 @@ describe('Site Settings API', () => {
     expect(res.body.data.value).toBe('newhashid123');
   });
 
-  it('GET /public/:key should return null for non-existent key', async () => {
+  it('GET /public/:key should return 404 for non-whitelisted key', async () => {
     const res = await request(app)
       .get('/api/settings/public/nonexistent');
-    expect(res.status).toBe(200);
-    expect(res.body.data.value).toBeNull();
+    expect(res.status).toBe(404);
+    expect(res.body.success).toBe(false);
   });
 
   it('GET / should return all settings with auth', async () => {

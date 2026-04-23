@@ -51,6 +51,7 @@ export const config = Object.freeze({
     pass: process.env.SMTP_PASS || '',
     from: process.env.SMTP_FROM || 'noreply@bemore.co.za',
     fromName: process.env.SMTP_FROM_NAME || 'BeMore Group',
+    resendApiKey: process.env.RESEND_API_KEY || '',
   },
   admin: {
     email: process.env.ADMIN_SEED_EMAIL || '',

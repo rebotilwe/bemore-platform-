@@ -4,7 +4,7 @@ import { store } from '../../store.ts';
 import { toast } from '../../components/toast.ts';
 import { CATEGORY_LABELS } from '../../constants/categories.ts';
 import { STATUS_LABELS, STATUS_CSS } from '../../constants/status.ts';
-import { formatDate } from '../../utils/format.ts';
+import { formatDate, esc } from '../../utils/format.ts';
 import { exportCsv } from '../../utils/csv.ts';
 import { mountAdminLayout } from './layout.ts';
 import { renderAppDetail, openModal } from '../../components/app-detail-modal.ts';
@@ -98,7 +98,7 @@ function renderCards(apps: Application[]): string {
     const email = app.personal?.email ?? '';
     const company = app.personal?.companyName ?? '';
     const date = app.submittedAt ? formatDate(app.submittedAt) : '';
-    const tags = (app.tags ?? []).slice(0, 2).map(t => `<span class="tag-badge">${t}</span>`).join('');
+    const tags = (app.tags ?? []).slice(0, 2).map(t => `<span class="tag-badge">${esc(t)}</span>`).join('');
     const value = (app.formData as Record<string, unknown>)?.estimatedValue as string || '';
     const isShortlisted = app.status === 'shortlisted';
     const btnLabel = isShortlisted ? '&#10003; Shortlisted' : 'Shortlist';
@@ -108,22 +108,22 @@ function renderCards(apps: Application[]): string {
     <div class="lead-card" data-id="${app._id}">
       <div class="lead-card-top">
         <div class="lead-card-header">
-          <span class="lead-card-ref">${app.refNumber}</span>
+          <span class="lead-card-ref">${esc(app.refNumber)}</span>
           <div class="lead-card-badges">
-            <span class="tag ${typeCls}">${typeLbl}</span>
-            <span class="tag ${statusCls}">${statusLbl}</span>
-            ${app.classification && app.classification !== 'unclassified' ? `<span class="tag tag-classification-${app.classification}">${app.classification.toUpperCase()}</span>` : ''}
-            ${app.engagementSource && app.engagementSource !== 'direct' ? `<span class="tag tag-source">${app.engagementSource}</span>` : ''}
+            <span class="tag ${typeCls}">${esc(typeLbl)}</span>
+            <span class="tag ${statusCls}">${esc(statusLbl)}</span>
+            ${app.classification && app.classification !== 'unclassified' ? `<span class="tag tag-classification-${esc(app.classification)}">${esc(app.classification.toUpperCase())}</span>` : ''}
+            ${app.engagementSource && app.engagementSource !== 'direct' ? `<span class="tag tag-source">${esc(app.engagementSource)}</span>` : ''}
           </div>
         </div>
-        <div class="lead-card-name" data-id="${app._id}">${name}</div>
+        <div class="lead-card-name" data-id="${app._id}">${esc(name)}</div>
         <div class="lead-card-meta-row">
-          ${company ? `<span class="lead-card-company">${company}</span>` : ''}
-          <span class="lead-card-email">${email}</span>
+          ${company ? `<span class="lead-card-company">${esc(company)}</span>` : ''}
+          <span class="lead-card-email">${esc(email)}</span>
         </div>
       </div>
       <div class="lead-card-mid">
-        ${value ? `<div class="lead-card-value">${value}</div>` : ''}
+        ${value ? `<div class="lead-card-value">${esc(value)}</div>` : ''}
         ${tags ? `<div class="lead-card-tags">${tags}</div>` : ''}
       </div>
       <div class="lead-card-bottom">
@@ -146,7 +146,7 @@ function renderTable(apps: Application[]): string {
     const email = app.personal?.email ?? '';
     const company = app.personal?.companyName ?? '';
     const date = app.submittedAt ? formatDate(app.submittedAt) : '';
-    const tags = (app.tags ?? []).slice(0, 2).map(t => `<span class="tag-badge">${t}</span>`).join(' ');
+    const tags = (app.tags ?? []).slice(0, 2).map(t => `<span class="tag-badge">${esc(t)}</span>`).join(' ');
     const value = (app.formData as Record<string, unknown>)?.estimatedValue as string || '';
     const isShortlisted = app.status === 'shortlisted';
     const btnLabel = isShortlisted ? 'Remove' : 'Shortlist';
@@ -154,13 +154,13 @@ function renderTable(apps: Application[]): string {
 
     return `<tr class="leads-tbl-row" data-id="${app._id}">
       <td><input type="checkbox" class="bulk-check" data-id="${app._id}" /></td>
-      <td><span class="nc" data-id="${app._id}">${name}</span><div class="tbl-sub">${company}</div></td>
-      <td><span class="lead-card-ref">${app.refNumber}</span></td>
-      <td><span class="tag ${typeCls}">${typeLbl}</span></td>
-      <td class="tbl-email">${email}</td>
-      <td>${value}</td>
+      <td><span class="nc" data-id="${app._id}">${esc(name)}</span><div class="tbl-sub">${esc(company)}</div></td>
+      <td><span class="lead-card-ref">${esc(app.refNumber)}</span></td>
+      <td><span class="tag ${typeCls}">${esc(typeLbl)}</span></td>
+      <td class="tbl-email">${esc(email)}</td>
+      <td>${esc(value)}</td>
       <td>${tags}</td>
-      <td><span class="tag ${statusCls}">${statusLbl}</span></td>
+      <td><span class="tag ${statusCls}">${esc(statusLbl)}</span></td>
       <td class="tbl-date">${date}</td>
       <td><button class="${btnCls}" data-id="${app._id}" data-shortlisted="${isShortlisted}">${btnLabel}</button></td>
     </tr>`;

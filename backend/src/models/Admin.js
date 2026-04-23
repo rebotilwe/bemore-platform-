@@ -18,18 +18,12 @@ export async function seedAdmin() {
   }
   const exists = await Admin.findOne({ email: config.admin.email });
   if (!exists) {
-    const hashed = await bcrypt.hash(config.admin.password, 10);
+    const hashed = await bcrypt.hash(config.admin.password, 12);
     await Admin.create({ email: config.admin.email, password: hashed, name: 'Admin' });
     logger.info('Admin account seeded');
-  } else {
-    // Sync password if env var changed since initial seed
-    const match = await bcrypt.compare(config.admin.password, exists.password);
-    if (!match) {
-      exists.password = await bcrypt.hash(config.admin.password, 10);
-      await exists.save();
-      logger.info('Admin password updated from environment');
-    }
   }
+  // In production, never auto-sync passwords from env — require manual reset
+  // This prevents credential re-seeding attacks if env vars are compromised
 }
 
 export default Admin;

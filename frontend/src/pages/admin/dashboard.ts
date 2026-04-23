@@ -2,7 +2,7 @@ import type { Page, Application, StatsData } from '../../types/index.ts';
 import { api } from '../../api.ts';
 import { CATEGORY_LABELS } from '../../constants/categories.ts';
 import { STATUS_LABELS, STATUS_CSS } from '../../constants/status.ts';
-import { formatDate } from '../../utils/format.ts';
+import { formatDate, esc } from '../../utils/format.ts';
 import { mountAdminLayout } from './layout.ts';
 import { renderAppDetail, openModal } from '../../components/app-detail-modal.ts';
 import { renderEmptyState, EMPTY_STATES } from '../../components/empty-state.ts';
@@ -118,7 +118,7 @@ function renderTopTags(stats: StatsData): string {
     <div class="dash-tag-grid">
       ${topTags.map(t => `
         <div class="dash-tag-chip">
-          <span class="dash-tag-name">${t._id}</span>
+          <span class="dash-tag-name">${esc(t._id)}</span>
           <span class="dash-tag-count">${t.count}</span>
         </div>
       `).join('')}
@@ -153,7 +153,7 @@ function renderSourceBreakdown(stats: StatsData): string {
         const isQr = s._id.startsWith('qr');
         return `<div class="dash-source-row">
           <span class="dash-source-icon${isQr ? ' qr' : ''}">${icon}</span>
-          <span class="dash-source-name">${s._id}</span>
+          <span class="dash-source-name">${esc(s._id)}</span>
           <div class="dash-type-track"><div class="dash-type-fill${isQr ? ' qr-fill' : ''}" style="width:${pct}%"></div></div>
           <span class="dash-type-val">${s.count}</span>
           <span class="dash-type-pct">${pct}%</span>
@@ -228,12 +228,12 @@ function renderRecentTable(apps: Application[]): string {
     return `
     <div class="dash-recent-card" data-id="${app._id}">
       <div class="dash-recent-top">
-        <span class="dash-recent-name">${name}</span>
-        <span class="tag ${statusCls}">${statusLbl}</span>
+        <span class="dash-recent-name">${esc(name)}</span>
+        <span class="tag ${statusCls}">${esc(statusLbl)}</span>
       </div>
       <div class="dash-recent-meta">
-        <span class="lead-card-ref">${app.refNumber}</span>
-        <span class="tag ${typeCls}">${typeLbl}</span>
+        <span class="lead-card-ref">${esc(app.refNumber)}</span>
+        <span class="tag ${typeCls}">${esc(typeLbl)}</span>
         <span class="dash-recent-date">${date}</span>
       </div>
     </div>`;
@@ -242,20 +242,20 @@ function renderRecentTable(apps: Application[]): string {
   // Desktop table
   const rows = apps.map(app => {
     const name = `${app.personal?.firstName ?? ''} ${app.personal?.surname ?? ''}`.trim() || 'Unknown';
-    const typeBadge = `<span class="tag ${TAG_CSS[app.userType] || ''}">${(CATEGORY_LABELS as Record<string, string>)[app.userType] || app.userType}</span>`;
+    const typeBadge = `<span class="tag ${TAG_CSS[app.userType] || ''}">${esc((CATEGORY_LABELS as Record<string, string>)[app.userType] || app.userType)}</span>`;
     const statusLbl = (STATUS_LABELS as Record<string, string>)[app.status] || app.status;
     const statusCls = (STATUS_CSS as Record<string, string>)[app.status] || '';
-    const tags = (app.tags ?? []).slice(0, 2).map(t => `<span class="tag-badge">${t}</span>`).join(' ');
+    const tags = (app.tags ?? []).slice(0, 2).map(t => `<span class="tag-badge">${esc(t)}</span>`).join(' ');
     const date = app.submittedAt ? formatDate(app.submittedAt) : '';
     const value = (app.formData as Record<string, unknown>)?.estimatedValue as string || '';
 
     return `<tr class="clickable-row" data-id="${app._id}">
-      <td><span class="nc" data-id="${app._id}">${name}</span></td>
+      <td><span class="nc" data-id="${app._id}">${esc(name)}</span></td>
       <td>${typeBadge}</td>
-      <td>${value}</td>
+      <td>${esc(value)}</td>
       <td>${tags}</td>
       <td>${date}</td>
-      <td><span class="tag ${statusCls}">${statusLbl}</span></td>
+      <td><span class="tag ${statusCls}">${esc(statusLbl)}</span></td>
     </tr>`;
   }).join('');
 

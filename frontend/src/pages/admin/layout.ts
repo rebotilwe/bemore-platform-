@@ -33,6 +33,7 @@ const sidebarSections: SidebarSection[] = [
   {
     label: 'Tools',
     items: [
+      { label: 'Admins',    path: '/admin/admins', icon: '&#9780;' },
       { label: 'QR Codes',   path: '/admin/qr', icon: '&#9635;' },
       { label: 'Audit Log',  path: '/admin/audit-log', icon: '&#9201;' },
       { label: 'Settings',   path: '/admin/settings', icon: '&#9881;' },
