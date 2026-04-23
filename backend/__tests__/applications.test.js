@@ -20,11 +20,17 @@ async function createTestAdmin() {
   });
 }
 
-async function getAuthToken() {
+async function getAuthCookies() {
   const loginResponse = await request(app)
     .post('/api/auth/login')
     .send({ email: 'admin@bemore.co.za', password: 'BeMore@2026!' });
-  return loginResponse.body.data?.token;
+
+  const cookies = loginResponse.headers['set-cookie'] || [];
+  const authCookie = cookies.find(c => c.startsWith('bm_token=')) || '';
+  const csrfCookie = cookies.find(c => c.startsWith('bm_csrf=')) || '';
+  const csrfToken = loginResponse.body.data?.csrfToken;
+
+  return { authCookie, csrfCookie, csrfToken };
 }
 
 afterEach(async () => {
@@ -91,11 +97,14 @@ describe('POST /api/applications', () => {
 });
 
 describe('GET /api/applications (admin)', () => {
-  let authToken;
+  let authCookie;
+  let csrfToken;
 
   beforeEach(async () => {
     await createTestAdmin();
-    authToken = await getAuthToken();
+    const cookies = await getAuthCookies();
+    authCookie = cookies.authCookie;
+    csrfToken = cookies.csrfToken;
   });
 
   it('should require authentication', async () => {
@@ -109,7 +118,7 @@ describe('GET /api/applications (admin)', () => {
 
     const response = await request(app)
       .get('/api/applications')
-      .set('Authorization', `Bearer ${authToken}`);
+      .set('Cookie', authCookie);
 
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('success', true);
@@ -122,7 +131,7 @@ describe('GET /api/applications (admin)', () => {
 
     const response = await request(app)
       .get('/api/applications?page=1&limit=10')
-      .set('Authorization', `Bearer ${authToken}`);
+      .set('Cookie', authCookie);
 
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('pagination');
@@ -134,7 +143,7 @@ describe('GET /api/applications (admin)', () => {
 
     const response = await request(app)
       .get('/api/applications?userType=developer')
-      .set('Authorization', `Bearer ${authToken}`);
+      .set('Cookie', authCookie);
 
     expect(response.status).toBe(200);
     response.body.data.forEach((app) => {
@@ -147,7 +156,7 @@ describe('GET /api/applications (admin)', () => {
 
     const response = await request(app)
       .get('/api/applications?status=new')
-      .set('Authorization', `Bearer ${authToken}`);
+      .set('Cookie', authCookie);
 
     expect(response.status).toBe(200);
     response.body.data.forEach((app) => {
@@ -157,11 +166,14 @@ describe('GET /api/applications (admin)', () => {
 });
 
 describe('GET /api/applications/stats (admin)', () => {
-  let authToken;
+  let authCookie;
+  let csrfToken;
 
   beforeEach(async () => {
     await createTestAdmin();
-    authToken = await getAuthToken();
+    const cookies = await getAuthCookies();
+    authCookie = cookies.authCookie;
+    csrfToken = cookies.csrfToken;
   });
 
   it('should return application statistics', async () => {
@@ -169,7 +181,7 @@ describe('GET /api/applications/stats (admin)', () => {
 
     const response = await request(app)
       .get('/api/applications/stats')
-      .set('Authorization', `Bearer ${authToken}`);
+      .set('Cookie', authCookie);
 
     expect(response.status).toBe(200);
     expect(response.body.data).toBeDefined();
@@ -181,7 +193,7 @@ describe('GET /api/applications/stats (admin)', () => {
 
     const response = await request(app)
       .get('/api/applications/stats')
-      .set('Authorization', `Bearer ${authToken}`);
+      .set('Cookie', authCookie);
 
     expect(response.body.data.byStatus).toBeDefined();
     expect(response.body.data.byStatus.find(s => s._id === 'new')?.count).toBeGreaterThanOrEqual(1);
@@ -192,7 +204,7 @@ describe('GET /api/applications/stats (admin)', () => {
 
     const response = await request(app)
       .get('/api/applications/stats')
-      .set('Authorization', `Bearer ${authToken}`);
+      .set('Cookie', authCookie);
 
     expect(response.body.data.byType).toBeDefined();
     expect(response.body.data.byType.find(t => t._id === 'developer')?.count).toBeGreaterThanOrEqual(1);
@@ -200,12 +212,15 @@ describe('GET /api/applications/stats (admin)', () => {
 });
 
 describe('PATCH /api/applications/:id (admin)', () => {
-  let authToken;
+  let authCookie;
+  let csrfToken;
   let applicationId;
 
   beforeEach(async () => {
     await createTestAdmin();
-    authToken = await getAuthToken();
+    const cookies = await getAuthCookies();
+    authCookie = cookies.authCookie;
+    csrfToken = cookies.csrfToken;
 
     const appResponse = await request(app)
       .post('/api/applications')
@@ -220,7 +235,8 @@ describe('PATCH /api/applications/:id (admin)', () => {
   it('should update application status', async () => {
     const response = await request(app)
       .patch(`/api/applications/${applicationId}`)
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Cookie', authCookie)
+      .set('X-CSRF-Token', csrfToken)
       .send({ status: 'reviewing' });
 
     expect(response.status).toBe(200);
@@ -230,7 +246,8 @@ describe('PATCH /api/applications/:id (admin)', () => {
   it('should add admin notes', async () => {
     const response = await request(app)
       .patch(`/api/applications/${applicationId}`)
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Cookie', authCookie)
+      .set('X-CSRF-Token', csrfToken)
       .send({ adminNotes: 'Looking promising' });
 
     expect(response.status).toBe(200);
@@ -240,7 +257,8 @@ describe('PATCH /api/applications/:id (admin)', () => {
   it('should update dealRoom settings', async () => {
     const response = await request(app)
       .patch(`/api/applications/${applicationId}`)
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Cookie', authCookie)
+      .set('X-CSRF-Token', csrfToken)
       .send({
         dealRoom: {
           summitAccess: true,
@@ -257,7 +275,8 @@ describe('PATCH /api/applications/:id (admin)', () => {
   it('should return 400 for invalid status', async () => {
     const response = await request(app)
       .patch(`/api/applications/${applicationId}`)
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Cookie', authCookie)
+      .set('X-CSRF-Token', csrfToken)
       .send({ status: 'invalid-status' });
 
     expect(response.status).toBe(400);
@@ -266,7 +285,8 @@ describe('PATCH /api/applications/:id (admin)', () => {
   it('should return 404 for non-existent application', async () => {
     const response = await request(app)
       .patch('/api/applications/507f1f77bcf86cd799439011')
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Cookie', authCookie)
+      .set('X-CSRF-Token', csrfToken)
       .send({ status: 'reviewing' });
 
     expect(response.status).toBe(404);
@@ -274,17 +294,20 @@ describe('PATCH /api/applications/:id (admin)', () => {
 });
 
 describe('Rate Limiting', () => {
-  let authToken;
+  let authCookie;
+  let csrfToken;
 
   beforeEach(async () => {
     await createTestAdmin();
-    authToken = await getAuthToken();
+    const cookies = await getAuthCookies();
+    authCookie = cookies.authCookie;
+    csrfToken = cookies.csrfToken;
   });
 
   it('should allow requests within rate limit', async () => {
     const response = await request(app)
       .get('/api/applications')
-      .set('Authorization', `Bearer ${authToken}`);
+      .set('Cookie', authCookie);
 
     expect(response.status).toBe(200);
   });

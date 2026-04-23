@@ -5,7 +5,6 @@ export interface AppState {
   selectedProfile: ProfileCategory | null;
   formData: Record<string, unknown>;
   currentStep: number;
-  token: string | null;
   isAuthenticated: boolean;
   adminEmail: string | null;
   stats: StatsData | null;
@@ -30,8 +29,7 @@ class Store {
       selectedProfile: null,
       formData: {},
       currentStep: 1,
-      token: sessionStorage.getItem('bm_token') || localStorage.getItem('bm_token'),
-      isAuthenticated: !!(sessionStorage.getItem('bm_token') || localStorage.getItem('bm_token')),
+      isAuthenticated: false, // Will be verified via /api/auth/verify
       adminEmail: null,
       stats: null,
       applications: [],
@@ -50,17 +48,6 @@ class Store {
   set<K extends StateKey>(key: K, value: AppState[K]): void {
     this.state[key] = value;
     this.notify(key);
-
-    // Persist certain keys
-    if (key === 'token') {
-      if (value) {
-        sessionStorage.setItem('bm_token', value as string);
-        localStorage.removeItem('bm_token'); // migrate away from localStorage
-      } else {
-        sessionStorage.removeItem('bm_token');
-        localStorage.removeItem('bm_token');
-      }
-    }
   }
 
   getState(): Readonly<AppState> {

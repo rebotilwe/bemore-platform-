@@ -5,18 +5,22 @@ import Application from '../src/models/Application.js';
 import Admin from '../src/models/Admin.js';
 
 const app = createApp();
-let authToken;
+let authCookie;
+let csrfToken;
 let testAppId;
 let testRefNumber;
-
 
 async function seedTestData() {
   const hashed = await bcrypt.hash('TestPass123!', 10);
   await Admin.create({ email: 'test-admin@bemore.co.za', password: hashed });
+
   const loginRes = await request(app)
     .post('/api/auth/login')
     .send({ email: 'test-admin@bemore.co.za', password: 'TestPass123!' });
-  authToken = loginRes.body.data?.token;
+
+  const cookies = loginRes.headers['set-cookie'] || [];
+  authCookie = cookies.find(c => c.startsWith('bm_token=')) || '';
+  csrfToken = loginRes.body.data?.csrfToken || '';
 
   const appRes = await request(app)
     .post('/api/applications')
@@ -25,6 +29,7 @@ async function seedTestData() {
       personal: { firstName: 'Lookup', surname: 'Test', email: 'lookup@example.co.za', phone: '0821234567', companyName: 'Test Corp' },
       formData: { landStatus: 'Land Secured', projectStage: 'Funding Stage', estimatedValue: 'R20m – R100m', engagementSource: 'qr' },
     });
+
   testRefNumber = appRes.body.data.refNumber;
   const found = await Application.findOne({ refNumber: testRefNumber });
   testAppId = found._id.toString();
@@ -130,7 +135,7 @@ describe('Engagement Source Tracking', () => {
   it('should include bySource in stats', async () => {
     const res = await request(app)
       .get('/api/applications/stats')
-      .set('Authorization', `Bearer ${authToken}`);
+      .set('Cookie', authCookie);
 
     expect(res.status).toBe(200);
     expect(res.body.data.bySource).toEqual(expect.any(Array));
@@ -146,7 +151,8 @@ describe('PATCH /api/applications/:id — Classification', () => {
   it('should accept valid classification', async () => {
     const res = await request(app)
       .patch(`/api/applications/${testAppId}`)
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Cookie', authCookie)
+      .set('X-CSRF-Token', csrfToken)
       .send({ classification: 'hot' });
 
     expect(res.status).toBe(200);
@@ -156,7 +162,8 @@ describe('PATCH /api/applications/:id — Classification', () => {
   it('should reject invalid classification', async () => {
     const res = await request(app)
       .patch(`/api/applications/${testAppId}`)
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Cookie', authCookie)
+      .set('X-CSRF-Token', csrfToken)
       .send({ classification: 'invalid' });
 
     expect(res.status).toBe(400);
@@ -166,7 +173,8 @@ describe('PATCH /api/applications/:id — Classification', () => {
     for (const cls of ['hot', 'warm', 'cold', 'unclassified']) {
       const res = await request(app)
         .patch(`/api/applications/${testAppId}`)
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Cookie', authCookie)
+        .set('X-CSRF-Token', csrfToken)
         .send({ classification: cls });
 
       expect(res.status).toBe(200);
@@ -178,7 +186,8 @@ describe('PATCH /api/applications/:id — Follow-Up', () => {
   it('should accept follow-up with required + dueDate + notes', async () => {
     const res = await request(app)
       .patch(`/api/applications/${testAppId}`)
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Cookie', authCookie)
+      .set('X-CSRF-Token', csrfToken)
       .send({
         followUp: {
           required: true,
@@ -195,7 +204,8 @@ describe('PATCH /api/applications/:id — Follow-Up', () => {
   it('should accept follow-up with required only', async () => {
     const res = await request(app)
       .patch(`/api/applications/${testAppId}`)
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Cookie', authCookie)
+      .set('X-CSRF-Token', csrfToken)
       .send({ followUp: { required: false } });
 
     expect(res.status).toBe(200);
@@ -205,7 +215,8 @@ describe('PATCH /api/applications/:id — Follow-Up', () => {
   it('should reject invalid dueDate format', async () => {
     const res = await request(app)
       .patch(`/api/applications/${testAppId}`)
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Cookie', authCookie)
+      .set('X-CSRF-Token', csrfToken)
       .send({ followUp: { dueDate: 'not-a-date' } });
 
     expect(res.status).toBe(400);
@@ -237,7 +248,8 @@ describe('POST /api/applications/send-reminders', () => {
   it('should accept valid ids array', async () => {
     const res = await request(app)
       .post('/api/applications/send-reminders')
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Cookie', authCookie)
+      .set('X-CSRF-Token', csrfToken)
       .send({ ids: [testAppId] });
 
     expect(res.status).toBe(200);
@@ -256,7 +268,8 @@ describe('POST /api/applications/send-reminders', () => {
   it('should reject empty ids', async () => {
     const res = await request(app)
       .post('/api/applications/send-reminders')
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Cookie', authCookie)
+      .set('X-CSRF-Token', csrfToken)
       .send({ ids: [] });
 
     expect(res.status).toBe(400);
@@ -265,7 +278,8 @@ describe('POST /api/applications/send-reminders', () => {
   it('should reject invalid MongoDB ids', async () => {
     const res = await request(app)
       .post('/api/applications/send-reminders')
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Cookie', authCookie)
+      .set('X-CSRF-Token', csrfToken)
       .send({ ids: ['not-a-valid-id'] });
 
     expect(res.status).toBe(400);
@@ -280,7 +294,7 @@ describe('GET /api/applications/export/csv', () => {
   it('should include new columns in CSV header', async () => {
     const res = await request(app)
       .get('/api/applications/export/csv')
-      .set('Authorization', `Bearer ${authToken}`);
+      .set('Cookie', authCookie);
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toContain('text/csv');
@@ -309,7 +323,8 @@ describe('POST /api/applications/bulk-status', () => {
   it('should update multiple applications', async () => {
     const res = await request(app)
       .post('/api/applications/bulk-status')
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Cookie', authCookie)
+      .set('X-CSRF-Token', csrfToken)
       .send({ ids: [testAppId], status: 'reviewing' });
 
     expect(res.status).toBe(200);
@@ -320,7 +335,8 @@ describe('POST /api/applications/bulk-status', () => {
     const fakeIds = Array.from({ length: 101 }, (_, i) => `6500000000000000000${String(i).padStart(5, '0')}`);
     const res = await request(app)
       .post('/api/applications/bulk-status')
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Cookie', authCookie)
+      .set('X-CSRF-Token', csrfToken)
       .send({ ids: fakeIds, status: 'reviewing' });
 
     expect(res.status).toBe(400);
@@ -329,7 +345,8 @@ describe('POST /api/applications/bulk-status', () => {
   it('should reject invalid status', async () => {
     const res = await request(app)
       .post('/api/applications/bulk-status')
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Cookie', authCookie)
+      .set('X-CSRF-Token', csrfToken)
       .send({ ids: [testAppId], status: 'invalid' });
 
     expect(res.status).toBe(400);

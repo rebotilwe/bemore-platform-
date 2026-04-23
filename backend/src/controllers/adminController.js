@@ -1,7 +1,9 @@
 import bcrypt from 'bcryptjs';
 import Admin from '../models/Admin.js';
+import AdminAuditLog from '../models/AdminAuditLog.js';
 import { track } from '../services/analyticsService.js';
 import logger from '../utils/logger.js';
+import { redactEmail } from '../utils/redactPII.js';
 
 export async function listAdmins(req, res, next) {
   try {
@@ -33,7 +35,19 @@ export async function createAdmin(req, res, next) {
       req,
     });
 
-    logger.info(`Admin created: ${email}`);
+    logger.info(`Admin created: ${redactEmail(email)}`);
+
+    // Log to AdminAuditLog
+    await AdminAuditLog.create({
+      admin: { id: req.admin?.id, email: redactEmail(req.admin?.email) },
+      action: 'admin_created',
+      target: { model: 'Admin', id: admin._id, refNumber: undefined },
+      details: { targetEmail: redactEmail(email) },
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      requestId: req.requestId,
+      status: 'success',
+    }).catch(err => console.error('Audit log failed:', err.message));
 
     res.status(201).json({
       success: true,
@@ -73,7 +87,19 @@ export async function updateAdmin(req, res, next) {
       req,
     });
 
-    logger.info(`Admin updated: ${admin.email}`);
+    logger.info(`Admin updated: ${redactEmail(admin.email)}`);
+
+    // Log to AdminAuditLog
+    await AdminAuditLog.create({
+      admin: { id: req.admin?.id, email: redactEmail(req.admin?.email) },
+      action: 'admin_updated',
+      target: { model: 'Admin', id: admin._id },
+      details: { targetEmail: redactEmail(admin.email) },
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      requestId: req.requestId,
+      status: 'success',
+    }).catch(err => console.error('Audit log failed:', err.message));
 
     res.json({
       success: true,
@@ -110,7 +136,19 @@ export async function deleteAdmin(req, res, next) {
       req,
     });
 
-    logger.info(`Admin deleted: ${admin.email}`);
+    logger.info(`Admin deleted: ${redactEmail(admin.email)}`);
+
+    // Log to AdminAuditLog
+    await AdminAuditLog.create({
+      admin: { id: req.admin?.id, email: redactEmail(req.admin?.email) },
+      action: 'admin_deleted',
+      target: { model: 'Admin', id: admin._id },
+      details: { targetEmail: redactEmail(admin.email) },
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      requestId: req.requestId,
+      status: 'success',
+    }).catch(err => console.error('Audit log failed:', err.message));
 
     res.json({ success: true, message: 'Admin deleted' });
   } catch (err) {

@@ -15,5 +15,5 @@ export async function authenticateAdmin(email, password) {
     { expiresIn: config.jwtExpiresIn },
   );
 
-  return { token, expiresIn: config.jwtExpiresIn };
+  return { token, expiresIn: config.jwtExpiresIn, adminId: admin._id.toString() };
 }

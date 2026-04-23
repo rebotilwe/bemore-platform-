@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import { config } from './config/index.js';
 import routes from './routes/index.js';
 import errorHandler from './middleware/errorHandler.js';
@@ -17,6 +18,7 @@ export function createApp() {
   app.use(requestLogger);
   app.use(compression());
   app.use(express.json({ limit: '100kb' }));
+  app.use(cookieParser());
   app.use(cors(config.cors));
   app.use(helmet());
 

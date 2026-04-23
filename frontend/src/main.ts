@@ -27,10 +27,11 @@ async function init(): Promise<void> {
   store.set('useApi', online);
   if (import.meta.env.DEV) console.log(online ? '✓ Connected to backend API' : '◌ Running in localStorage demo mode');
 
-  // Verify existing session token
-  if (store.get('token')) {
+  // Always verify session with backend on page load (cookie is auto-sent)
+  // This handles both returning users and fresh page loads
+  if (online) {
     const valid = await verifySession();
-    if (!valid && import.meta.env.DEV) console.log('◌ Session expired — logged out');
+    if (import.meta.env.DEV) console.log(valid ? '✓ Session valid' : '◌ No valid session');
   }
 
   // Capture engagement source from URL params (e.g., ?src=qr)
