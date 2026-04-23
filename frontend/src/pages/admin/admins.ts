@@ -1,13 +1,25 @@
 import type { Page } from '../../types/index.ts';
 import { api } from '../../api.ts';
+import { store } from '../../store.ts';
 import { mountAdminLayout } from './layout.ts';
 import { toast } from '../../components/toast.ts';
+import { esc } from '../../utils/format.ts';
 
 interface AdminUser {
   _id: string;
   email: string;
   name: string;
   createdAt: string;
+}
+
+function getInitials(name: string, email: string): string {
+  if (name) {
+    const parts = name.trim().split(/\s+/);
+    return parts.length > 1
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : parts[0].slice(0, 2).toUpperCase();
+  }
+  return email.slice(0, 2).toUpperCase();
 }
 
 export const adminsPage: Page = {
@@ -19,54 +31,53 @@ export const adminsPage: Page = {
         <p class="settings-header-sub">Manage who has access to the admin dashboard.</p>
       </div>
 
-      <div class="admins-actions">
-        <button class="btn-primary" id="add-admin-btn">Add Admin User</button>
-      </div>
-
       <div id="admins-content">
         <div class="skeleton skeleton-card"></div>
       </div>
 
-      <dialog id="admin-modal" class="modal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h3 class="modal-title" id="admin-modal-title">Add Admin User</h3>
-            <button class="modal-close" id="admin-modal-close">&times;</button>
+      <dialog id="admin-dialog" class="admin-dialog">
+        <div class="admin-dialog-card">
+          <div class="admin-dialog-header">
+            <h3 class="admin-dialog-title" id="admin-dialog-title">Add Admin User</h3>
+            <button class="admin-dialog-close" id="admin-dialog-close" aria-label="Close">&times;</button>
           </div>
-          <form id="admin-form" class="modal-form">
+          <form id="admin-form">
             <input type="hidden" id="admin-id" />
-            <div class="form-group">
-              <label for="admin-email" class="form-label">Email</label>
-              <input type="email" id="admin-email" class="form-input" required />
+            <div class="admin-form-group">
+              <label for="admin-email" class="admin-form-label">Email</label>
+              <input type="email" id="admin-email" class="admin-form-input" placeholder="admin@example.co.za" required />
             </div>
-            <div class="form-group">
-              <label for="admin-name" class="form-label">Name (optional)</label>
-              <input type="text" id="admin-name" class="form-input" />
+            <div class="admin-form-group">
+              <label for="admin-name" class="admin-form-label">Name</label>
+              <input type="text" id="admin-name" class="admin-form-input" placeholder="Full name (optional)" />
             </div>
-            <div class="form-group">
-              <label for="admin-password" class="form-label">Password</label>
-              <input type="password" id="admin-password" class="form-input" minlength="8" required />
-              <span class="form-hint">Minimum 8 characters</span>
+            <div class="admin-form-group" id="password-group">
+              <label for="admin-password" class="admin-form-label">Password</label>
+              <input type="password" id="admin-password" class="admin-form-input" placeholder="Minimum 8 characters" minlength="8" />
+              <span class="admin-form-hint" id="password-hint">Minimum 8 characters</span>
             </div>
-            <div class="modal-actions">
-              <button type="button" class="btn-ghost" id="admin-modal-cancel">Cancel</button>
-              <button type="submit" class="btn-primary" id="admin-submit-btn">Create</button>
+            <div class="admin-dialog-actions">
+              <button type="button" class="btn-ghost" id="admin-dialog-cancel">Cancel</button>
+              <button type="submit" class="btn-primary" id="admin-submit-btn">Create Admin</button>
             </div>
           </form>
         </div>
       </dialog>
 
-      <dialog id="delete-modal" class="modal">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h3 class="modal-title">Delete Admin</h3>
-            <button class="modal-close" id="delete-modal-close">&times;</button>
+      <dialog id="delete-dialog" class="admin-dialog">
+        <div class="admin-dialog-card">
+          <div class="admin-dialog-header">
+            <h3 class="admin-dialog-title">Delete Admin</h3>
+            <button class="admin-dialog-close" id="delete-dialog-close" aria-label="Close">&times;</button>
           </div>
-          <p class="modal-body-text">Are you sure you want to delete this admin user? This action cannot be undone.</p>
+          <div class="admin-delete-body">
+            <p>This will permanently remove admin access for:</p>
+            <div class="admin-delete-email" id="delete-email-display"></div>
+          </div>
           <input type="hidden" id="delete-admin-id" />
-          <div class="modal-actions">
-            <button type="button" class="btn-ghost" id="delete-modal-cancel">Cancel</button>
-            <button type="button" class="btn-danger" id="delete-confirm-btn">Delete</button>
+          <div class="admin-dialog-actions">
+            <button type="button" class="btn-ghost" id="delete-dialog-cancel">Cancel</button>
+            <button type="button" class="btn-danger" id="delete-confirm-btn">Delete Admin</button>
           </div>
         </div>
       </dialog>
@@ -77,17 +88,16 @@ export const adminsPage: Page = {
     mountAdminLayout();
 
     const container = document.getElementById('admins-content');
-    const addBtn = document.getElementById('add-admin-btn');
-    const adminModal = document.getElementById('admin-modal') as HTMLDialogElement;
-    const deleteModal = document.getElementById('delete-modal') as HTMLDialogElement;
-    if (!container || !addBtn || !adminModal || !deleteModal) return;
+    const adminDialog = document.getElementById('admin-dialog') as HTMLDialogElement;
+    const deleteDialog = document.getElementById('delete-dialog') as HTMLDialogElement;
+    if (!container || !adminDialog || !deleteDialog) return;
 
+    const currentEmail = store.get('adminEmail') || '';
     let admins: AdminUser[] = [];
 
-    // Load admins
     async function loadAdmins() {
       const res = await api.getAdmins();
-      admins = (res.success && res.data) as AdminUser[] || [];
+      admins = (res.success && Array.isArray(res.data) ? res.data : []) as AdminUser[];
       renderAdmins();
     }
 
@@ -95,32 +105,45 @@ export const adminsPage: Page = {
       if (!container) return;
       if (admins.length === 0) {
         container.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-icon">&#9780;</div>
-            <p class="empty-text">No admin users found</p>
-            <p class="empty-subtext">Add an admin to enable dashboard access.</p>
+          <div class="admins-empty">
+            <div class="admins-empty-icon">&#9780;</div>
+            <h3 class="admins-empty-title">No Admin Users</h3>
+            <p class="admins-empty-sub">Add an admin to enable dashboard access.</p>
           </div>`;
         return;
       }
 
       container.innerHTML = `
+        <div class="admins-header-row">
+          <span class="admins-count">${admins.length} admin${admins.length !== 1 ? 's' : ''}</span>
+          <button class="btn-primary" id="add-admin-btn">+ Add Admin</button>
+        </div>
         <div class="admins-list">
-          ${admins.map(admin => `
+          ${admins.map(admin => {
+            const isYou = admin.email === currentEmail;
+            const initials = getInitials(admin.name, admin.email);
+            const date = new Date(admin.createdAt).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' });
+            return `
             <div class="admin-card" data-id="${admin._id}">
-              <div class="admin-card-info">
-                <div class="admin-card-email">${admin.email}</div>
-                <div class="admin-card-name">${admin.name || '—'}</div>
-                <div class="admin-card-date">Created ${new Date(admin.createdAt).toLocaleDateString('en-ZA')}</div>
+              <div class="admin-card-left">
+                <div class="admin-card-avatar">${esc(initials)}</div>
+                <div class="admin-card-info">
+                  <div class="admin-card-email">${esc(admin.email)}${isYou ? '<span class="admin-card-you">You</span>' : ''}</div>
+                  <div class="admin-card-name">${esc(admin.name || 'No name set')}</div>
+                  <div class="admin-card-date">Added ${date}</div>
+                </div>
               </div>
               <div class="admin-card-actions">
                 <button class="btn-sm btn-ghost edit-admin-btn" data-id="${admin._id}">Edit</button>
-                <button class="btn-sm btn-danger delete-admin-btn" data-id="${admin._id}">Delete</button>
+                ${!isYou ? `<button class="btn-sm btn-danger delete-admin-btn" data-id="${admin._id}">Delete</button>` : ''}
               </div>
-            </div>
-          `).join('')}
+            </div>`;
+          }).join('')}
         </div>`;
 
-      // Attach event listeners
+      // Attach events
+      document.getElementById('add-admin-btn')?.addEventListener('click', openAddModal);
+
       container.querySelectorAll('.edit-admin-btn').forEach(btn => {
         btn.addEventListener('click', () => openEditModal((btn as HTMLElement).dataset.id!));
       });
@@ -135,46 +158,47 @@ export const adminsPage: Page = {
       (document.getElementById('admin-email') as HTMLInputElement).value = '';
       (document.getElementById('admin-name') as HTMLInputElement).value = '';
       (document.getElementById('admin-password') as HTMLInputElement).value = '';
-      (document.getElementById('admin-modal-title') as HTMLElement).textContent = 'Add Admin User';
-      (document.getElementById('admin-submit-btn') as HTMLElement).textContent = 'Create';
+      (document.getElementById('admin-dialog-title') as HTMLElement).textContent = 'Add Admin User';
+      (document.getElementById('admin-submit-btn') as HTMLElement).textContent = 'Create Admin';
       (document.getElementById('admin-password') as HTMLInputElement).required = true;
-      adminModal.showModal();
+      (document.getElementById('password-hint') as HTMLElement).textContent = 'Minimum 8 characters';
+      adminDialog.showModal();
     }
 
     function openEditModal(id: string) {
       const admin = admins.find(a => a._id === id);
       if (!admin) return;
-
       (document.getElementById('admin-id') as HTMLInputElement).value = id;
       (document.getElementById('admin-email') as HTMLInputElement).value = admin.email;
-      (document.getElementById('admin-name') as HTMLInputElement).value = admin.name;
+      (document.getElementById('admin-name') as HTMLInputElement).value = admin.name || '';
       (document.getElementById('admin-password') as HTMLInputElement).value = '';
-      (document.getElementById('admin-modal-title') as HTMLElement).textContent = 'Edit Admin User';
-      (document.getElementById('admin-submit-btn') as HTMLElement).textContent = 'Save';
+      (document.getElementById('admin-dialog-title') as HTMLElement).textContent = 'Edit Admin User';
+      (document.getElementById('admin-submit-btn') as HTMLElement).textContent = 'Save Changes';
       (document.getElementById('admin-password') as HTMLInputElement).required = false;
-      adminModal.showModal();
+      (document.getElementById('password-hint') as HTMLElement).textContent = 'Leave blank to keep current password';
+      adminDialog.showModal();
     }
 
     function openDeleteModal(id: string) {
+      const admin = admins.find(a => a._id === id);
+      if (!admin) return;
       (document.getElementById('delete-admin-id') as HTMLInputElement).value = id;
-      deleteModal.showModal();
+      const emailDisplay = document.getElementById('delete-email-display');
+      if (emailDisplay) emailDisplay.textContent = admin.email;
+      deleteDialog.showModal();
     }
 
-    // Event listeners
-    addBtn.addEventListener('click', openAddModal);
+    // Close handlers
+    const closeAdmin = () => adminDialog.close();
+    const closeDelete = () => deleteDialog.close();
 
-    document.getElementById('admin-modal-close')?.addEventListener('click', () => adminModal.close());
-    document.getElementById('admin-modal-cancel')?.addEventListener('click', () => adminModal.close());
-    document.getElementById('delete-modal-close')?.addEventListener('click', () => deleteModal.close());
-    document.getElementById('delete-modal-cancel')?.addEventListener('click', () => deleteModal.close());
+    document.getElementById('admin-dialog-close')?.addEventListener('click', closeAdmin);
+    document.getElementById('admin-dialog-cancel')?.addEventListener('click', closeAdmin);
+    document.getElementById('delete-dialog-close')?.addEventListener('click', closeDelete);
+    document.getElementById('delete-dialog-cancel')?.addEventListener('click', closeDelete);
 
-    // Close modal on backdrop click
-    adminModal.addEventListener('click', (e) => {
-      if (e.target === adminModal) adminModal.close();
-    });
-    deleteModal.addEventListener('click', (e) => {
-      if (e.target === deleteModal) deleteModal.close();
-    });
+    adminDialog.addEventListener('click', (e) => { if (e.target === adminDialog) closeAdmin(); });
+    deleteDialog.addEventListener('click', (e) => { if (e.target === deleteDialog) closeDelete(); });
 
     // Form submit
     document.getElementById('admin-form')?.addEventListener('submit', async (e) => {
@@ -196,23 +220,23 @@ export const adminsPage: Page = {
       try {
         let res;
         if (id) {
-          const updateData: { email?: string; name?: string; password?: string } = { email, name };
-          if (password) updateData.password = password;
-          res = await api.updateAdmin(id, updateData);
+          const data: { email?: string; name?: string; password?: string } = { email, name };
+          if (password) data.password = password;
+          res = await api.updateAdmin(id, data);
         } else {
           res = await api.createAdmin({ email, password, name });
         }
 
         if (res.success) {
-          toast(id ? 'Admin updated' : 'Admin created');
-          adminModal.close();
+          toast(id ? 'Admin updated successfully' : 'Admin created successfully');
+          closeAdmin();
           await loadAdmins();
         } else {
-          toast(res.message || 'Failed to save admin');
+          toast(res.message || 'Operation failed');
         }
       } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = id ? 'Save' : 'Create';
+        submitBtn.textContent = id ? 'Save Changes' : 'Create Admin';
       }
     });
 
@@ -229,18 +253,17 @@ export const adminsPage: Page = {
         const res = await api.deleteAdmin(id);
         if (res.success) {
           toast('Admin deleted');
-          deleteModal.close();
+          closeDelete();
           await loadAdmins();
         } else {
           toast(res.message || 'Failed to delete admin');
         }
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Delete';
+        btn.textContent = 'Delete Admin';
       }
     });
 
-    // Initial load
     await loadAdmins();
   },
 };
