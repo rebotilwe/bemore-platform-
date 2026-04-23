@@ -46,10 +46,9 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
   <link rel="manifest" href="/manifest.json">
 
-  <!-- Fonts — async load to avoid render-blocking -->
+  <!-- Fonts — preconnect + async load via JS (main.ts) to avoid render-blocking -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400&display=swap" crossorigin>
 
   <!-- Preload LCP image -->
   <link rel="preload" as="image" href="/be-more-group-logo.png">
