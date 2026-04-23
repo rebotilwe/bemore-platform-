@@ -12,6 +12,12 @@ import { tracker } from './services/tracker.ts';
 inject();
 injectSpeedInsights();
 
+// Load Google Fonts asynchronously (avoid render-blocking)
+const fontLink = document.createElement('link');
+fontLink.rel = 'stylesheet';
+fontLink.href = 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400&display=swap';
+document.head.appendChild(fontLink);
+
 new ErrorBoundary('app');
 
 async function init(): Promise<void> {

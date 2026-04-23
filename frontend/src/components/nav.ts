@@ -7,7 +7,7 @@ export function renderNav(_currentPath: string): string {
 
   return `
     <nav id="main-nav" role="navigation" aria-label="Main navigation">
-      <a class="nav-logo" href="#/"><img src="/be-more-group-logo.png" alt="BeMore Group" class="nav-logo-img" /></a>
+      <a class="nav-logo" href="#/"><img src="/be-more-group-logo.png" alt="BeMore Group" class="nav-logo-img" width="40" height="50" /></a>
       <button class="nav-burger" id="nav-burger" aria-label="Toggle menu" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>

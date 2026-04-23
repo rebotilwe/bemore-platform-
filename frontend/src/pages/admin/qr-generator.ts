@@ -23,7 +23,7 @@ export const qrGeneratorPage: Page = {
       <div class="qr-content">
         <div class="qr-preview-card">
           <div class="qr-brand-header">
-            <img src="/be-more-group-logo.png" alt="BeMore Group" class="qr-brand-logo" />
+            <img src="/be-more-group-logo.png" alt="BeMore Group" class="qr-brand-logo" width="60" height="74" />
             <span class="qr-brand-sub">SME Access Initiative</span>
           </div>
           <div class="qr-img-wrap">

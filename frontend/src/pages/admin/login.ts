@@ -10,7 +10,7 @@ export const loginPage: Page = {
       <button class="btn-ghost login-back" id="login-back">← Back to Home</button>
       <div class="admin-login-box">
         <div class="login-logo-wrap">
-          <img src="/be-more-group-logo.png" alt="BeMore Group" class="login-logo-img" />
+          <img src="/be-more-group-logo.png" alt="BeMore Group" class="login-logo-img" width="80" height="99" />
         </div>
         <h1 class="admin-title display">Admin Portal</h1>
         <p class="admin-sub">BeMore SME Access Initiative — Secure Access</p>

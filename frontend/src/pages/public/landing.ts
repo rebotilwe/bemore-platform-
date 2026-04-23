@@ -10,7 +10,7 @@ export const landingPage: Page = {
       <!-- Co-Branding Header -->
       <div class="landing-brands fade-in">
         <div class="landing-brand-item">
-          <img src="/be-more-group-logo.png" alt="BeMore Group" class="landing-brand-logo-img" />
+          <img src="/be-more-group-logo.png" alt="BeMore Group" class="landing-brand-logo-img" width="80" height="99" />
           <span class="landing-brand-label">SME Access Initiative</span>
         </div>
         <div class="landing-brand-divider" aria-hidden="true"></div>
