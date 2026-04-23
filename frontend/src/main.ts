@@ -8,6 +8,7 @@ import { verifySession } from './auth.ts';
 import { ErrorBoundary } from './components/error-boundary.ts';
 
 import { tracker } from './services/tracker.ts';
+import { initInstallPrompt } from './components/install-prompt.ts';
 
 inject();
 injectSpeedInsights();
@@ -65,6 +66,9 @@ async function init(): Promise<void> {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   }
+
+  // PWA install prompt (shows after 15s if not dismissed)
+  initInstallPrompt();
 }
 
 init();

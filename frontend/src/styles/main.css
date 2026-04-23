@@ -16,6 +16,7 @@
 @import './components/progress.css';
 @import './components/toast.css';
 @import './components/empty-state.css';
+@import './components/install-prompt.css';
 
 /* Pages */
 @import './pages/hero.css';
