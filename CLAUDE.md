@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Last updated**: 15 Apr 2026
+**Last updated**: 24 Apr 2026
 
 ## Project Overview
 
@@ -37,15 +37,23 @@ BeMore/
 │   ├── src/
 │   │   ├── app.js            # Express app factory (trust proxy, compression, CORS, helmet)
 │   │   ├── config/           # index.js (env validation), rateLimit.js (6 limiters), db.js (retry logic)
-│   │   ├── models/           # Application, Admin, AnalyticsEvent, EmailLog, Poll, PollResponse, SiteSettings, PageView, TrackingEvent
+│   │   ├── models/           # Application, Admin, AdminAuditLog, AnalyticsEvent, EmailLog, Poll, PollResponse, SiteSettings, PageView, TrackingEvent
 │   │   ├── controllers/      # application, auth, analytics, report, poll, traffic
 │   │   ├── services/         # applicationService (duplicate check), authService, analyticsService, reportService, pollService, pollSSE, trafficService
 │   │   ├── routes/           # applications (POPIA endpoints), auth, health, analytics, reports, polls, settings, tracking
-│   │   ├── middleware/       # auth (JWT), errorHandler, requestLogger, validate
-│   │   └── utils/            # autoTag, mailer (nodemailer + EmailLog tracking), logger (winston)
-│   └── __tests__/            # Jest + mongodb-memory-server (71 tests)
-└── docs/
-    └── api/openapi.yaml      # OpenAPI 3.1 spec
+│   │   ├── middleware/       # auth (JWT + Bearer), csrfProtection, errorHandler, requestLogger, validate
+│   │   └── utils/            # autoTag, mailer (Resend + SMTP), logger (winston), redactPII (POPIA)
+│   └── __tests__/            # Jest + mongodb-memory-server (184 tests)
+├── docs/
+│   ├── api/openapi.yaml      # OpenAPI 3.1 spec (50+ endpoints)
+│   ├── architecture.md       # System architecture with ASCII diagrams
+│   ├── environment-setup.md  # Developer setup guide
+│   ├── release-management.md # Versioning and release workflow
+│   ├── adr/                  # 8 Architecture Decision Records
+│   ├── compliance/popia.md   # POPIA compliance documentation
+│   └── runbooks/             # deployment, incident-response, backup-recovery
+├── CONTRIBUTING.md            # Developer contribution guide
+└── SECURITY.md                # Security policy and vulnerability reporting
 ```
 
 ## Development Commands
@@ -64,9 +72,9 @@ npm install && npm run dev          # nodemon auto-restart
 cd frontend && npm run typecheck    # tsc --noEmit
 
 # Tests
-cd backend && npm test              # 71 Jest tests (sequential, --runInBand, 30s timeout)
+cd backend && npm test              # 184 Jest tests (sequential, --runInBand, cross-env)
 cd backend && npm run test:coverage # with coverage report
-cd frontend && npx vitest run       # 43 Vitest tests
+cd frontend && npx vitest run       # 185 Vitest tests (17 test files)
 cd frontend && npm run test:coverage
 
 # Run a single test file
@@ -158,17 +166,21 @@ Frontend auto-detects backend via `GET /api/health`. If offline, falls back to `
 
 ## Production Hardening (applied)
 
-- **Env validation**: App exits if `JWT_SECRET` or `MONGODB_URI` missing in production
+- **Env validation**: App exits if `JWT_SECRET` or `MONGODB_URI` missing in production/staging
+- **Auth**: Dual JWT auth — Bearer token (sessionStorage) + HttpOnly cookie fallback. Railway CDN strips Set-Cookie, so Bearer is primary path through Vercel proxy rewrites
+- **CSRF**: Double-submit pattern — CSRF token in header (`X-CSRF-Token`) required for POST/PUT/PATCH/DELETE (except login)
+- **Admin audit logging**: All admin actions logged to `AdminAuditLog` (login, CRUD, status changes, bulk ops) with 7-year FICA retention
+- **PII redaction**: Auto-redacts email, phone, SA ID, IP addresses in logs before writing (POPIA mandatory)
 - **CORS**: Explicit origin list only (no wildcard), credentials + methods + headers restricted
 - **Trust proxy**: Enabled for accurate IP-based rate limiting behind Railway/Vercel proxy
-- **Rate limiting**: 5 tiers — health (200/min), public (100/15min), admin (300/15min), auth (10/15min), vote (60/15min)
+- **Rate limiting**: 6 tiers — health (200/min), public (100/15min), admin (300/15min), auth (10/15min), vote (60/15min), tracking (120/min)
 - **Compression**: gzip on API responses
 - **MongoDB retry**: 3 attempts with exponential backoff (2s/4s/8s)
 - **Structured logging**: Winston only, no console.log in production
 - **Process handlers**: unhandledRejection + uncaughtException caught
-- **Security headers**: X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy, Permissions-Policy (via Vercel)
+- **Security headers**: CSP, X-Frame-Options DENY, X-Content-Type-Options nosniff, HSTS, Referrer-Policy, Permissions-Policy (via Vercel)
 - **Cache headers**: Hashed assets get immutable 1-year cache
-- **Service worker**: v2 with stale-while-revalidate, precaches logo + icons
+- **Service worker**: Production-only (bemore-tawny.vercel.app). On staging/dev, any existing SW is auto-unregistered
 - **CSV export**: Formula injection prevention (prefixes `=+\-@` cells)
 - **Settings whitelist**: Only known keys can be written via admin API
 - **Error handler**: Mongoose CastError no longer leaks raw values
@@ -179,18 +191,35 @@ Frontend auto-detects backend via `GET /api/health`. If offline, falls back to `
 ## Environment Variables (Backend)
 
 ```
+# Server
 PORT=5000
-MONGODB_URI=mongodb://...          # REQUIRED in production
-JWT_SECRET=<32+ char random>       # REQUIRED in production
+NODE_ENV=production                # production | staging | development
+
+# Database
+MONGODB_URI=mongodb://...          # REQUIRED in production/staging
+
+# Auth
+JWT_SECRET=<32+ char random>       # REQUIRED in production/staging
 JWT_EXPIRES_IN=8h
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
 CORS_ORIGIN=                       # Omit to use defaults, or comma-separated origins
+
+# Email (Resend preferred, SMTP fallback)
+RESEND_API_KEY=
 SMTP_HOST=mail.bts-app.co.za
-SMTP_PORT=465
+SMTP_PORT=587
 SMTP_USER=info@bts-app.co.za
 SMTP_PASS=<password>
 SMTP_FROM=info@bts-app.co.za
 SMTP_FROM_NAME=BeMore
+
+# Platform
 PLATFORM_URL=https://bemore-tawny.vercel.app
+
+# Admin Seed
 ADMIN_SEED_EMAIL=admin@bemore.co.za
 ADMIN_SEED_PASSWORD=<password>
 ```
@@ -201,12 +230,13 @@ ADMIN_SEED_PASSWORD=<password>
 - **Frontend**: Vercel (auto-deploy from `main` branch). Config in `frontend/vercel.json`
 - **Backend**: Railway (`bemore-production.up.railway.app`). API proxied via Vercel rewrites
 - **Production URL**: `https://bemore-tawny.vercel.app`
-- **Database**: MongoDB Atlas
+- **Database**: Railway MongoDB (internal: `mongodb.railway.internal:27017/bemore`, public proxy: `shortline.proxy.rlwy.net:50435`)
+- **Railway Project ID**: `73f243fd-1f42-4cc2-aa2f-094a9879eea5` (production environment)
 
 ### Staging
 - **Frontend**: Vercel (auto-deploy from `staging` branch). Domain: `bemorecapital.co.za`
 - **Backend**: Railway (`bemore-staging.up.railway.app`). API proxied via Vercel rewrites
-- **Database**: Railway MongoDB (internal: `mongodb.railway.internal:27017/bemore_staging`)
+- **Database**: Railway MongoDB (internal: `mongodb.railway.internal:27017/bemore_staging`, public proxy: `shortline.proxy.rlwy.net:28868`)
 - **Branch**: `staging` — merge features here before promoting to `main`
 - **NODE_ENV**: `staging` (env validation enforced same as production)
 
@@ -214,6 +244,12 @@ ADMIN_SEED_PASSWORD=<password>
 - `main` → production (Vercel + Railway production)
 - `staging` → staging (Vercel bemorecapital.co.za + Railway staging)
 - Feature branches → PR against `staging` first, then promote to `main`
+
+### Post-Merge Warning
+**After squash-merging staging → main**, always verify `frontend/vercel.json`:
+- Rewrite destination must be `bemore-production.up.railway.app` (not staging)
+- CSP `connect-src` must reference `bemore-production.up.railway.app`
+The staging branch has different URLs that will overwrite production on merge.
 
 ## CI/CD
 
@@ -224,6 +260,23 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on PR/push to `main`, `develop`
 
 ## Key Dependencies
 
-**Backend**: express, mongoose, jsonwebtoken, bcryptjs, helmet, cors, compression, express-rate-limit, express-validator, nodemailer, winston, uuid
+**Backend**: express, mongoose, jsonwebtoken, bcryptjs, helmet, cors, compression, cookie-parser, express-rate-limit, express-validator, nodemailer, winston, uuid
 **Frontend**: vite, typescript (vanilla TS, no framework), @vercel/analytics, @vercel/speed-insights
-**Testing**: jest, mongodb-memory-server, supertest (backend); vitest, jsdom, @testing-library/dom (frontend)
+**Testing**: jest, cross-env, mongodb-memory-server, supertest (backend); vitest, jsdom, @testing-library/dom (frontend)
+
+## Enterprise Documentation
+
+| Document | Path |
+|----------|------|
+| System Architecture | `docs/architecture.md` |
+| ADRs (8 records) | `docs/adr/` |
+| OpenAPI 3.1 Spec | `docs/api/openapi.yaml` |
+| POPIA Compliance | `docs/compliance/popia.md` |
+| Deployment Runbook | `docs/runbooks/deployment.md` |
+| Incident Response | `docs/runbooks/incident-response.md` |
+| Backup & Recovery | `docs/runbooks/backup-recovery.md` |
+| Environment Setup | `docs/environment-setup.md` |
+| Release Management | `docs/release-management.md` |
+| Contributing Guide | `CONTRIBUTING.md` |
+| Security Policy | `SECURITY.md` |
+| PR Template | `.github/PULL_REQUEST_TEMPLATE.md` |
