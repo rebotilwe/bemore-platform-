@@ -40,14 +40,14 @@ describe('Form Page — Application Submission Logic', () => {
   });
 
   describe('Form Validation', () => {
-    const validateUserType = (type) => {
+    const validateUserType = (type: string) => {
       const types = ['developer', 'landowner', 'investor', 'student', 'professional', 'aspiring'];
       return types.includes(type);
     };
 
-    const validateEmail = (email) => email.includes('@') && email.includes('.');
+    const validateEmail = (email: string) => email.includes('@') && email.includes('.');
 
-    const validatePhone = (phone) => phone.startsWith('+27') && phone.length >= 12;
+    const validatePhone = (phone: string) => phone.startsWith('+27') && phone.length >= 12;
 
     it('should validate developer user type', () => {
       expect(validateUserType('developer')).toBe(true);

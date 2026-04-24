@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 describe('QR Code & Engagement Source Tracking', () => {
   // Pure logic tests - no browser APIs needed
@@ -24,7 +24,7 @@ describe('QR Code & Engagement Source Tracking', () => {
   });
 
   describe('Source Display Logic', () => {
-    const shouldShowSourceTag = (source) => 
+    const shouldShowSourceTag = (source: string | null) =>
       source != null && source !== '' && source !== 'direct';
 
     it('should show tag for QR sources', () => {

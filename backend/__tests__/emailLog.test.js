@@ -204,6 +204,7 @@ describe('EmailLog Model — POPIA Compliance', () => {
 
   describe('POPIA Compliance Queries', () => {
     beforeEach(async () => {
+      await EmailLog.deleteMany({});
       await EmailLog.create([
         {
           to: 'user1@example.com',

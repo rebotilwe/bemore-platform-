@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 
 describe('Leads Page — Lead Management Logic', () => {
   beforeEach(() => {
@@ -53,12 +53,12 @@ describe('Leads Page — Lead Management Logic', () => {
     ];
 
     it('should sort by date descending', () => {
-      const sorted = [...leads].sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+      const sorted = [...leads].sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
       expect(sorted[0].submittedAt).toBe('2026-03-01');
     });
 
     it('should sort by date ascending', () => {
-      const sorted = [...leads].sort((a, b) => new Date(a.submittedAt) - new Date(b.submittedAt));
+      const sorted = [...leads].sort((a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime());
       expect(sorted[0].submittedAt).toBe('2026-01-01');
     });
   });
@@ -100,7 +100,7 @@ describe('Leads Page — Lead Management Logic', () => {
     });
 
     it('should show source tag for non-direct', () => {
-      const shouldShow = (source) => source && source !== 'direct';
+      const shouldShow = (source: string) => source && source !== 'direct';
       expect(shouldShow('qr')).toBe(true);
       expect(shouldShow('direct')).toBe(false);
     });
@@ -137,13 +137,13 @@ describe('Dashboard Page — Analytics Logic', () => {
     });
 
     it('should count by status', () => {
-      const counts = {};
+      const counts: Record<string, number> = {};
       for (const app of apps) {
         counts[app.status] = (counts[app.status] || 0) + 1;
       }
-      expect(counts.new).toBe(2);
-      expect(counts.reviewing).toBe(1);
-      expect(counts.funded).toBe(1);
+      expect(counts['new']).toBe(2);
+      expect(counts['reviewing']).toBe(1);
+      expect(counts['funded']).toBe(1);
     });
 
     it('should calculate conversion rate', () => {
@@ -195,13 +195,13 @@ describe('Dashboard Page — Analytics Logic', () => {
     ];
 
     it('should count by source', () => {
-      const sourceCounts = {};
+      const sourceCounts: Record<string, number> = {};
       for (const app of apps) {
         const source = app.engagementSource || 'direct';
         sourceCounts[source] = (sourceCounts[source] || 0) + 1;
       }
-      expect(sourceCounts.direct).toBe(2);
-      expect(sourceCounts.qr).toBe(1);
+      expect(sourceCounts['direct']).toBe(2);
+      expect(sourceCounts['qr']).toBe(1);
     });
   });
 });

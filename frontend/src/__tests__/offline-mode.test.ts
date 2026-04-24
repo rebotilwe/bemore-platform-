@@ -58,12 +58,12 @@ describe('Offline / Demo Mode', () => {
     it('should save form state', () => {
       saveFormState({ step: 2, userType: 'developer' });
       const state = loadFormState();
-      expect(state?.step).toBe(2);
+      expect((state as any)?.step).toBe(2);
     });
 
     it('should restore form state', () => {
       saveFormState({ step: 1 });
-      expect(loadFormState()?.step).toBe(1);
+      expect((loadFormState() as any)?.step).toBe(1);
     });
 
     it('should return null when no saved state', () => {
