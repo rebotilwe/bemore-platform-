@@ -5,6 +5,7 @@ import * as appService from '../services/applicationService.js';
 import { track } from '../services/analyticsService.js';
 import { sendSubmissionConfirmation, sendStatusNotification, sendSummitReminder } from '../utils/mailer.js';
 import { redactEmail, redactPhone } from '../utils/redactPII.js';
+import logger from '../utils/logger.js';
 
 export async function submit(req, res, next) {
   try {
@@ -17,7 +18,8 @@ export async function submit(req, res, next) {
       req,
     });
 
-    sendSubmissionConfirmation(app.personal.email, app.refNumber, app.personal.firstName).catch(() => {});
+    sendSubmissionConfirmation(app.personal.email, app.refNumber, app.personal.firstName)
+      .catch(err => logger.error('Submission confirm email failed', { error: err.message, refNumber: app.refNumber }));
 
     res.status(201).json({ success: true, data: { refNumber: app.refNumber } });
   } catch (err) {
@@ -44,7 +46,7 @@ export async function list(req, res, next) {
       userAgent: req.get('user-agent'),
       requestId: req.requestId,
       status: 'success',
-    }).catch(err => console.error('Audit log failed:', err.message));
+    }).catch(err => logger.error('Audit log failed', { error: err.message }));
 
     res.json({ success: true, ...result });
   } catch (err) {
@@ -73,7 +75,7 @@ export async function getOne(req, res, next) {
       userAgent: req.get('user-agent'),
       requestId: req.requestId,
       status: 'success',
-    }).catch(err => console.error('Audit log failed:', err.message));
+    }).catch(err => logger.error('Audit log failed', { error: err.message }));
 
     res.json({ success: true, data: app });
   } catch (err) {
@@ -104,11 +106,12 @@ export async function update(req, res, next) {
       userAgent: req.get('user-agent'),
       requestId: req.requestId,
       status: 'success',
-    }).catch(err => console.error('Audit log failed:', err.message));
+    }).catch(err => logger.error('Audit log failed', { error: err.message }));
 
     // Send email notification on status change
     if (updates.status && app.personal?.email) {
-      sendStatusNotification(app.personal.email, app.refNumber, app.personal.firstName, updates.status).catch(() => {});
+      sendStatusNotification(app.personal.email, app.refNumber, app.personal.firstName, updates.status)
+        .catch(err => logger.error('Status notification email failed', { error: err.message, refNumber: app.refNumber, status: updates.status }));
     }
 
     res.json({ success: true, data: app });
@@ -136,7 +139,7 @@ export async function stats(req, res, next) {
       userAgent: req.get('user-agent'),
       requestId: req.requestId,
       status: 'success',
-    }).catch(err => console.error('Audit log failed:', err.message));
+    }).catch(err => logger.error('Audit log failed', { error: err.message }));
 
     res.json({ success: true, data });
   } catch (err) {
@@ -194,7 +197,7 @@ export async function exportCsv(req, res, next) {
       userAgent: req.get('user-agent'),
       requestId: req.requestId,
       status: 'success',
-    }).catch(err => console.error('Audit log failed:', err.message));
+    }).catch(err => logger.error('Audit log failed', { error: err.message }));
 
     res.end();
   } catch (err) {
@@ -236,14 +239,15 @@ export async function bulkUpdateStatus(req, res, next) {
       userAgent: req.get('user-agent'),
       requestId: req.requestId,
       status: 'success',
-    }).catch(err => console.error('Audit log failed:', err.message));
+    }).catch(err => logger.error('Audit log failed', { error: err.message }));
 
     // Send email notifications for significant status changes
     if (['shortlisted', 'invited', 'funded'].includes(status)) {
       const apps = await Application.find({ _id: { $in: ids } }).select('personal refNumber');
       for (const app of apps) {
         if (app.personal?.email) {
-          sendStatusNotification(app.personal.email, app.refNumber, app.personal.firstName, status).catch(() => {});
+          sendStatusNotification(app.personal.email, app.refNumber, app.personal.firstName, status)
+            .catch(err => logger.error('Bulk status notification failed', { error: err.message, refNumber: app.refNumber }));
         }
       }
     }
@@ -269,7 +273,8 @@ export async function sendReminders(req, res, next) {
     let sent = 0;
     for (const app of apps) {
       if (app.personal?.email) {
-        sendSummitReminder(app.personal.email, app.refNumber, app.personal.firstName).catch(() => {});
+        sendSummitReminder(app.personal.email, app.refNumber, app.personal.firstName)
+          .catch(err => logger.error('Summit reminder email failed', { error: err.message, refNumber: app.refNumber }));
         sent++;
       }
     }
@@ -289,7 +294,7 @@ export async function sendReminders(req, res, next) {
       userAgent: req.get('user-agent'),
       requestId: req.requestId,
       status: 'success',
-    }).catch(err => console.error('Audit log failed:', err.message));
+    }).catch(err => logger.error('Audit log failed', { error: err.message }));
 
     res.json({ success: true, data: { sent } });
   } catch (err) {

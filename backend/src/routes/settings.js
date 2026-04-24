@@ -12,10 +12,11 @@ const ALLOWED_SETTINGS = [
   'mentimeterEmbedId', 'mentimeter_id',
   'polls_enabled',
   'registrationOpen', 'maintenanceMode', 'platformAnnouncement',
+  'summit_config',
 ];
 
 // Public settings whitelist — only these keys are readable without auth
-const PUBLIC_SETTINGS = ['mentimeterEmbedId', 'mentimeter_id', 'polls_enabled', 'registrationOpen', 'platformAnnouncement'];
+const PUBLIC_SETTINGS = ['mentimeterEmbedId', 'mentimeter_id', 'polls_enabled', 'registrationOpen', 'platformAnnouncement', 'summit_config'];
 
 // Public: get specific setting (e.g., mentimeter ID)
 router.get('/public/:key', async (req, res) => {
