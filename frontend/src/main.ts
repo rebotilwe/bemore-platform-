@@ -63,9 +63,13 @@ async function init(): Promise<void> {
   // Initialize router
   router.init();
 
-  // Register service worker (static assets only — never caches API or HTML)
-  if ('serviceWorker' in navigator) {
+  // Register service worker only in production (caching interferes with staging/dev debugging)
+  const isProductionHost = window.location.hostname === 'bemore-tawny.vercel.app';
+  if (isProductionHost && 'serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
+  } else if ('serviceWorker' in navigator) {
+    // Unregister any existing SW in staging/dev to avoid stale cache issues
+    navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
   }
 
   // PWA install prompt (shows after 15s if not dismissed)
