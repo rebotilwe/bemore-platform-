@@ -1,4 +1,4 @@
-import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals';
+import { jest, describe, beforeAll, beforeEach, it, expect } from '@jest/globals';
 
 // Mock EmailLog using ESM unstable_mockModule
 jest.unstable_mockModule('../src/models/EmailLog.js', () => ({
@@ -24,9 +24,15 @@ jest.unstable_mockModule('../src/config/index.js', () => ({
   }
 }));
 
-// Dynamically import modules after mocking
-const { sendSubmissionConfirmation, sendStatusNotification, sendSummitReminder } = await import('../src/utils/mailer.js');
-const EmailLog = (await import('../src/models/EmailLog.js')).default;
+let sendSubmissionConfirmation, sendStatusNotification, sendSummitReminder, EmailLog;
+
+beforeAll(async () => {
+  const mailer = await import('../src/utils/mailer.js');
+  sendSubmissionConfirmation = mailer.sendSubmissionConfirmation;
+  sendStatusNotification = mailer.sendStatusNotification;
+  sendSummitReminder = mailer.sendSummitReminder;
+  EmailLog = (await import('../src/models/EmailLog.js')).default;
+});
 
 describe('mailer.js', () => {
   beforeEach(() => {
