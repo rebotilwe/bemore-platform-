@@ -62,8 +62,8 @@ export async function login(req, res, next) {
       status: 'success',
     }).catch(err => console.error('Audit log failed:', err.message));
 
-    // Return CSRF token so client can store it for subsequent requests
-    res.json({ success: true, data: { expiresIn: result.expiresIn, csrfToken } });
+    // Return token + CSRF so frontend can use Bearer auth (works through Vercel proxy)
+    res.json({ success: true, data: { token: result.token, expiresIn: result.expiresIn, csrfToken } });
   } catch (err) {
     next(err);
   }

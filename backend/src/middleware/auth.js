@@ -1,9 +1,11 @@
 import jwt from 'jsonwebtoken';
 import { config } from '../config/index.js';
 
-// Read JWT from HttpOnly cookie (bm_token)
+// Read JWT from cookie (bm_token) or Authorization header (Bearer)
+// Supports both: cookies work for same-origin, Bearer works through proxies (Vercel rewrites)
 export default function auth(req, res, next) {
-  const token = req.cookies?.bm_token;
+  const token = req.cookies?.bm_token
+    || (req.get('Authorization')?.startsWith('Bearer ') && req.get('Authorization').slice(7));
   if (!token) {
     return res.status(401).json({ success: false, message: 'No token provided' });
   }
@@ -29,10 +31,14 @@ export function csrfProtection(req, res, next) {
     return next();
   }
 
-  const cookieToken = req.cookies?.bm_csrf;
   const headerToken = req.get('X-CSRF-Token');
+  if (!headerToken) {
+    return res.status(403).json({ success: false, message: 'Missing CSRF token' });
+  }
 
-  if (!cookieToken || !headerToken || cookieToken !== headerToken) {
+  // Double-submit: cookie must match header (if cookie is available)
+  const cookieToken = req.cookies?.bm_csrf;
+  if (cookieToken && cookieToken !== headerToken) {
     return res.status(403).json({ success: false, message: 'Invalid CSRF token' });
   }
 

@@ -16,6 +16,11 @@ const REQUEST_TIMEOUT = 15000; // 15 seconds
 const RETRY_DELAY = 2000;
 const MAX_RETRIES = 1; // 1 retry for GET on network error
 
+// Read auth token from sessionStorage (set on login)
+function getAuthToken(): string | null {
+  return sessionStorage.getItem('bm_token');
+}
+
 // Read CSRF token from sessionStorage (set on login)
 function getCsrfToken(): string | null {
   return sessionStorage.getItem('bm_csrf');
@@ -38,7 +43,13 @@ const CSRF_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
 
-  // Add CSRF token for state-changing requests (JWT is in HttpOnly cookie)
+  // Add Bearer token for auth (works through Vercel proxy rewrites)
+  const authToken = getAuthToken();
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+
+  // Add CSRF token for state-changing requests
   if (CSRF_METHODS.includes(method.toUpperCase())) {
     const csrfToken = getCsrfToken();
     if (csrfToken) {
@@ -71,6 +82,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     if (res.status === 401 && store.get('isAuthenticated') && !path.includes('/auth/login')) {
       store.set('isAuthenticated', false);
       store.set('adminEmail', null);
+      sessionStorage.removeItem('bm_token');
       sessionStorage.removeItem('bm_csrf');
       window.location.hash = '/admin/login';
     }

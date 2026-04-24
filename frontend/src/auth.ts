@@ -6,30 +6,35 @@ export async function login(email: string, password: string) {
   const result = await api.login(email, password);
   if (result.success && result.data) {
     store.set('isAuthenticated', true);
-    const csrfToken = result.data && result.data.csrfToken;
-    if (csrfToken) {
-      sessionStorage.setItem('bm_csrf', csrfToken);
-    }
-    const token = result.data && result.data.token;
-    if (token) {
+
+    // Store JWT for Bearer auth (works through Vercel proxy rewrites)
+    if (result.data.token) {
+      sessionStorage.setItem('bm_token', result.data.token);
       try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        if (payload && payload.email) store.set('adminEmail', payload.email);
+        const payload = JSON.parse(atob(result.data.token.split('.')[1]));
+        if (payload?.email) store.set('adminEmail', payload.email);
       } catch {
         store.set('adminEmail', email);
       }
     } else {
       store.set('adminEmail', email);
     }
+
+    // Store CSRF token for state-changing requests
+    if (result.data.csrfToken) {
+      sessionStorage.setItem('bm_csrf', result.data.csrfToken);
+    }
+
     return { success: true };
   }
   return { success: false, message: result.message || 'Invalid credentials' };
 }
 
 export async function logout() {
-  try { await api.logout(); } catch(e) {}
+  try { await api.logout(); } catch { /* ignore */ }
   store.set('isAuthenticated', false);
   store.set('adminEmail', null);
+  sessionStorage.removeItem('bm_token');
   sessionStorage.removeItem('bm_csrf');
   navigate('/');
 }
