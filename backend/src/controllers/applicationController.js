@@ -1,15 +1,17 @@
 import Application from '../models/Application.js';
+import AdminAuditLog from '../models/AdminAuditLog.js';
 import { APPLICATION_STATUSES } from '../constants/enums.js';
 import * as appService from '../services/applicationService.js';
 import { track } from '../services/analyticsService.js';
 import { sendSubmissionConfirmation, sendStatusNotification, sendSummitReminder } from '../utils/mailer.js';
+import { redactEmail, redactPhone } from '../utils/redactPII.js';
 
 export async function submit(req, res, next) {
   try {
     const app = await appService.createApplication(req.body);
 
     track('application.submitted', 'application', {
-      actor: { type: 'applicant', email: app.personal.email },
+      actor: { type: 'applicant', email: redactEmail(app.personal.email) },
       target: { model: 'Application', id: app._id.toString(), refNumber: app.refNumber },
       meta: { userType: app.userType, tags: app.tags },
       req,
@@ -33,6 +35,17 @@ export async function list(req, res, next) {
       req,
     });
 
+    // Log to AdminAuditLog
+    await AdminAuditLog.create({
+      admin: { id: req.admin?.id, email: redactEmail(req.admin?.email) },
+      action: 'application_view',
+      meta: { action: 'list', filters: req.query, resultCount: result.pagination.total },
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      requestId: req.requestId,
+      status: 'success',
+    }).catch(err => console.error('Audit log failed:', err.message));
+
     res.json({ success: true, ...result });
   } catch (err) {
     next(err);
@@ -49,6 +62,18 @@ export async function getOne(req, res, next) {
       target: { model: 'Application', id: app._id.toString(), refNumber: app.refNumber },
       req,
     });
+
+    // Log to AdminAuditLog
+    await AdminAuditLog.create({
+      admin: { id: req.admin?.id, email: redactEmail(req.admin?.email) },
+      action: 'application_view',
+      target: { model: 'Application', id: app._id, refNumber: app.refNumber },
+      details: { action: 'view' },
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      requestId: req.requestId,
+      status: 'success',
+    }).catch(err => console.error('Audit log failed:', err.message));
 
     res.json({ success: true, data: app });
   } catch (err) {
@@ -68,6 +93,18 @@ export async function update(req, res, next) {
       meta: { fields: Object.keys(updates).filter(k => k !== 'updatedAt'), newStatus: updates.status },
       req,
     });
+
+    // Log to AdminAuditLog
+    await AdminAuditLog.create({
+      admin: { id: req.admin?.id, email: redactEmail(req.admin?.email) },
+      action: 'status_update',
+      target: { model: 'Application', id: app._id, refNumber: app.refNumber },
+      details: { fields: Object.keys(updates).filter(k => k !== 'updatedAt'), newStatus: updates.status },
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      requestId: req.requestId,
+      status: 'success',
+    }).catch(err => console.error('Audit log failed:', err.message));
 
     // Send email notification on status change
     if (updates.status && app.personal?.email) {
@@ -89,6 +126,17 @@ export async function stats(req, res, next) {
       actor: { type: 'admin', id: req.admin?.id },
       req,
     });
+
+    // Log to AdminAuditLog
+    await AdminAuditLog.create({
+      admin: { id: req.admin?.id, email: redactEmail(req.admin?.email) },
+      action: 'application_view',
+      meta: { action: 'stats' },
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      requestId: req.requestId,
+      status: 'success',
+    }).catch(err => console.error('Audit log failed:', err.message));
 
     res.json({ success: true, data });
   } catch (err) {
@@ -116,7 +164,7 @@ export async function exportCsv(req, res, next) {
       const row = [
         a.refNumber, a.userType, a.status,
         a.classification || 'unclassified', a.engagementSource || 'direct',
-        a.personal?.firstName, a.personal?.surname, a.personal?.email, a.personal?.phone,
+        a.personal?.firstName, a.personal?.surname, redactEmail(a.personal?.email || ''), redactPhone(a.personal?.phone || ''),
         a.personal?.companyName || '',
         a.formData?.estimatedValue || '', a.formData?.projectStage || '', a.formData?.landStatus || '',
         (a.tags || []).join('; '),
@@ -136,6 +184,17 @@ export async function exportCsv(req, res, next) {
       meta: { count },
       req,
     });
+
+    // Log to AdminAuditLog
+    await AdminAuditLog.create({
+      admin: { id: req.admin?.id, email: redactEmail(req.admin?.email) },
+      action: 'data_export',
+      meta: { count, type: 'csv' },
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      requestId: req.requestId,
+      status: 'success',
+    }).catch(err => console.error('Audit log failed:', err.message));
 
     res.end();
   } catch (err) {
@@ -167,6 +226,17 @@ export async function bulkUpdateStatus(req, res, next) {
       meta: { count: result.modifiedCount, newStatus: status, ids },
       req,
     });
+
+    // Log to AdminAuditLog
+    await AdminAuditLog.create({
+      admin: { id: req.admin?.id, email: redactEmail(req.admin?.email) },
+      action: 'bulk_status_update',
+      meta: { count: result.modifiedCount, newStatus: status },
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      requestId: req.requestId,
+      status: 'success',
+    }).catch(err => console.error('Audit log failed:', err.message));
 
     // Send email notifications for significant status changes
     if (['shortlisted', 'invited', 'funded'].includes(status)) {
@@ -209,6 +279,17 @@ export async function sendReminders(req, res, next) {
       meta: { count: sent, ids },
       req,
     });
+
+    // Log to AdminAuditLog
+    await AdminAuditLog.create({
+      admin: { id: req.admin?.id, email: redactEmail(req.admin?.email) },
+      action: 'email_reminder_sent',
+      meta: { count: sent },
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      requestId: req.requestId,
+      status: 'success',
+    }).catch(err => console.error('Audit log failed:', err.message));
 
     res.json({ success: true, data: { sent } });
   } catch (err) {

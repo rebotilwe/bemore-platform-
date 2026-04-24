@@ -1,49 +1,57 @@
-import { store } from './store.ts';
-import { api } from './api.ts';
-import { navigate } from './router.ts';
+import { store } from './store.js';
+import { api } from './api.js';
+import { navigate } from './router.js';
 
-function parseToken(token: string): { email?: string } {
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return { email: payload.email };
-  } catch {
-    return {};
-  }
-}
-
-export async function login(email: string, password: string): Promise<{ success: boolean; message?: string }> {
+export async function login(email: string, password: string) {
   const result = await api.login(email, password);
   if (result.success && result.data) {
-    store.set('token', result.data.token);
     store.set('isAuthenticated', true);
-    const parsed = parseToken(result.data.token);
-    store.set('adminEmail', parsed.email || email);
+
+    // Store JWT for Bearer auth (works through Vercel proxy rewrites)
+    if (result.data.token) {
+      sessionStorage.setItem('bm_token', result.data.token);
+      try {
+        const payload = JSON.parse(atob(result.data.token.split('.')[1]));
+        if (payload?.email) store.set('adminEmail', payload.email);
+      } catch {
+        store.set('adminEmail', email);
+      }
+    } else {
+      store.set('adminEmail', email);
+    }
+
+    // Store CSRF token for state-changing requests
+    if (result.data.csrfToken) {
+      sessionStorage.setItem('bm_csrf', result.data.csrfToken);
+    }
+
     return { success: true };
   }
   return { success: false, message: result.message || 'Invalid credentials' };
 }
 
-export function logout(): void {
-  store.set('token', null);
+export async function logout() {
+  try { await api.logout(); } catch { /* ignore */ }
   store.set('isAuthenticated', false);
   store.set('adminEmail', null);
+  sessionStorage.removeItem('bm_token');
+  sessionStorage.removeItem('bm_csrf');
   navigate('/');
 }
 
-export function authGuard(): boolean {
-  return store.get('isAuthenticated');
+export function authGuard() {
+  if (store.get('isAuthenticated')) return true;
+  return false;
 }
 
-export async function verifySession(): Promise<boolean> {
-  if (!store.get('token')) return false;
+export async function verifySession() {
   const valid = await api.verifyToken();
-  if (!valid) {
-    store.set('token', null);
+  if (valid) {
+    store.set('isAuthenticated', true);
+  } else {
     store.set('isAuthenticated', false);
     store.set('adminEmail', null);
-  } else if (!store.get('adminEmail')) {
-    const parsed = parseToken(store.get('token')!);
-    if (parsed.email) store.set('adminEmail', parsed.email);
+    sessionStorage.removeItem('bm_csrf');
   }
   return valid;
 }

@@ -10,6 +10,10 @@ const emailLogSchema = new mongoose.Schema({
   sentAt: { type: Date, default: Date.now },
 });
 
+// TTL index — auto-delete email logs after 24 months (POPIA compliance)
+// 24 months = 730 days = 63072000 seconds
+emailLogSchema.index({ sentAt: 1 }, { expireAfterSeconds: 63072000 });
+
 emailLogSchema.index({ sentAt: -1 });
 emailLogSchema.index({ refNumber: 1, sentAt: -1 });
 

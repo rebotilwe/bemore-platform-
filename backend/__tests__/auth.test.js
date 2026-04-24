@@ -19,15 +19,19 @@ describe('POST /api/auth/login', () => {
     });
   });
 
-  it('should return 200 and token on valid credentials', async () => {
+  it('should return 200 and cookies on valid credentials', async () => {
     const response = await request(app)
       .post('/api/auth/login')
       .send({ email: 'admin@bemore.co.za', password: 'BeMore@2026!' });
 
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('success', true);
-    expect(response.body.data).toHaveProperty('token');
     expect(response.body.data).toHaveProperty('expiresIn');
+    // JWT is now in HttpOnly cookie (bm_token)
+    expect(response.headers['set-cookie']).toBeDefined();
+    expect(response.headers['set-cookie'].some(c => c.includes('bm_token'))).toBe(true);
+    // CSRF token returned in body
+    expect(response.body.data).toHaveProperty('csrfToken');
   });
 
   it('should return 401 on invalid password', async () => {
@@ -69,7 +73,8 @@ describe('POST /api/auth/login', () => {
 });
 
 describe('GET /api/auth/verify', () => {
-  let authToken;
+  let authCookie;
+  let csrfToken;
 
   beforeEach(async () => {
     const hashedPassword = await bcrypt.hash('BeMore@2026!', 10);
@@ -81,14 +86,17 @@ describe('GET /api/auth/verify', () => {
     const loginResponse = await request(app)
       .post('/api/auth/login')
       .send({ email: 'admin@bemore.co.za', password: 'BeMore@2026!' });
-    
-    authToken = loginResponse.body.data?.token;
+
+    // Extract bm_token cookie
+    const cookies = loginResponse.headers['set-cookie'];
+    authCookie = cookies.find(c => c.startsWith('bm_token='));
+    csrfToken = loginResponse.body.data?.csrfToken;
   });
 
   it('should return 200 with admin data on valid token', async () => {
     const response = await request(app)
       .get('/api/auth/verify')
-      .set('Authorization', `Bearer ${authToken}`);
+      .set('Cookie', authCookie);
 
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('success', true);
@@ -104,7 +112,7 @@ describe('GET /api/auth/verify', () => {
   it('should return 401 on invalid token', async () => {
     const response = await request(app)
       .get('/api/auth/verify')
-      .set('Authorization', 'Bearer invalid-token');
+      .set('Cookie', 'bm_token=invalid-token');
 
     expect(response.status).toBe(401);
     expect(response.body.message).toContain('Invalid');

@@ -197,13 +197,27 @@ ADMIN_SEED_PASSWORD=<password>
 
 ## Deployment
 
+### Production
 - **Frontend**: Vercel (auto-deploy from `main` branch). Config in `frontend/vercel.json`
 - **Backend**: Railway (`bemore-production.up.railway.app`). API proxied via Vercel rewrites
 - **Production URL**: `https://bemore-tawny.vercel.app`
+- **Database**: MongoDB Atlas
+
+### Staging
+- **Frontend**: Vercel (auto-deploy from `staging` branch). Domain: `bemorecapital.co.za`
+- **Backend**: Railway (`bemore-staging.up.railway.app`). API proxied via Vercel rewrites
+- **Database**: Railway MongoDB (internal: `mongodb.railway.internal:27017/bemore_staging`)
+- **Branch**: `staging` — merge features here before promoting to `main`
+- **NODE_ENV**: `staging` (env validation enforced same as production)
+
+### Branch Strategy
+- `main` → production (Vercel + Railway production)
+- `staging` → staging (Vercel bemorecapital.co.za + Railway staging)
+- Feature branches → PR against `staging` first, then promote to `main`
 
 ## CI/CD
 
-GitHub Actions (`.github/workflows/ci.yml`) runs on PR/push to `main` or `develop`:
+GitHub Actions (`.github/workflows/ci.yml`) runs on PR/push to `main`, `develop`, or `staging`:
 1. **Backend Test** — `npm ci` + `npm test` (Node 20, ubuntu, coverage artifact uploaded)
 2. **Frontend Test** — `tsc --noEmit` + `vitest run` + `npm run build`
 3. **Security Scan** — `npm audit --audit-level=critical` on both (non-blocking, `continue-on-error`)

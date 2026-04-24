@@ -1,18 +1,38 @@
 import AnalyticsEvent from '../models/AnalyticsEvent.js';
 import Application from '../models/Application.js';
 import logger from '../utils/logger.js';
+import { redactPII, redactEmail, redactPhone } from '../utils/redactPII.js';
 
 /**
  * Track an analytics event (fire-and-forget)
+ * PII is redacted before storage (POPIA compliance)
  */
 export function track(event, category, { actor, target, meta, req } = {}) {
+  // Redact PII from actor before storing
+  const safeActor = { ...(actor || { type: 'system' }) };
+  if (safeActor.email) {
+    safeActor.email = redactEmail(safeActor.email);
+  }
+  if (safeActor.phone) {
+    safeActor.phone = redactPhone(safeActor.phone);
+  }
+
+  // Redact PII from target
+  const safeTarget = target ? { ...target } : undefined;
+  if (safeTarget?.email) {
+    safeTarget.email = redactEmail(safeTarget.email);
+  }
+
+  // Redact PII from meta
+  const safeMeta = meta ? JSON.parse(redactPII(JSON.stringify(meta))) : undefined;
+
   AnalyticsEvent.create({
     event,
     category,
-    actor: actor || { type: 'system' },
-    target,
-    meta,
-    ip: req?.ip,
+    actor: safeActor,
+    target: safeTarget,
+    meta: safeMeta,
+    ip: req?.ip ? redactPII(req.ip) : undefined,
     userAgent: req?.get('user-agent'),
   }).catch(err => logger.error(`Analytics track error: ${err.message}`));
 }

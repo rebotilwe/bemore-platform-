@@ -7,16 +7,21 @@ import SiteSettings from '../src/models/SiteSettings.js';
 import EmailLog from '../src/models/EmailLog.js';
 
 const app = createApp();
-let authToken;
+let authCookie;
+let csrfToken;
 let testRefNumber;
 
 async function seedTestData() {
   const hashed = await bcrypt.hash('TestPass123!', 10);
   await Admin.create({ email: 'popia-admin@bemore.co.za', password: hashed });
+
   const loginRes = await request(app)
     .post('/api/auth/login')
     .send({ email: 'popia-admin@bemore.co.za', password: 'TestPass123!' });
-  authToken = loginRes.body.data?.token;
+
+  const cookies = loginRes.headers['set-cookie'] || [];
+  authCookie = cookies.find(c => c.startsWith('bm_token=')) || '';
+  csrfToken = loginRes.body.data?.csrfToken || '';
 
   const appRes = await request(app)
     .post('/api/applications')
@@ -30,9 +35,10 @@ async function seedTestData() {
 
 beforeAll(async () => { await seedTestData(); });
 
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════
 //  DUPLICATE PREVENTION
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════
+
 describe('Duplicate Application Prevention', () => {
   it('should return 409 when same email + userType already exists', async () => {
     const res = await request(app)
@@ -60,9 +66,10 @@ describe('Duplicate Application Prevention', () => {
   });
 });
 
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════
 //  POPIA DATA EXPORT
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════
+
 describe('POST /api/applications/data-export', () => {
   it('should export data for valid refNumber + email', async () => {
     const res = await request(app)
@@ -89,9 +96,10 @@ describe('POST /api/applications/data-export', () => {
   });
 });
 
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════
 //  POPIA DATA DELETE
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════
+
 describe('POST /api/applications/data-delete', () => {
   let deleteRefNumber;
 
@@ -140,9 +148,10 @@ describe('POST /api/applications/data-delete', () => {
   });
 });
 
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════
 //  SITE SETTINGS
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════
+
 describe('Site Settings API', () => {
   it('PUT should require auth', async () => {
     const res = await request(app)
@@ -154,7 +163,8 @@ describe('Site Settings API', () => {
   it('PUT should update a setting with auth', async () => {
     const res = await request(app)
       .put('/api/settings/mentimeter_id')
-      .set('Authorization', `Bearer ${authToken}`)
+      .set('Cookie', authCookie)
+      .set('X-CSRF-Token', csrfToken)
       .send({ value: 'newhashid123' });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -177,15 +187,16 @@ describe('Site Settings API', () => {
   it('GET / should return all settings with auth', async () => {
     const res = await request(app)
       .get('/api/settings')
-      .set('Authorization', `Bearer ${authToken}`);
+      .set('Cookie', authCookie);
     expect(res.status).toBe(200);
     expect(res.body.data).toHaveProperty('mentimeter_id');
   });
 });
 
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════
 //  EMAIL LOGS
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════
+
 describe('GET /api/emails/:refNumber', () => {
   beforeAll(async () => {
     await EmailLog.create([
@@ -202,7 +213,7 @@ describe('GET /api/emails/:refNumber', () => {
   it('should return email logs for a refNumber', async () => {
     const res = await request(app)
       .get(`/api/emails/${testRefNumber}`)
-      .set('Authorization', `Bearer ${authToken}`);
+      .set('Cookie', authCookie);
     expect(res.status).toBe(200);
     expect(res.body.data.length).toBeGreaterThanOrEqual(2);
     expect(res.body.data[0]).toHaveProperty('template');

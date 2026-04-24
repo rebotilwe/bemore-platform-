@@ -2,65 +2,89 @@ openapi: 3.1.0
 info:
   title: BeMore SME Access Initiative API
   description: |
-    API for the BeMore lead-generation portal targeting South African property
-    developers, landowners, student accommodation operators, and built environment
-    professionals seeking institutional funding partnerships.
+    API for the BeMore live engagement and data capture platform targeting South African
+    property developers, landowners, student accommodation operators, and built environment
+    professionals seeking institutional funding partnerships through PBSA.
 
     ## Authentication
-    Admin endpoints require a Bearer token obtained via `/auth/login`.
-    ```
-    Authorization: Bearer <access_token>
-    ```
+    Admin endpoints use **HttpOnly cookie-based JWT** authentication. On successful login,
+    the server sets two cookies:
+    - `bm_token` — HttpOnly JWT cookie (not accessible via JavaScript)
+    - `bm_csrf` — CSRF token cookie (readable by client)
 
-    ## Public Endpoints
-    - `POST /api/applications` — submit an application (duplicate prevention)
-    - `POST /api/applications/lookup` — status lookup (refNumber + email)
-    - `POST /api/applications/data-export` — POPIA: export applicant data
-    - `POST /api/applications/data-delete` — POPIA: delete applicant data
-    - `GET /api/settings/public/:key` — read a public site setting
-    - `GET /api/health` — health check (no auth required)
+    State-changing admin requests (POST, PATCH, PUT, DELETE) require the CSRF token
+    sent via the `X-CSRF-Token` header (double-submit cookie pattern).
+
+    ## Rate Limiting
+    All endpoints are rate-limited. Standard headers (`RateLimit-*`) are returned.
+    | Tier | Window | Max Requests | Applies To |
+    |------|--------|-------------|------------|
+    | Health | 1 min | 200 | `GET /health` |
+    | Public | 15 min | 100/IP | Application submit, lookup, POPIA, public settings |
+    | Admin | 15 min | 300 | All admin endpoints |
+    | Auth | 15 min | 10 | `POST /auth/login` |
+    | Vote | 15 min | 60/session | `POST /polls/:id/vote` |
+    | Tracking | 15 min | 300/IP | `POST /track/*` |
 
     ## Application Status Flow
-    `new` -> `reviewing` -> `shortlisted` -> `invited` -> `funded`
+    `new` → `reviewing` → `shortlisted` → `invited` → `funded`
 
     ## Auto-Tagging
     Applications are automatically tagged on submission based on form data:
-    `HIGH_VALUE`, `SHOVEL_READY`, `PIPELINE_READY`, `INSTITUTIONAL_GRADE`
-  version: 2.0.0
+    `HIGH_VALUE`, `LARGE_CAPITAL`, `MID_VALUE`, `LAND_SECURED`, `FUNDING_STAGE`,
+    `SHOVEL_READY`, `PIPELINE_READY`, `INSTITUTIONAL_GRADE`, `EXPERIENCED`,
+    `STUDENT_FOCUS`, `LARGE_OPERATOR`, `REGISTERED`
+
+    ## POPIA Compliance
+    Public data-export and data-delete endpoints allow applicants to exercise their
+    right to access and right to erasure under the Protection of Personal Information Act.
+    A 24-month TTL index auto-deletes stale records.
+  version: 3.0.0
   contact:
     name: Bukani Tech Solutions
+    url: https://bts-app.co.za
 
 servers:
   - url: http://localhost:5000/api
     description: Local development
   - url: https://bemore-tawny.vercel.app/api
-    description: Production
+    description: Production (via Vercel rewrite to Railway)
 
 tags:
   - name: Health
     description: System health checks
   - name: Auth
-    description: Admin authentication
+    description: Admin authentication (cookie-based JWT + CSRF)
   - name: Applications
-    description: Application management
+    description: Application submission and management
   - name: POPIA
     description: Data rights endpoints (export, delete)
+  - name: Analytics
+    description: Dashboard analytics and audit event log
+  - name: Traffic
+    description: Site traffic analytics (page views, devices, referrers)
   - name: Reports
     description: Pre-built intelligence reports
-  - name: Analytics
-    description: Analytics and audit log
+  - name: Polls
+    description: Live polling with SSE real-time updates
   - name: Settings
-    description: Site settings (admin-configurable)
+    description: Site settings (admin-configurable key-value store)
   - name: Emails
     description: Email delivery logs
-  - name: Polls
-    description: Live polling management
+  - name: Tracking
+    description: Client-side analytics ingestion (fire-and-forget)
+  - name: Admins
+    description: Admin user management
 
 paths:
+  # ────────────────────────────────────────────
+  # Health
+  # ────────────────────────────────────────────
   /health:
     get:
       tags: [Health]
       summary: Health check
+      description: Returns service health status. Rate limited to 200 req/min.
       security: []
       responses:
         '200':
@@ -75,12 +99,23 @@ paths:
                     example: ok
                   uptime:
                     type: number
+                    description: Process uptime in seconds
                     example: 86400
+        '429':
+          $ref: '#/components/responses/RateLimited'
 
+  # ────────────────────────────────────────────
+  # Auth
+  # ────────────────────────────────────────────
   /auth/login:
     post:
       tags: [Auth]
       summary: Admin login
+      description: |
+        Authenticates an admin user. On success, sets `bm_token` (HttpOnly JWT) and
+        `bm_csrf` (readable CSRF token) cookies. Returns the CSRF token in the response
+        body so the client can store it for subsequent state-changing requests.
+        Rate limited to 10 requests per 15 minutes.
       security: []
       requestBody:
         required: true
@@ -99,51 +134,103 @@ paths:
                   format: password
       responses:
         '200':
-          description: Login successful
+          description: Login successful — JWT set in HttpOnly cookie
+          headers:
+            Set-Cookie:
+              description: |
+                Sets `bm_token` (HttpOnly, Secure, SameSite=Strict) and
+                `bm_csrf` (SameSite=Strict) cookies with 8-hour expiry.
+              schema:
+                type: string
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AuthResponse'
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      expiresIn:
+                        type: string
+                        example: 8h
+                      csrfToken:
+                        type: string
+                        description: CSRF token for state-changing requests (send as X-CSRF-Token header)
+                        example: a1b2c3d4e5f6...
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Invalid credentials
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Admin logout
+      description: Clears authentication cookies. Requires valid JWT and CSRF token.
+      parameters:
+        - $ref: '#/components/parameters/CSRFToken'
+      responses:
+        '200':
+          description: Logged out — cookies cleared
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Logged out
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /applications:
+  /auth/verify:
     get:
-      tags: [Applications]
-      summary: List applications (admin)
-      parameters:
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: [new, reviewing, shortlisted, invited, funded]
-        - name: category
-          in: query
-          schema:
-            type: string
-            enum: [developer, landowner, student, professional]
-        - name: page
-          in: query
-          schema:
-            type: integer
-            default: 1
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 20
+      tags: [Auth]
+      summary: Verify JWT token
+      description: Validates the current JWT cookie. Returns 200 if valid, 401 if expired or missing.
       responses:
         '200':
-          description: List of applications
+          description: Token is valid
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
         '401':
           $ref: '#/components/responses/Unauthorized'
+
+  # ────────────────────────────────────────────
+  # Applications (Public)
+  # ────────────────────────────────────────────
+  /applications:
     post:
       tags: [Applications]
       summary: Submit application (public)
+      description: |
+        Submit a new application. Duplicate prevention is enforced — same email + userType
+        combination returns 409 with the existing reference number. Phone numbers are
+        normalized to +27 format. Auto-tagging is applied based on form data.
+        Rate limited to 100 requests per 15 minutes per IP.
       security: []
       requestBody:
         required: true
@@ -153,19 +240,104 @@ paths:
               $ref: '#/components/schemas/ApplicationInput'
       responses:
         '201':
-          description: Application submitted
+          description: Application submitted successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Application'
         '400':
           $ref: '#/components/responses/ValidationError'
+        '409':
+          description: Duplicate application (same email + userType)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: An application with this email and category already exists
+                  refNumber:
+                    type: string
+                    example: BM-09C5B0EF
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+    get:
+      tags: [Applications]
+      summary: List applications (admin)
+      description: Paginated, filterable list of all applications. Rate limited to 300 req/15min.
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [new, reviewing, shortlisted, invited, funded, all]
+        - name: userType
+          in: query
+          schema:
+            type: string
+            enum: [developer, landowner, investor, student, professional, aspiring, all]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: sortBy
+          in: query
+          description: Field to sort by
+          schema:
+            type: string
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: Paginated list of applications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Application'
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /applications/lookup:
     post:
       tags: [Applications]
       summary: Status lookup (public)
-      description: Allows applicants to check their application status using reference number and email. No authentication required.
+      description: |
+        Allows applicants to check their application status using reference number and email.
+        No authentication required. Rate limited to 100 req/15min per IP.
       security: []
       requestBody:
         required: true
@@ -192,17 +364,22 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   data:
                     type: object
                     properties:
                       refNumber:
                         type: string
+                        example: BM-09C5B0EF
                       firstName:
                         type: string
+                        example: Thabo
                       userType:
                         type: string
+                        enum: [developer, landowner, investor, student, professional, aspiring]
                       status:
                         type: string
+                        enum: [new, reviewing, shortlisted, invited, funded]
                       tags:
                         type: array
                         items:
@@ -212,33 +389,11 @@ paths:
                       submittedAt:
                         type: string
                         format: date-time
+                      updatedAt:
+                        type: string
+                        format: date-time
         '404':
           description: No matching application found
-
-  /applications/bulk-status:
-    post:
-      tags: [Applications]
-      summary: Bulk status update (admin)
-      description: Update status for up to 100 applications at once. Triggers email notifications for shortlisted/invited/funded.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [ids, status]
-              properties:
-                ids:
-                  type: array
-                  items:
-                    type: string
-                  maxItems: 100
-                status:
-                  type: string
-                  enum: [new, reviewing, shortlisted, invited, funded]
-      responses:
-        '200':
-          description: Bulk update successful
           content:
             application/json:
               schema:
@@ -246,50 +401,16 @@ paths:
                 properties:
                   success:
                     type: boolean
-                  data:
-                    type: object
-                    properties:
-                      updated:
-                        type: integer
-
-  /applications/send-reminders:
-    post:
-      tags: [Applications]
-      summary: Send summit reminders (admin)
-      description: Send summit reminder emails to up to 100 applicants.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [ids]
-              properties:
-                ids:
-                  type: array
-                  items:
+                    example: false
+                  message:
                     type: string
-                  maxItems: 100
-      responses:
-        '200':
-          description: Reminders sent
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: object
-                    properties:
-                      sent:
-                        type: integer
+                    example: No application found. Please check your reference number and email.
 
   /applications/stats:
     get:
       tags: [Applications]
       summary: Application statistics (admin)
+      description: Aggregated statistics for the admin dashboard.
       responses:
         '200':
           description: Aggregated statistics
@@ -304,9 +425,17 @@ paths:
     get:
       tags: [Applications]
       summary: Export applications as CSV (admin)
+      description: |
+        Downloads all applications as a CSV file. Formula injection prevention
+        is applied (cells starting with `=`, `+`, `-`, `@` are prefixed).
       responses:
         '200':
           description: CSV file download
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: attachment; filename="bemore-applications-2026-04-24.csv"
           content:
             text/csv:
               schema:
@@ -314,16 +443,142 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /applications/{id}:
-    patch:
+  /applications/bulk-status:
+    post:
       tags: [Applications]
-      summary: Update application status (admin)
+      summary: Bulk status update (admin)
+      description: |
+        Update status for up to 100 applications at once. Triggers email notifications
+        for shortlisted, invited, and funded status changes. Requires CSRF token.
+      parameters:
+        - $ref: '#/components/parameters/CSRFToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids, status]
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+                    description: MongoDB ObjectId
+                  minItems: 1
+                  maxItems: 100
+                status:
+                  type: string
+                  enum: [new, reviewing, shortlisted, invited, funded]
+      responses:
+        '200':
+          description: Bulk update successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      updated:
+                        type: integer
+                        example: 15
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /applications/send-reminders:
+    post:
+      tags: [Applications]
+      summary: Send summit reminder emails (admin)
+      description: Send summit reminder emails to up to 100 applicants. Requires CSRF token.
+      parameters:
+        - $ref: '#/components/parameters/CSRFToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+                    description: MongoDB ObjectId
+                  minItems: 1
+                  maxItems: 100
+      responses:
+        '200':
+          description: Reminders sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      sent:
+                        type: integer
+                        example: 25
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /applications/{id}:
+    get:
+      tags: [Applications]
+      summary: Get single application (admin)
+      description: Retrieve a single application by MongoDB ObjectId.
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: string
+            description: MongoDB ObjectId
+      responses:
+        '200':
+          description: Application details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Application'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Applications]
+      summary: Update application (admin)
+      description: |
+        Update application fields (status, classification, notes, deal room, follow-up).
+        Status changes to shortlisted/invited/funded trigger email notifications.
+        Requires CSRF token.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            description: MongoDB ObjectId
+        - $ref: '#/components/parameters/CSRFToken'
       requestBody:
         required: true
         content:
@@ -367,41 +622,29 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Application'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /reports/{reportName}:
-    get:
-      tags: [Reports]
-      summary: Get pre-built report (admin)
-      parameters:
-        - name: reportName
-          in: path
-          required: true
-          schema:
-            type: string
-            enum:
-              - high-value-developers
-              - pipeline-ready-land
-              - institutional-grade-housing
-              - deal-room-shortlist
-      responses:
-        '200':
-          description: Report data
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
+  # ────────────────────────────────────────────
+  # POPIA Data Rights
+  # ────────────────────────────────────────────
   /applications/data-export:
     post:
       tags: [POPIA]
       summary: Export applicant data (POPIA right to access)
+      description: |
+        Allows an applicant to download all their stored data using reference number
+        and email. An analytics event (`popia.data_export`) is logged.
+        Rate limited to 100 req/15min per IP.
       security: []
       requestBody:
         required: true
@@ -419,11 +662,17 @@ paths:
                   format: email
       responses:
         '200':
-          description: Full application data
+          description: Full application data returned
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SuccessResponse'
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Application'
         '404':
           $ref: '#/components/responses/NotFound'
 
@@ -431,6 +680,10 @@ paths:
     post:
       tags: [POPIA]
       summary: Permanently delete applicant data (POPIA right to erasure)
+      description: |
+        Permanently and irreversibly deletes all data for the matching application.
+        Requires the `confirm` field to be exactly `"DELETE"`. An analytics event
+        (`popia.data_deleted`) is logged. Rate limited to 100 req/15min per IP.
       security: []
       requestBody:
         required: true
@@ -442,25 +695,44 @@ paths:
               properties:
                 refNumber:
                   type: string
+                  example: BM-A1B2C3D4
                 email:
                   type: string
                   format: email
                 confirm:
                   type: string
                   enum: [DELETE]
-                  description: Must be exactly "DELETE" to confirm
+                  description: Must be exactly "DELETE" to confirm permanent deletion
       responses:
         '200':
           description: Data permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Your data has been permanently deleted.
         '400':
           $ref: '#/components/responses/ValidationError'
         '404':
           $ref: '#/components/responses/NotFound'
 
+  # ────────────────────────────────────────────
+  # Settings
+  # ────────────────────────────────────────────
   /settings/public/{key}:
     get:
       tags: [Settings]
       summary: Read a public site setting
+      description: |
+        Returns the value of a publicly readable setting. Only whitelisted keys are
+        accessible: `mentimeterEmbedId`, `mentimeter_id`, `polls_enabled`,
+        `registrationOpen`, `platformAnnouncement`.
       security: []
       parameters:
         - name: key
@@ -468,7 +740,8 @@ paths:
           required: true
           schema:
             type: string
-          example: mentimeter_id
+            enum: [mentimeterEmbedId, mentimeter_id, polls_enabled, registrationOpen, platformAnnouncement]
+          example: polls_enabled
       responses:
         '200':
           description: Setting value
@@ -479,20 +752,37 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   data:
                     type: object
                     properties:
                       key:
                         type: string
+                        example: polls_enabled
                       value: {}
+        '404':
+          description: Setting key not found or not publicly readable
 
   /settings:
     get:
       tags: [Settings]
       summary: Get all site settings (admin)
+      description: Returns all stored settings as a key-value map.
       responses:
         '200':
-          description: All settings as key-value map
+          description: All settings
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    additionalProperties: true
+                    description: Key-value map of all settings
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -500,12 +790,18 @@ paths:
     put:
       tags: [Settings]
       summary: Update a site setting (admin)
+      description: |
+        Updates a site setting value. Only whitelisted keys are accepted:
+        `mentimeterEmbedId`, `mentimeter_id`, `polls_enabled`, `registrationOpen`,
+        `maintenanceMode`, `platformAnnouncement`. Requires CSRF token.
       parameters:
         - name: key
           in: path
           required: true
           schema:
             type: string
+            enum: [mentimeterEmbedId, mentimeter_id, polls_enabled, registrationOpen, maintenanceMode, platformAnnouncement]
+        - $ref: '#/components/parameters/CSRFToken'
       requestBody:
         required: true
         content:
@@ -514,27 +810,11 @@ paths:
               type: object
               required: [value]
               properties:
-                value: {}
+                value:
+                  description: The setting value (string, boolean, number, or object)
       responses:
         '200':
           description: Setting updated
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /emails/{refNumber}:
-    get:
-      tags: [Emails]
-      summary: Get email delivery history for an application (admin)
-      parameters:
-        - name: refNumber
-          in: path
-          required: true
-          schema:
-            type: string
-          example: BM-A1B2C3D4
-      responses:
-        '200':
-          description: Email log entries sorted by date descending
           content:
             application/json:
               schema:
@@ -542,45 +822,81 @@ paths:
                 properties:
                   success:
                     type: boolean
-                  data:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        to:
-                          type: string
-                        subject:
-                          type: string
-                        template:
-                          type: string
-                          enum: [submission_confirmation, status_notification, summit_reminder]
-                        refNumber:
-                          type: string
-                        status:
-                          type: string
-                          enum: [sent, failed]
-                        error:
-                          type: string
-                        sentAt:
-                          type: string
-                          format: date-time
+                    example: true
+                  message:
+                    type: string
+                    example: Setting "polls_enabled" updated
+        '400':
+          description: Unknown setting key
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: 'Unknown setting key: "invalid_key"'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  # ────────────────────────────────────────────
+  # Emails
+  # ────────────────────────────────────────────
+  /emails/{refNumber}:
+    get:
+      tags: [Emails]
+      summary: Get email delivery history for an application (admin)
+      description: |
+        Returns up to 50 email log entries for the given reference number, sorted
+        by date descending. Reference number must match format `BM-XXXX` (4-12 alphanumeric chars).
+      parameters:
+        - name: refNumber
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^BM-[A-Z0-9]{4,12}$'
+          example: BM-A1B2C3D4
+      responses:
+        '200':
+          description: Email log entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EmailLogEntry'
+        '400':
+          description: Invalid reference number format
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ────────────────────────────────────────────
+  # Analytics
+  # ────────────────────────────────────────────
   /analytics/dashboard:
     get:
       tags: [Analytics]
       summary: KPI dashboard
+      description: Key performance indicators for the admin dashboard.
       parameters:
-        - name: range
-          in: query
-          schema:
-            type: string
-            enum: [7d, 30d, 90d, 1y]
-            default: 30d
+        - $ref: '#/components/parameters/DateRange'
       responses:
         '200':
-          description: Dashboard data
+          description: Dashboard KPI data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -588,9 +904,14 @@ paths:
     get:
       tags: [Analytics]
       summary: Conversion funnel
+      description: Application status funnel showing counts at each stage.
       responses:
         '200':
           description: Funnel stage counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -598,6 +919,7 @@ paths:
     get:
       tags: [Analytics]
       summary: Submission trends
+      description: Time-series data of application submissions.
       parameters:
         - name: granularity
           in: query
@@ -605,14 +927,14 @@ paths:
             type: string
             enum: [day, week, month]
             default: day
-        - name: range
-          in: query
-          schema:
-            type: string
-            default: 30d
+        - $ref: '#/components/parameters/DateRange'
       responses:
         '200':
           description: Trend data points
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -620,9 +942,14 @@ paths:
     get:
       tags: [Analytics]
       summary: Tag distribution and co-occurrence
+      description: Analysis of auto-tag distribution and which tags commonly appear together.
       responses:
         '200':
           description: Tag analytics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -630,9 +957,14 @@ paths:
     get:
       tags: [Analytics]
       summary: Demographics breakdown
+      description: Breakdown of applicants by user type, engagement source, and other demographic fields.
       responses:
         '200':
           description: Demographics data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -640,9 +972,14 @@ paths:
     get:
       tags: [Analytics]
       summary: Deal room analytics
+      description: Metrics for deal room access, funder distribution, and summit attendance.
       responses:
         '200':
           description: Deal room metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
@@ -650,6 +987,9 @@ paths:
     get:
       tags: [Analytics]
       summary: Audit event log (paginated)
+      description: |
+        Paginated log of system events (application submissions, admin actions,
+        auth events, report views, system events).
       parameters:
         - name: page
           in: query
@@ -672,103 +1012,926 @@ paths:
       responses:
         '200':
           description: Paginated event log
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        action:
+                          type: string
+                        category:
+                          type: string
+                        actor:
+                          type: object
+                        target:
+                          type: object
+                        meta:
+                          type: object
+                        timestamp:
+                          type: string
+                          format: date-time
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
         '401':
           $ref: '#/components/responses/Unauthorized'
+
+  # ────────────────────────────────────────────
+  # Traffic (also mounted at /insights/*)
+  # ────────────────────────────────────────────
+  /insights/traffic:
+    get:
+      tags: [Traffic]
+      summary: Traffic overview
+      description: |
+        High-level traffic KPIs (total views, unique visitors, sessions, avg duration).
+        Also accessible via `/analytics/traffic`.
+      parameters:
+        - $ref: '#/components/parameters/DateRange'
+      responses:
+        '200':
+          description: Traffic overview data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /insights/traffic/trends:
+    get:
+      tags: [Traffic]
+      summary: Traffic trends
+      description: Time-series page view and visitor data.
+      parameters:
+        - name: granularity
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month]
+        - $ref: '#/components/parameters/DateRange'
+      responses:
+        '200':
+          description: Traffic trend data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /insights/traffic/referrers:
+    get:
+      tags: [Traffic]
+      summary: Top referrers
+      description: Traffic sources and referrer breakdown.
+      parameters:
+        - $ref: '#/components/parameters/DateRange'
+      responses:
+        '200':
+          description: Referrer data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /insights/traffic/devices:
+    get:
+      tags: [Traffic]
+      summary: Device breakdown
+      description: Visitor breakdown by device type, browser, and operating system.
+      parameters:
+        - $ref: '#/components/parameters/DateRange'
+      responses:
+        '200':
+          description: Device analytics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /insights/traffic/hours:
+    get:
+      tags: [Traffic]
+      summary: Hourly heatmap
+      description: Page views grouped by hour of day (Africa/Johannesburg timezone).
+      parameters:
+        - $ref: '#/components/parameters/DateRange'
+      responses:
+        '200':
+          description: Hourly traffic data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /insights/traffic/form-funnel:
+    get:
+      tags: [Traffic]
+      summary: Form funnel analytics
+      description: Drop-off analysis for the multi-step registration form.
+      parameters:
+        - $ref: '#/components/parameters/DateRange'
+      responses:
+        '200':
+          description: Form funnel data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /insights/traffic/clicks:
+    get:
+      tags: [Traffic]
+      summary: Top CTA clicks
+      description: Most clicked call-to-action elements tracked via `data-track` attributes.
+      parameters:
+        - $ref: '#/components/parameters/DateRange'
+      responses:
+        '200':
+          description: Click analytics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ────────────────────────────────────────────
+  # Reports
+  # ────────────────────────────────────────────
+  /reports/high-value-developers:
+    get:
+      tags: [Reports]
+      summary: High-value developers report
+      description: Pre-built report of applications tagged HIGH_VALUE with developer profile.
+      responses:
+        '200':
+          description: Report data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /reports/pipeline-ready-land:
+    get:
+      tags: [Reports]
+      summary: Pipeline-ready land report
+      description: Pre-built report of applications tagged PIPELINE_READY with land secured.
+      responses:
+        '200':
+          description: Report data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /reports/institutional-grade-housing:
+    get:
+      tags: [Reports]
+      summary: Institutional-grade housing report
+      description: Pre-built report of applications tagged INSTITUTIONAL_GRADE for student housing.
+      responses:
+        '200':
+          description: Report data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /reports/deal-room-shortlist:
+    get:
+      tags: [Reports]
+      summary: Deal room shortlist report
+      description: Pre-built report of applications with deal room access granted.
+      responses:
+        '200':
+          description: Report data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ────────────────────────────────────────────
+  # Polls
+  # ────────────────────────────────────────────
+  /polls/active:
+    get:
+      tags: [Polls]
+      summary: Get active poll (public)
+      description: Returns the currently active poll with its questions and options. No auth required.
+      security: []
+      responses:
+        '200':
+          description: Active poll (or null if none active)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Poll'
 
   /polls:
     get:
       tags: [Polls]
-      summary: List polls
+      summary: List polls (admin)
+      description: List all polls, optionally filtered by status.
       parameters:
         - name: status
           in: query
           schema:
             type: string
+            enum: [draft, active, paused, closed]
       responses:
         '200':
           description: Poll list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Poll'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
     post:
       tags: [Polls]
-      summary: Create a poll
+      summary: Create a poll (admin)
+      description: Create a new poll with one or more questions. Requires CSRF token.
+      parameters:
+        - $ref: '#/components/parameters/CSRFToken'
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [title, questions]
+              properties:
+                title:
+                  type: string
+                  maxLength: 200
+                  example: Summit Feedback
+                description:
+                  type: string
+                  maxLength: 500
+                questions:
+                  type: array
+                  minItems: 1
+                  items:
+                    $ref: '#/components/schemas/PollQuestion'
       responses:
         '201':
           description: Poll created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Poll'
+        '400':
+          $ref: '#/components/responses/ValidationError'
         '401':
           $ref: '#/components/responses/Unauthorized'
 
   /polls/{id}:
+    get:
+      tags: [Polls]
+      summary: Get poll details (admin)
+      parameters:
+        - $ref: '#/components/parameters/PollId'
+      responses:
+        '200':
+          description: Poll details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Poll'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
     patch:
       tags: [Polls]
-      summary: Update a poll
+      summary: Update a poll (admin)
+      description: Update poll title, description, or questions. Requires CSRF token.
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/PollId'
+        - $ref: '#/components/parameters/CSRFToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  maxLength: 200
+                description:
+                  type: string
+                  maxLength: 500
+                questions:
+                  type: array
+                  minItems: 1
+                  items:
+                    $ref: '#/components/schemas/PollQuestion'
       responses:
         '200':
           description: Poll updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Poll'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
     delete:
       tags: [Polls]
-      summary: Delete a poll
+      summary: Delete a poll (admin)
+      description: Permanently delete a poll and all its responses. Requires CSRF token.
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/PollId'
+        - $ref: '#/components/parameters/CSRFToken'
       responses:
         '200':
           description: Poll deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /polls/{id}/vote:
     post:
       tags: [Polls]
       summary: Submit a vote (public)
+      description: |
+        Submit a vote on an active poll question. Requires a sessionId for
+        duplicate prevention. Rate limited to 60 votes per 15 minutes per session.
       security: []
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/PollId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [questionId, sessionId]
+              properties:
+                questionId:
+                  type: string
+                  description: MongoDB ObjectId of the question
+                sessionId:
+                  type: string
+                  description: Client-generated session identifier
+                optionId:
+                  type: string
+                  description: MongoDB ObjectId of the selected option (for multiple-choice)
+                textResponse:
+                  type: string
+                  maxLength: 200
+                  description: Free-text response (for word-cloud or open-text)
+                ratingValue:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  description: Rating value (for rating type)
       responses:
         '200':
           description: Vote recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /polls/{id}/live:
+    get:
+      tags: [Polls]
+      summary: Live poll results (SSE stream, public)
+      description: |
+        Server-Sent Events (SSE) stream that pushes real-time vote updates.
+        The client receives `data:` frames with JSON payloads as votes arrive.
+        Connection stays open until the client disconnects or the poll closes.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/PollId'
+      responses:
+        '200':
+          description: SSE event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: Newline-delimited SSE events with JSON data payloads
+
+  /polls/{id}/status:
+    patch:
+      tags: [Polls]
+      summary: Set poll status (admin)
+      description: Change the status of a poll (draft, active, paused, closed). Requires CSRF token.
+      parameters:
+        - $ref: '#/components/parameters/PollId'
+        - $ref: '#/components/parameters/CSRFToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [draft, active, paused, closed]
+      responses:
+        '200':
+          description: Poll status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Poll'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /polls/{id}/activate:
+    patch:
+      tags: [Polls]
+      summary: Activate a specific question (admin)
+      description: |
+        Set the active question index for a poll. Use `-1` to deactivate all questions.
+        Requires CSRF token.
+      parameters:
+        - $ref: '#/components/parameters/PollId'
+        - $ref: '#/components/parameters/CSRFToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [questionIndex]
+              properties:
+                questionIndex:
+                  type: integer
+                  minimum: -1
+                  description: Zero-based question index, or -1 to deactivate all
+      responses:
+        '200':
+          description: Question activated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Poll'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /polls/{id}/results:
     get:
       tags: [Polls]
-      summary: Get poll results
+      summary: Get poll results (admin)
+      description: Aggregated results for all questions in a poll.
+      parameters:
+        - $ref: '#/components/parameters/PollId'
+      responses:
+        '200':
+          description: Poll results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ────────────────────────────────────────────
+  # Tracking (public, fire-and-forget)
+  # ────────────────────────────────────────────
+  /track/pageview:
+    post:
+      tags: [Tracking]
+      summary: Track page view (public)
+      description: |
+        Records a page view event. Fire-and-forget — always returns 202 if validation
+        passes. Server parses User-Agent for device/browser/OS info.
+        Rate limited to 300 req/15min per IP.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionId, visitorId, path]
+              properties:
+                sessionId:
+                  type: string
+                  maxLength: 64
+                visitorId:
+                  type: string
+                  maxLength: 64
+                path:
+                  type: string
+                  maxLength: 500
+                  example: /register
+                referrer:
+                  type: string
+                  maxLength: 2000
+                utmSource:
+                  type: string
+                  maxLength: 200
+                utmMedium:
+                  type: string
+                  maxLength: 200
+                utmCampaign:
+                  type: string
+                  maxLength: 200
+                screenWidth:
+                  type: integer
+                screenHeight:
+                  type: integer
+      responses:
+        '202':
+          description: Page view accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid tracking data
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /track/event:
+    post:
+      tags: [Tracking]
+      summary: Track custom event (public)
+      description: |
+        Records a custom tracking event (click, form funnel step, interaction, etc.).
+        Fire-and-forget — always returns 202 if validation passes.
+        Rate limited to 300 req/15min per IP.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionId, visitorId, category, action]
+              properties:
+                sessionId:
+                  type: string
+                  maxLength: 64
+                visitorId:
+                  type: string
+                  maxLength: 64
+                category:
+                  type: string
+                  enum: [click, form_funnel, interaction, scroll, download]
+                action:
+                  type: string
+                  maxLength: 200
+                  example: cta_register_click
+                label:
+                  type: string
+                  maxLength: 500
+                value:
+                  type: number
+                  default: 0
+                path:
+                  type: string
+                  maxLength: 500
+                meta:
+                  type: object
+                  description: Additional metadata (max 1KB serialized)
+                  additionalProperties: true
+      responses:
+        '202':
+          description: Event accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid tracking data
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /track/heartbeat:
+    post:
+      tags: [Tracking]
+      summary: Update page view duration (public)
+      description: |
+        Updates the duration field on an existing page view record. Used to track
+        time-on-page. Fire-and-forget — always returns 202 if validation passes.
+        Rate limited to 300 req/15min per IP.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionId, path, duration]
+              properties:
+                sessionId:
+                  type: string
+                  maxLength: 64
+                path:
+                  type: string
+                  maxLength: 500
+                duration:
+                  type: number
+                  description: Time on page in milliseconds
+      responses:
+        '202':
+          description: Heartbeat accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '400':
+          description: Invalid heartbeat data
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  # ────────────────────────────────────────────
+  # Admins
+  # ────────────────────────────────────────────
+  /admins:
+    get:
+      tags: [Admins]
+      summary: List admin users
+      description: Returns all admin accounts (email, name, creation date). Requires admin JWT.
+      responses:
+        '200':
+          description: List of admin users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminUser'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Admins]
+      summary: Create admin user
+      description: Create a new admin account. Requires admin JWT and CSRF token.
+      parameters:
+        - $ref: '#/components/parameters/CSRFToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                name:
+                  type: string
+                  maxLength: 100
+      responses:
+        '201':
+          description: Admin created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/AdminUser'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /admins/{id}:
+    patch:
+      tags: [Admins]
+      summary: Update admin user
+      description: Update an admin's email, password, or name. Requires CSRF token.
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: string
+            description: MongoDB ObjectId
+        - $ref: '#/components/parameters/CSRFToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  maxLength: 254
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                name:
+                  type: string
+                  maxLength: 100
       responses:
         '200':
-          description: Poll results
+          description: Admin updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/AdminUser'
+        '400':
+          $ref: '#/components/responses/ValidationError'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
+    delete:
+      tags: [Admins]
+      summary: Delete admin user
+      description: Permanently delete an admin account. Requires CSRF token.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            description: MongoDB ObjectId
+        - $ref: '#/components/parameters/CSRFToken'
+      responses:
+        '200':
+          description: Admin deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+# ══════════════════════════════════════════════
+# Components
+# ══════════════════════════════════════════════
 components:
   securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: bm_token
+      description: HttpOnly JWT cookie set by POST /auth/login
+
+  parameters:
+    CSRFToken:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      description: CSRF token from `bm_csrf` cookie (double-submit pattern)
+      schema:
+        type: string
+
+    DateRange:
+      name: range
+      in: query
+      description: Date range filter
+      schema:
+        type: string
+        enum: ['7d', '30d', '90d', '1y']
+        default: '30d'
+
+    PollId:
+      name: id
+      in: path
+      required: true
+      description: MongoDB ObjectId of the poll
+      schema:
+        type: string
 
   schemas:
     ApplicationInput:
@@ -785,23 +1948,29 @@ components:
           properties:
             firstName:
               type: string
+              maxLength: 100
               example: Thabo
             surname:
               type: string
+              maxLength: 100
               example: Mokoena
             email:
               type: string
               format: email
+              maxLength: 254
               example: thabo@example.co.za
             phone:
               type: string
-              example: "0821234567"
+              pattern: '^(\+?27\d{9}|0\d{9})$'
+              example: '0821234567'
             companyName:
               type: string
               example: Mokoena Developments
         formData:
           type: object
-          description: Flexible form data from the 5-step registration process
+          description: |
+            Flexible form data from the 5-step registration process.
+            Only whitelisted keys are accepted; unknown keys are stripped.
           properties:
             landStatus:
               type: string
@@ -812,9 +1981,217 @@ components:
             estimatedValue:
               type: string
               example: R20m - R100m
+            seeking:
+              type: string
+            previousFunding:
+              type: string
+            projectDescription:
+              type: string
+            summitAttendance:
+              type: string
+            tcAccepted:
+              type: boolean
+            popiaConsent:
+              type: boolean
+            yearsExperience:
+              type: string
+            developmentTypes:
+              type: string
+            landSize:
+              type: string
+            zoningStatus:
+              type: string
+            isServiced:
+              type: string
+            ownershipStructure:
+              type: string
+            investmentFocus:
+              type: string
+            investmentTicket:
+              type: string
+            bedCount:
+              type: string
+            occupancyRate:
+              type: string
+            universityPartnership:
+              type: string
+            assetType:
+              type: string
+            profession:
+              type: string
+            registrationStatus:
+              type: string
+            projectScale:
+              type: string
+            developmentInterests:
+              type: string
+            relevantExperience:
+              type: string
             engagementSource:
               type: string
               example: qr
+
+    Application:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: MongoDB ObjectId
+        refNumber:
+          type: string
+          example: BM-09C5B0EF
+        userType:
+          type: string
+          enum: [developer, landowner, investor, student, professional, aspiring]
+        personal:
+          type: object
+          properties:
+            firstName:
+              type: string
+            surname:
+              type: string
+            email:
+              type: string
+              format: email
+            phone:
+              type: string
+            companyName:
+              type: string
+        formData:
+          type: object
+        tags:
+          type: array
+          items:
+            type: string
+          example: [HIGH_VALUE, PIPELINE_READY]
+        status:
+          type: string
+          enum: [new, reviewing, shortlisted, invited, funded]
+        classification:
+          type: string
+          enum: [unclassified, hot, warm, cold]
+        engagementSource:
+          type: string
+          example: qr
+        adminNotes:
+          type: string
+        followUp:
+          type: object
+          properties:
+            required:
+              type: boolean
+            dueDate:
+              type: string
+              format: date-time
+            notes:
+              type: string
+            completedAt:
+              type: string
+              format: date-time
+        dealRoom:
+          type: object
+          properties:
+            summitAccess:
+              type: boolean
+            dealRoomEntry:
+              type: boolean
+            funders:
+              type: array
+              items:
+                type: string
+                enum: [PBSA]
+        submittedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Poll:
+      type: object
+      properties:
+        _id:
+          type: string
+        title:
+          type: string
+          example: Summit Feedback
+        description:
+          type: string
+        status:
+          type: string
+          enum: [draft, active, paused, closed]
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PollQuestion'
+        activeQuestionIndex:
+          type: integer
+          description: Currently active question index (-1 for none)
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PollQuestion:
+      type: object
+      required: [text, type]
+      properties:
+        text:
+          type: string
+          maxLength: 500
+          example: How useful was the summit?
+        type:
+          type: string
+          enum: [multiple-choice, word-cloud, rating, open-text]
+        options:
+          type: array
+          description: Required for multiple-choice questions
+          items:
+            type: object
+            properties:
+              _id:
+                type: string
+              text:
+                type: string
+
+    EmailLogEntry:
+      type: object
+      properties:
+        to:
+          type: string
+          format: email
+        subject:
+          type: string
+        template:
+          type: string
+          enum: [submission_confirmation, status_notification, summit_reminder]
+        refNumber:
+          type: string
+        status:
+          type: string
+          enum: [sent, failed]
+        error:
+          type: string
+          description: Error message if status is failed
+        sentAt:
+          type: string
+          format: date-time
+
+    AdminUser:
+      type: object
+      properties:
+        _id:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
 
     SuccessResponse:
       type: object
@@ -862,31 +2239,20 @@ components:
       properties:
         page:
           type: integer
+          example: 1
         limit:
           type: integer
+          example: 20
         total:
           type: integer
+          example: 150
         totalPages:
           type: integer
-
-    AuthResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: object
-          properties:
-            token:
-              type: string
-            expiresIn:
-              type: string
-              example: 8h
+          example: 8
 
   responses:
     Unauthorized:
-      description: Authentication required or token invalid
+      description: Authentication required or token invalid/expired
       content:
         application/json:
           schema:
@@ -904,6 +2270,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            data: null
+            error:
+              code: NOT_FOUND
+              message: Resource not found
 
     ValidationError:
       description: Request validation failed
@@ -911,6 +2283,29 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            data: null
+            error:
+              code: VALIDATION_ERROR
+              message: Validation failed
+              details:
+                - field: email
+                  message: Valid email required
+
+    RateLimited:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              error:
+                type: string
+                example: Too many requests. Please try again later.
 
 security:
-  - BearerAuth: []
+  - CookieAuth: []

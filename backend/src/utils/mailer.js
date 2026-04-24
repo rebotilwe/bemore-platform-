@@ -2,12 +2,13 @@ import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 import { config } from '../config/index.js';
 import logger from './logger.js';
+import { redactEmail } from './redactPII.js';
 import EmailLog from '../models/EmailLog.js';
 
 const PLATFORM_URL = process.env.PLATFORM_URL || 'https://bemore-tawny.vercel.app';
 
 function logEmail(to, subject, template, refNumber, status, error) {
-  EmailLog.create({ to, subject, template, refNumber, status, error: error || undefined })
+  EmailLog.create({ to: redactEmail(to), subject, template, refNumber, status, error: error || undefined })
     .catch(err => logger.error(`EmailLog write failed: ${err.message}`));
 }
 
@@ -45,7 +46,7 @@ function getTransporter() {
       socketTimeout: 30000,
       tls: { rejectUnauthorized: false },
     });
-    logger.info(`Mail transporter created: ${config.mail.host}:${config.mail.port} (user: ${config.mail.user})`);
+    logger.info(`Mail transporter created: ${config.mail.host}:${config.mail.port} (user: ${redactEmail(config.mail.user || '')})`);
 
     // Verify connection on startup (non-blocking)
     transporter.verify().then(() => {
@@ -141,7 +142,7 @@ export async function sendSubmissionConfirmation(to, refNumber, firstName) {
 
   logEmail(to, `Application Received — ${refNumber}`, 'submission_confirmation', refNumber, result.success ? 'sent' : 'failed', result.error);
   if (result.success) {
-    logger.info(`Submission confirmation sent to ${to} (${refNumber})`);
+    logger.info(`Submission confirmation sent to ${redactEmail(to)} (${refNumber})`);
   }
 }
 
@@ -213,7 +214,7 @@ export async function sendStatusNotification(to, refNumber, firstName, newStatus
 
   logEmail(to, `${msg.subject} — ${refNumber}`, 'status_notification', refNumber, result.success ? 'sent' : 'failed', result.error);
   if (result.success) {
-    logger.info(`Status notification (${newStatus}) sent to ${to} (${refNumber})`);
+    logger.info(`Status notification (${newStatus}) sent to ${redactEmail(to)} (${refNumber})`);
   }
 }
 
@@ -240,7 +241,7 @@ export async function sendSummitReminder(to, refNumber, firstName) {
 
   logEmail(to, `Reminder — BeMore (${refNumber})`, 'reminder', refNumber, result.success ? 'sent' : 'failed', result.error);
   if (result.success) {
-    logger.info(`Reminder sent to ${to} (${refNumber})`);
+    logger.info(`Reminder sent to ${redactEmail(to)} (${refNumber})`);
   }
 }
 
