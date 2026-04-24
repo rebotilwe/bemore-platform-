@@ -28,7 +28,7 @@ export function autoTag(type, f) {
   if (f.landStatus === 'Land Secured' && ['Funding Stage', 'Construction Stage'].includes(f.projectStage)) {
     t.push('PIPELINE_READY');
   }
-  if (f.landStatus === 'Land Secured' && f.estimatedValue?.includes('R100m')) {
+  if (typeof f.estimatedValue === 'string' && f.landStatus === 'Land Secured' && f.estimatedValue.includes('R100m')) {
     t.push('INSTITUTIONAL_GRADE');
   }
 

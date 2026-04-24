@@ -131,7 +131,6 @@ export async function sendSubmissionConfirmation(to, refNumber, firstName) {
     You can check your application status at any time using the link below.
   `, [
     { label: 'Check My Status', url: `${PLATFORM_URL}/#/status` },
-    { label: 'Join Live Poll', url: `${PLATFORM_URL}/#/mentee-meter` },
   ]);
 
   const result = await sendEmail({
