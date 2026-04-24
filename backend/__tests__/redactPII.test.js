@@ -17,10 +17,10 @@ describe('redactPII.js', () => {
 
   describe('redactPhone', () => {
     it('should redact South African phone numbers', () => {
-      // Standard format: +27 82 123 4567
-      expect(redactPhone('+2712345678')).toBe('+27***45678'); // prefix kept, middle masked
-      // 10-digit format: 082 123 4567
-      expect(redactPhone('0821234567')).toBe('0***4567');
+      // +27XXXXXXXX → prefix(+27) + masked(middle) + last4
+      expect(redactPhone('+2712345678')).toBe('+27****5678');
+      // 0XXXXXXXXX → prefix(0) + masked(middle) + last4
+      expect(redactPhone('0821234567')).toBe('0*****4567');
       expect(redactPhone('not-a-phone')).toBe('not-a-phone');
     });
   });
@@ -30,7 +30,7 @@ describe('redactPII.js', () => {
       const input = 'Contact test@example.com or +2712345678';
       const result = redactPII(input);
       expect(result).toContain('t***@example.com');
-      expect(result).toContain('+27******5678');
+      expect(result).toContain('+27****5678');
     });
 
     it('should redact PII in objects', () => {
@@ -47,7 +47,7 @@ describe('redactPII.js', () => {
       };
       const result = redactPII(input);
       expect(result.email).toBe('j***@example.com');
-      expect(result.phone).toBe('082*****4567');
+      expect(result.phone).toBe('0*****4567');
       expect(result.password).toBe('[REDACTED]');
       expect(result.nested.token).toBe('[REDACTED]');
       expect(result.nested.ip).toBe('192.168.*.*');

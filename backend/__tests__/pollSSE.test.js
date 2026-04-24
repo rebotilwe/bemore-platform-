@@ -78,13 +78,20 @@ describe('pollSSE.js', () => {
     });
 
     it('should remove client if write fails', () => {
+      let callCount = 0;
       const badRes = {
-        write: jest.fn().mockImplementation(() => { throw new Error('write failed'); }),
+        writeHead: jest.fn(),
+        write: jest.fn().mockImplementation(() => {
+          callCount++;
+          if (callCount > 1) throw new Error('write failed'); // fail on broadcast, not connect
+        }),
         on: jest.fn(),
+        end: jest.fn(),
       };
       addClient('poll1', badRes);
+      expect(getClientCount('poll1')).toBe(1);
       broadcast('poll1', 'test', { data: 1 });
-      expect(getClientCount('poll1')).toBe(1); // original client still there, badRes removed
+      expect(getClientCount('poll1')).toBe(0); // badRes removed after write failure
     });
   });
 
@@ -94,8 +101,9 @@ describe('pollSSE.js', () => {
     });
 
     it('should return correct count', () => {
+      const mockRes2 = { writeHead: jest.fn(), write: jest.fn(), on: jest.fn(), end: jest.fn() };
       addClient('poll1', mockRes);
-      addClient('poll1', mockRes);
+      addClient('poll1', mockRes2);
       expect(getClientCount('poll1')).toBe(2);
     });
   });
