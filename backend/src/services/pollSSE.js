@@ -113,3 +113,14 @@ export function getTotalClientCount() {
   }
   return total;
 }
+
+/**
+ * Clear all clients (for testing). Clears keepalive timers too.
+ */
+export function clearClients() {
+  for (const timer of keepaliveTimers.values()) {
+    clearInterval(timer);
+  }
+  keepaliveTimers.clear();
+  clients.clear();
+}

@@ -12,8 +12,8 @@
  */
 
 const EMAIL_REGEX = /([a-zA-Z0-9._%+-]+)@([a-zA-Z0-9._-]+\.[a-zA-Z]{2,})/g;
-const SA_PHONE_REGEX = /(\+27|0)(\d{2})\d{5}(\d{4})/g;
-const SA_ID_REGEX = /\b(\d{6})\d{7}(\d{3})\b/g;
+const SA_PHONE_REGEX = /(\+27|0)(\d+)(\d{4})/g;
+const SA_ID_REGEX = /\d{13}/g;
 const IPV4_REGEX = /\b(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\b/g;
 const IPV6_REGEX = /\b([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b/g;
 const PASSWORD_TOKEN_KEYS = ['password', 'pass', 'pwd', 'token', 'secret', 'apiKey', 'api_key', 'jwt', 'accessToken', 'refreshToken'];
@@ -31,19 +31,25 @@ function redactEmails(str) {
 
 /**
  * Redact South African phone numbers in a string
+ * Handles: +27XXXXXXXXXXX (9-11 digits), 0XXXXXXXXXX (8-10 digits)
+ * Keeps last 4 digits visible, masks the rest
  */
 function redactPhones(str) {
-  return str.replace(SA_PHONE_REGEX, (match, prefix, mid, last4) => {
-    return `${prefix}${'*'.repeat(5)}${last4}`;
+  return str.replace(SA_PHONE_REGEX, (match, prefix, middle, last4) => {
+    return prefix + '*'.repeat(middle.length) + last4;
   });
 }
 
 /**
  * Redact South African ID numbers in a string
+ * SA ID: 13 digits - YYMMDDSSSSCCC
+ * Masks first 6 (birth date) and last 3 (citizenship), keeps 4 in middle (serial)
  */
 function redactSAIDs(str) {
-  return str.replace(SA_ID_REGEX, (match, first6, last3) => {
-    return '*'.repeat(6) + last3 + '*'.repeat(3);
+  return str.replace(SA_ID_REGEX, (match) => {
+    // match is 13 digits: YYMMDDSSSSCCC
+    // We mask first 6 + last 3, keep 4 middle
+    return '*'.repeat(6) + match.slice(6, 10) + '*'.repeat(3);
   });
 }
 

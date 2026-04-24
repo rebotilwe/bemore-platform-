@@ -1,6 +1,28 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { exportCsv } from '../utils/csv.ts';
 
+// Mock URL.createObjectURL for jsdom which doesn't have this static method
+const mockBlobUrls = new Map<Blob, string>();
+const originalCreateObjectURL = typeof URL !== 'undefined' ? URL.createObjectURL?.bind(URL) : undefined;
+
+if (!originalCreateObjectURL) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (URL as any).createObjectURL = (blob: Blob) => {
+    const url = `blob:${Math.random().toString(36).slice(2)}`;
+    mockBlobUrls.set(blob, url);
+    return url;
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (URL as any).revokeObjectURL = (url: string) => {
+    for (const [blob, blobUrl] of mockBlobUrls) {
+      if (blobUrl === url) {
+        mockBlobUrls.delete(blob);
+        break;
+      }
+    }
+  };
+}
+
 describe('CSV Export', () => {
   beforeEach(() => {
     document.body.innerHTML = '';

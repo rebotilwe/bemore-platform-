@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { addClient, removeClient, broadcast, getClientCount, getTotalClientCount } from '../src/services/pollSSE.js';
+import { addClient, removeClient, broadcast, getClientCount, getTotalClientCount, clearClients } from '../src/services/pollSSE.js';
 
 describe('pollSSE.js', () => {
   let mockRes;
 
   beforeEach(() => {
+    clearClients(); // Clear shared state before each test
     mockRes = {
       writeHead: jest.fn(),
       write: jest.fn(),
@@ -14,7 +15,7 @@ describe('pollSSE.js', () => {
   });
 
   afterEach(() => {
-    // Clean up all intervals
+    clearClients(); // Clean up between tests
     jest.clearAllTimers();
   });
 

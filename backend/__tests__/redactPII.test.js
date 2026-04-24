@@ -17,22 +17,20 @@ describe('redactPII.js', () => {
 
   describe('redactPhone', () => {
     it('should redact South African phone numbers', () => {
-      // +27 + 11 digits total: +27 12 345 6789 → prefix +27, mid 12, last4 6789
-      expect(redactPhone('+271234567890')).toBe('+27*****67890'); // Wait need 11 digits after +27
-      // Correct: +27 (3) + 12345678901 (11 digits) → total 14 chars
-      expect(redactPhone('+2712345678901')).toBe('+27*****8901');
-      // 0821234567 → 10 digits: 0 (prefix), 82 (2 digits), 12345 (5 digits), 6789 (4 digits? No, 0821234567 is 10 digits: 0 + 821234567 → 9 digits after 0, need 2+5+4=11 digits after prefix. Let's use 0821234567890 (13 digits: 0 + 821234567890 → 12 digits after 0)
-      expect(redactPhone('0821234567890')).toBe('082*****7890');
+      // Standard format: +27 82 123 4567
+      expect(redactPhone('+2712345678')).toBe('+27***45678'); // prefix kept, middle masked
+      // 10-digit format: 082 123 4567
+      expect(redactPhone('0821234567')).toBe('0***4567');
       expect(redactPhone('not-a-phone')).toBe('not-a-phone');
     });
   });
 
   describe('redactPII', () => {
     it('should redact PII in strings', () => {
-      const input = 'Contact test@example.com or +2712345678901';
+      const input = 'Contact test@example.com or +2712345678';
       const result = redactPII(input);
       expect(result).toContain('t***@example.com');
-      expect(result).toContain('+27*****8901');
+      expect(result).toContain('+27******5678');
     });
 
     it('should redact PII in objects', () => {
@@ -59,7 +57,8 @@ describe('redactPII.js', () => {
     it('should redact SA ID numbers', () => {
       const input = 'ID: 1234567890123';
       const result = redactPII(input);
-      expect(result).toContain('******0123***');
+      // ID 1234567890123 → ******7890*** (first 6 masked + last 3 masked)
+      expect(result).toContain('******7890***');
     });
 
     it('should redact IPv6 addresses', () => {

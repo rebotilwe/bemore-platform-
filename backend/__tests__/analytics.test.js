@@ -46,8 +46,12 @@ async function seedTestData() {
 
 beforeAll(async () => { await seedTestData(); });
 afterAll(async () => {
-  await AnalyticsEvent.deleteMany({});
-  await Admin.deleteMany({});
+  try {
+    await AnalyticsEvent.deleteMany({});
+    await Admin.deleteMany({});
+  } catch (e) {
+    // Ignore cleanup errors if DB already disconnected
+  }
 });
 
 // ══════════════════════════════════════
