@@ -46,7 +46,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     }
   }
 
-  const opts: RequestInit = { method, headers, body: body ? JSON.stringify(body) : undefined };
+  const opts: RequestInit = { method, headers, credentials: 'include', body: body ? JSON.stringify(body) : undefined };
   let res: Response | undefined;
 
   // Retry loop (only retries GET on network/timeout errors)

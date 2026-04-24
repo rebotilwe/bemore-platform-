@@ -4,7 +4,7 @@ import AdminAuditLog from '../models/AdminAuditLog.js';
 import { redactEmail } from '../utils/redactPII.js';
 import crypto from 'crypto';
 
-const isProd = process.env.NODE_ENV === 'production';
+const isProd = process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'staging';
 
 export async function login(req, res, next) {
   try {
