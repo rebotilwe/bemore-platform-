@@ -175,7 +175,7 @@ export const api = {
   // ── Applications ──
   async lookupStatus(refNumber: string, email: string): Promise<ApiResponse<{
     refNumber: string; firstName: string; userType: string; status: string;
-    tags: string[]; summitAccess: boolean; submittedAt: string; updatedAt?: string;
+    tags: string[]; summitAccess: boolean; allocatedProjects: string[]; submittedAt: string; updatedAt?: string;
   }>> {
     if (store.get('useApi')) {
       return request('POST', '/applications/lookup', { refNumber, email });
@@ -186,6 +186,7 @@ export const api = {
     return { success: true, data: {
       refNumber: app.refNumber, firstName: app.personal.firstName, userType: app.userType,
       status: app.status, tags: app.tags, summitAccess: app.dealRoom?.summitAccess || false,
+      allocatedProjects: (app as Application & { allocatedProjects?: string[] }).allocatedProjects || [],
       submittedAt: app.submittedAt, updatedAt: app.updatedAt,
     }};
   },

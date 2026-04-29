@@ -140,7 +140,20 @@ export const statusPage: Page = {
           ${d.tags?.length ? `
           <div class="st-tags-section">
             <div class="st-tags-title">Intelligence Tags</div>
-            <div class="st-tags">${d.tags.map(t => `<span class="tag-badge">${esc(t)}</span>`).join(' ')}</div>
+            <div class="st-tags">${d.tags.map((t: string) => `<span class="tag-badge">${esc(t)}</span>`).join(' ')}</div>
+          </div>` : ''}
+
+          ${d.userType === 'professional' ? `
+          <div class="st-allocated-section">
+            <div class="st-allocated-title">Allocated Projects</div>
+            ${d.allocatedProjects?.length
+              ? `<div class="st-allocated-list">${d.allocatedProjects.map((p: string) => `
+                <div class="st-allocated-item">
+                  <span class="st-allocated-icon">&#9654;</span>
+                  <span>${esc(p)}</span>
+                </div>`).join('')}</div>`
+              : `<p class="st-allocated-empty">No projects have been allocated to your profile yet. Our team will be in touch once a suitable opportunity arises.</p>`
+            }
           </div>` : ''}
 
           <div class="st-next-steps">

@@ -64,7 +64,7 @@ router.post('/lookup',
       const app = await (await import('../models/Application.js')).default.findOne({
         refNumber: refNumber.trim().toUpperCase(),
         'personal.email': email.trim().toLowerCase(),
-      }).select('refNumber userType status tags dealRoom.summitAccess submittedAt updatedAt personal.firstName');
+      }).select('refNumber userType status tags dealRoom.summitAccess allocatedProjects submittedAt updatedAt personal.firstName');
 
       if (!app) {
         return res.status(404).json({ success: false, message: 'No application found. Please check your reference number and email.' });
@@ -79,6 +79,7 @@ router.post('/lookup',
           status: app.status,
           tags: app.tags,
           summitAccess: app.dealRoom?.summitAccess || false,
+          allocatedProjects: app.allocatedProjects || [],
           submittedAt: app.submittedAt,
           updatedAt: app.updatedAt,
         },
