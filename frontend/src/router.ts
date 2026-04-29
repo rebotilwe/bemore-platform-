@@ -7,7 +7,16 @@ import { heroPage } from './pages/public/hero.ts';
 import { gatewayPage } from './pages/public/gateway.ts';
 import { formPage } from './pages/public/form.ts';
 import { successPage } from './pages/public/success.ts';
-import { aboutPage } from './pages/public/about.ts';
+import {
+  aboutPage,
+  aboutOverviewPage,
+  aboutGroupPage,
+  aboutVisionPage,
+  aboutEmpowermentPage,
+  aboutImpactPage,
+  aboutPerformancePage,
+  aboutOpportunityPage,
+} from './pages/public/about.ts';
 import { landingPage } from './pages/public/landing.ts';
 import { statusPage } from './pages/public/status.ts';
 import { loginPage } from './pages/admin/login.ts';
@@ -24,7 +33,14 @@ const routes: RouteConfig[] = [
   { path: '/',              page: () => heroPage,        layout: 'public' },
   { path: '/gateway',       page: () => gatewayPage,     layout: 'public' },
   { path: '/register',      page: () => formPage,        layout: 'public' },
-  { path: '/about',         page: () => aboutPage,       layout: 'public' },
+  { path: '/about',             page: () => aboutPage,             layout: 'public' },
+  { path: '/about/overview',    page: () => aboutOverviewPage,    layout: 'public' },
+  { path: '/about/group',       page: () => aboutGroupPage,       layout: 'public' },
+  { path: '/about/vision',      page: () => aboutVisionPage,      layout: 'public' },
+  { path: '/about/empowerment', page: () => aboutEmpowermentPage, layout: 'public' },
+  { path: '/about/impact',      page: () => aboutImpactPage,      layout: 'public' },
+  { path: '/about/performance', page: () => aboutPerformancePage, layout: 'public' },
+  { path: '/about/opportunity', page: () => aboutOpportunityPage, layout: 'public' },
   { path: '/success',       page: () => successPage,     layout: 'public' },
   { path: '/landing',       page: () => landingPage,     layout: 'public' },
   { path: '/status',        page: () => statusPage,      layout: 'public' },
