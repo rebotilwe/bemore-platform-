@@ -155,26 +155,26 @@ describe('POST /api/applications/data-delete', () => {
 describe('Site Settings API', () => {
   it('PUT should require auth', async () => {
     const res = await request(app)
-      .put('/api/settings/mentimeter_id')
-      .send({ value: 'test123' });
+      .put('/api/settings/registrationOpen')
+      .send({ value: true });
     expect(res.status).toBe(401);
   });
 
   it('PUT should update a setting with auth', async () => {
     const res = await request(app)
-      .put('/api/settings/mentimeter_id')
+      .put('/api/settings/registrationOpen')
       .set('Cookie', authCookie)
       .set('X-CSRF-Token', csrfToken)
-      .send({ value: 'newhashid123' });
+      .send({ value: false });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
   });
 
   it('GET /public/:key should return the setting without auth', async () => {
     const res = await request(app)
-      .get('/api/settings/public/mentimeter_id');
+      .get('/api/settings/public/registrationOpen');
     expect(res.status).toBe(200);
-    expect(res.body.data.value).toBe('newhashid123');
+    expect(res.body.data.value).toBe(false);
   });
 
   it('GET /public/:key should return 404 for non-whitelisted key', async () => {
@@ -189,7 +189,7 @@ describe('Site Settings API', () => {
       .get('/api/settings')
       .set('Cookie', authCookie);
     expect(res.status).toBe(200);
-    expect(res.body.data).toHaveProperty('mentimeter_id');
+    expect(res.body.data).toHaveProperty('registrationOpen');
   });
 });
 

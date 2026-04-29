@@ -19,6 +19,20 @@ export function renderStepProject(profile?: ProfileCategory): string {
     </div>`;
   }
 
+  if (profile === 'aspiring') {
+    return `
+    <div class="fdiv">Your Development Ambitions</div>
+
+    <div class="fg">
+      <label class="flbl" for="t-project">Tell us about your development goals <span class="flbl-hint">(optional)</span></label>
+      <textarea class="fta" id="t-project" name="projectDescription"
+                maxlength="1000" rows="5"
+                placeholder="What kind of developer do you want to become? What opportunities are you looking for? Any relevant experience or projects you'd like to highlight."
+                aria-required="false" aria-label="Development goals"></textarea>
+      <div class="fta-count"><span>0</span> / 1,000 characters</div>
+    </div>`;
+  }
+
   if (profile === 'professional') {
     return `
     <div class="fdiv">Additional Information</div>

@@ -36,9 +36,12 @@ export function csrfProtection(req, res, next) {
     return res.status(403).json({ success: false, message: 'Missing CSRF token' });
   }
 
-  // Double-submit: cookie must match header (if cookie is available)
+  // Double-submit: cookie must be present AND match header
   const cookieToken = req.cookies?.bm_csrf;
-  if (cookieToken && cookieToken !== headerToken) {
+  if (!cookieToken) {
+    return res.status(403).json({ success: false, message: 'Missing CSRF cookie' });
+  }
+  if (cookieToken !== headerToken) {
     return res.status(403).json({ success: false, message: 'Invalid CSRF token' });
   }
 

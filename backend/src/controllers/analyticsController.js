@@ -59,7 +59,7 @@ export async function dealRoom(_req, res, next) {
 
 export async function eventLog(req, res, next) {
   try {
-    const data = await analytics.getEventLog({
+    const { data: events, pagination } = await analytics.getEventLog({
       page: parseInt(req.query.page) || 1,
       limit: parseInt(req.query.limit) || 50,
       category: req.query.category,
@@ -67,7 +67,7 @@ export async function eventLog(req, res, next) {
       startDate: req.query.startDate,
       endDate: req.query.endDate,
     });
-    res.json({ success: true, ...data });
+    res.json({ success: true, data: events, pagination });
   } catch (err) {
     next(err);
   }

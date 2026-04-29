@@ -23,7 +23,6 @@ info:
     | Public | 15 min | 100/IP | Application submit, lookup, POPIA, public settings |
     | Admin | 15 min | 300 | All admin endpoints |
     | Auth | 15 min | 10 | `POST /auth/login` |
-    | Vote | 15 min | 60/session | `POST /polls/:id/vote` |
     | Tracking | 15 min | 300/IP | `POST /track/*` |
 
     ## Application Status Flow
@@ -32,8 +31,10 @@ info:
     ## Auto-Tagging
     Applications are automatically tagged on submission based on form data:
     `HIGH_VALUE`, `LARGE_CAPITAL`, `MID_VALUE`, `LAND_SECURED`, `FUNDING_STAGE`,
-    `SHOVEL_READY`, `PIPELINE_READY`, `INSTITUTIONAL_GRADE`, `EXPERIENCED`,
-    `STUDENT_FOCUS`, `LARGE_OPERATOR`, `REGISTERED`
+    `SHOVEL_READY`, `PIPELINE_READY`, `INSTITUTIONAL_GRADE`, `FUNDED_BEFORE`,
+    `INSTITUTIONAL_TRACK`, `SEEKS_EQUITY`, `SEEKS_DEBT`, `EXPERIENCED`, `STUDENT_FOCUS`,
+    `LARGE_LAND`, `SERVICED`, `ZONED`, `INVESTOR`, `LARGE_INVESTOR`, `LARGE_OPERATOR`,
+    `HIGH_OCCUPANCY`, `UNI_ACCREDITED`, `NSFAS_ACCREDITED`, `LARGE_SCALE`, `REGISTERED`
 
     ## POPIA Compliance
     Public data-export and data-delete endpoints allow applicants to exercise their
@@ -65,8 +66,6 @@ tags:
     description: Site traffic analytics (page views, devices, referrers)
   - name: Reports
     description: Pre-built intelligence reports
-  - name: Polls
-    description: Live polling with SSE real-time updates
   - name: Settings
     description: Site settings (admin-configurable key-value store)
   - name: Emails
@@ -731,8 +730,7 @@ paths:
       summary: Read a public site setting
       description: |
         Returns the value of a publicly readable setting. Only whitelisted keys are
-        accessible: `mentimeterEmbedId`, `mentimeter_id`, `polls_enabled`,
-        `registrationOpen`, `platformAnnouncement`.
+        accessible: `registrationOpen`, `platformAnnouncement`, `summit_config`.
       security: []
       parameters:
         - name: key
@@ -740,8 +738,8 @@ paths:
           required: true
           schema:
             type: string
-            enum: [mentimeterEmbedId, mentimeter_id, polls_enabled, registrationOpen, platformAnnouncement]
-          example: polls_enabled
+            enum: [registrationOpen, platformAnnouncement, summit_config]
+          example: summit_config
       responses:
         '200':
           description: Setting value
@@ -758,7 +756,7 @@ paths:
                     properties:
                       key:
                         type: string
-                        example: polls_enabled
+                        example: summit_config
                       value: {}
         '404':
           description: Setting key not found or not publicly readable
@@ -792,15 +790,15 @@ paths:
       summary: Update a site setting (admin)
       description: |
         Updates a site setting value. Only whitelisted keys are accepted:
-        `mentimeterEmbedId`, `mentimeter_id`, `polls_enabled`, `registrationOpen`,
-        `maintenanceMode`, `platformAnnouncement`. Requires CSRF token.
+        `registrationOpen`, `maintenanceMode`, `platformAnnouncement`, `summit_config`.
+        Requires CSRF token.
       parameters:
         - name: key
           in: path
           required: true
           schema:
             type: string
-            enum: [mentimeterEmbedId, mentimeter_id, polls_enabled, registrationOpen, maintenanceMode, platformAnnouncement]
+            enum: [registrationOpen, maintenanceMode, platformAnnouncement, summit_config]
         - $ref: '#/components/parameters/CSRFToken'
       requestBody:
         required: true
@@ -825,7 +823,7 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: Setting "polls_enabled" updated
+                    example: Setting "registrationOpen" updated
         '400':
           description: Unknown setting key
           content:
@@ -1234,356 +1232,6 @@ paths:
                 $ref: '#/components/schemas/SuccessResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
-  # ────────────────────────────────────────────
-  # Polls
-  # ────────────────────────────────────────────
-  /polls/active:
-    get:
-      tags: [Polls]
-      summary: Get active poll (public)
-      description: Returns the currently active poll with its questions and options. No auth required.
-      security: []
-      responses:
-        '200':
-          description: Active poll (or null if none active)
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    $ref: '#/components/schemas/Poll'
-
-  /polls:
-    get:
-      tags: [Polls]
-      summary: List polls (admin)
-      description: List all polls, optionally filtered by status.
-      parameters:
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: [draft, active, paused, closed]
-      responses:
-        '200':
-          description: Poll list
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Poll'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-    post:
-      tags: [Polls]
-      summary: Create a poll (admin)
-      description: Create a new poll with one or more questions. Requires CSRF token.
-      parameters:
-        - $ref: '#/components/parameters/CSRFToken'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [title, questions]
-              properties:
-                title:
-                  type: string
-                  maxLength: 200
-                  example: Summit Feedback
-                description:
-                  type: string
-                  maxLength: 500
-                questions:
-                  type: array
-                  minItems: 1
-                  items:
-                    $ref: '#/components/schemas/PollQuestion'
-      responses:
-        '201':
-          description: Poll created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    $ref: '#/components/schemas/Poll'
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /polls/{id}:
-    get:
-      tags: [Polls]
-      summary: Get poll details (admin)
-      parameters:
-        - $ref: '#/components/parameters/PollId'
-      responses:
-        '200':
-          description: Poll details
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    $ref: '#/components/schemas/Poll'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-    patch:
-      tags: [Polls]
-      summary: Update a poll (admin)
-      description: Update poll title, description, or questions. Requires CSRF token.
-      parameters:
-        - $ref: '#/components/parameters/PollId'
-        - $ref: '#/components/parameters/CSRFToken'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                title:
-                  type: string
-                  maxLength: 200
-                description:
-                  type: string
-                  maxLength: 500
-                questions:
-                  type: array
-                  minItems: 1
-                  items:
-                    $ref: '#/components/schemas/PollQuestion'
-      responses:
-        '200':
-          description: Poll updated
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    $ref: '#/components/schemas/Poll'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-    delete:
-      tags: [Polls]
-      summary: Delete a poll (admin)
-      description: Permanently delete a poll and all its responses. Requires CSRF token.
-      parameters:
-        - $ref: '#/components/parameters/PollId'
-        - $ref: '#/components/parameters/CSRFToken'
-      responses:
-        '200':
-          description: Poll deleted
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /polls/{id}/vote:
-    post:
-      tags: [Polls]
-      summary: Submit a vote (public)
-      description: |
-        Submit a vote on an active poll question. Requires a sessionId for
-        duplicate prevention. Rate limited to 60 votes per 15 minutes per session.
-      security: []
-      parameters:
-        - $ref: '#/components/parameters/PollId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [questionId, sessionId]
-              properties:
-                questionId:
-                  type: string
-                  description: MongoDB ObjectId of the question
-                sessionId:
-                  type: string
-                  description: Client-generated session identifier
-                optionId:
-                  type: string
-                  description: MongoDB ObjectId of the selected option (for multiple-choice)
-                textResponse:
-                  type: string
-                  maxLength: 200
-                  description: Free-text response (for word-cloud or open-text)
-                ratingValue:
-                  type: integer
-                  minimum: 1
-                  maximum: 10
-                  description: Rating value (for rating type)
-      responses:
-        '200':
-          description: Vote recorded
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-        '400':
-          $ref: '#/components/responses/ValidationError'
-        '429':
-          $ref: '#/components/responses/RateLimited'
-
-  /polls/{id}/live:
-    get:
-      tags: [Polls]
-      summary: Live poll results (SSE stream, public)
-      description: |
-        Server-Sent Events (SSE) stream that pushes real-time vote updates.
-        The client receives `data:` frames with JSON payloads as votes arrive.
-        Connection stays open until the client disconnects or the poll closes.
-      security: []
-      parameters:
-        - $ref: '#/components/parameters/PollId'
-      responses:
-        '200':
-          description: SSE event stream
-          content:
-            text/event-stream:
-              schema:
-                type: string
-                description: Newline-delimited SSE events with JSON data payloads
-
-  /polls/{id}/status:
-    patch:
-      tags: [Polls]
-      summary: Set poll status (admin)
-      description: Change the status of a poll (draft, active, paused, closed). Requires CSRF token.
-      parameters:
-        - $ref: '#/components/parameters/PollId'
-        - $ref: '#/components/parameters/CSRFToken'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [status]
-              properties:
-                status:
-                  type: string
-                  enum: [draft, active, paused, closed]
-      responses:
-        '200':
-          description: Poll status updated
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    $ref: '#/components/schemas/Poll'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /polls/{id}/activate:
-    patch:
-      tags: [Polls]
-      summary: Activate a specific question (admin)
-      description: |
-        Set the active question index for a poll. Use `-1` to deactivate all questions.
-        Requires CSRF token.
-      parameters:
-        - $ref: '#/components/parameters/PollId'
-        - $ref: '#/components/parameters/CSRFToken'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [questionIndex]
-              properties:
-                questionIndex:
-                  type: integer
-                  minimum: -1
-                  description: Zero-based question index, or -1 to deactivate all
-      responses:
-        '200':
-          description: Question activated
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    $ref: '#/components/schemas/Poll'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /polls/{id}/results:
-    get:
-      tags: [Polls]
-      summary: Get poll results (admin)
-      description: Aggregated results for all questions in a poll.
-      parameters:
-        - $ref: '#/components/parameters/PollId'
-      responses:
-        '200':
-          description: Poll results
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SuccessResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
 
   # ────────────────────────────────────────────
   # Tracking (public, fire-and-forget)

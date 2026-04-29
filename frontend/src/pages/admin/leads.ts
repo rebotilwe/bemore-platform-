@@ -89,8 +89,9 @@ function renderBulkBar(): string {
 function getQuickInfo(userType: string, fd: Record<string, unknown>): string {
   switch (userType) {
     case 'developer':
-    case 'aspiring':
       return (fd.estimatedValue as string) || '';
+    case 'aspiring':
+      return (fd.developmentInterests as string[])?.slice(0, 2).join(' · ') || 'Aspiring Developer';
     case 'investor':
       return (fd.investmentAmount as string) || '';
     case 'landowner':

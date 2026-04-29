@@ -252,6 +252,10 @@ function validate(): boolean {
       if (!ok) { toast('Please complete all required fields'); return false; }
       return true;
     }
+    if (profile === 'aspiring') {
+      // Only the optional free-text field on step 2 — no required selects, so always valid
+      return true;
+    }
     if (!getRadioVal('r-land')) { toast('Please select your land status'); return false; }
     setError('s-stage', false); setError('s-value', false);
     let ok = true;
@@ -285,7 +289,7 @@ function validate(): boolean {
   }
   if (step === 4) {
     const profile = store.get('selectedProfile');
-    if (profile === 'investor' || profile === 'professional') return true; // optional for these profiles
+    if (profile === 'investor' || profile === 'professional' || profile === 'aspiring') return true; // optional step
     setError('t-project', false);
     if (!minLength(inputVal('t-project'), 50)) { setError('t-project', true); toast('Please describe your project (min 50 characters)'); return false; }
     return true;
