@@ -214,6 +214,19 @@ function validate(): boolean {
       if (!ok) { toast('Please complete all required fields'); return false; }
       return true;
     }
+    if (profile === 'landowner') {
+      setError('b-size', false); setError('b-zone', false); setError('b-own', false); setError('b-timeline', false);
+      let ok = true;
+      if (!inputVal('b-size'))     { setError('b-size', true); ok = false; }
+      if (!inputVal('b-zone'))     { setError('b-zone', true); ok = false; }
+      if (!inputVal('b-own'))      { setError('b-own', true); ok = false; }
+      if (!inputVal('b-timeline')) { setError('b-timeline', true); ok = false; }
+      if (!getRadioVal('b-serv'))     { toast('Please indicate if land is serviced'); return false; }
+      if (!getRadioVal('b-appetite')) { toast('Please select your development appetite'); return false; }
+      if (!getRadioVal('b-bond'))     { toast('Please indicate if there is an existing bond'); return false; }
+      if (!ok) { toast('Please complete all required fields'); return false; }
+      return true;
+    }
     if (!getRadioVal('r-land')) { toast('Please select your land status'); return false; }
     setError('s-stage', false); setError('s-value', false);
     let ok = true;
@@ -223,13 +236,14 @@ function validate(): boolean {
     return ok;
   }
   if (step === 3) {
-    if (!getCheckedVals('c-seeking').length) { toast('Please select at least one option'); return false; }
     const profile = store.get('selectedProfile');
-    if (profile !== 'investor' && !getRadioVal('r-prevfund')) { toast('Please select your funding history'); return false; }
+    if (!getCheckedVals('c-seeking').length) { toast('Please select at least one option'); return false; }
     if (profile === 'investor') {
       setError('inv-timeline', false);
       if (!inputVal('inv-timeline')) { setError('inv-timeline', true); toast('Please select your decision-making timeline'); return false; }
+      return true;
     }
+    if (!getRadioVal('r-prevfund')) { toast('Please answer the land valuation question'); return false; }
     return true;
   }
   if (step === 4) {
@@ -272,7 +286,20 @@ function collectAllFormData(): Record<string, unknown> {
   };
 
   if (profile === 'developer') { data.yearsExperience = get('a-exp'); data.developmentTypes = getChk('a-dtype'); }
-  else if (profile === 'landowner') { data.landSize = get('b-size'); data.zoningStatus = get('b-zone'); data.isServiced = getRad('b-serv'); data.ownershipStructure = get('b-own'); }
+  else if (profile === 'landowner') {
+    data.landSize = get('b-size');
+    data.zoningStatus = get('b-zone');
+    data.isServiced = getRad('b-serv');
+    data.ownershipStructure = get('b-own');
+    data.developmentAppetite = getRad('b-appetite');
+    data.timeline = get('b-timeline');
+    data.existingBond = getRad('b-bond');
+    data.partnershipOutcome = getChk('c-seeking');
+    data.recentValuation = getRad('r-prevfund');
+    // Clear generic fields not applicable to landowners
+    delete data.landStatus; delete data.projectStage; delete data.estimatedValue;
+    delete data.seeking; delete data.previousFunding;
+  }
   else if (profile === 'investor') {
     data.investmentFocus = getChk('inv-focus');
     data.investmentAmount = get('inv-amount');

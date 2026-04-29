@@ -28,6 +28,29 @@ function renderDefault(): string {
     </div>`;
 }
 
+function renderLandowner(): string {
+  return `
+    <div class="fdiv">Partnership Preferences</div>
+
+    <div class="fg">
+      <label class="flbl req">What outcome are you seeking? <span class="flbl-hint">(select all that apply)</span></label>
+      <div class="cg" id="c-seeking" role="group" aria-label="What outcome are you seeking?">
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>Equity stake in the development</div>
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>Upfront sale proceeds</div>
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>Monthly rental income</div>
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>Combination of the above</div>
+      </div>
+    </div>
+
+    <div class="fg">
+      <label class="flbl req">Have you had the land valued recently?</label>
+      <div class="rg" id="r-prevfund" role="radiogroup" aria-label="Have you had the land valued recently?">
+        <div class="ro" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span>Yes — within the last 12 months</div>
+        <div class="ro" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span>No — not recently valued</div>
+      </div>
+    </div>`;
+}
+
 function renderInvestor(): string {
   return `
     <div class="fdiv">Investment Intentions</div>
@@ -58,6 +81,7 @@ function renderInvestor(): string {
 
 export function renderStepFunding(profile?: ProfileCategory): string {
   if (profile === 'investor') return renderInvestor();
+  if (profile === 'landowner') return renderLandowner();
   return renderDefault();
 }
 

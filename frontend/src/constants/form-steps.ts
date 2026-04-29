@@ -14,16 +14,29 @@ export const FORM_STEPS: StepMeta[] = [
 
 const INVESTOR_OVERRIDES: Partial<StepMeta>[] = [
   {},
-  { title: 'Investment Profile',   subtitle: 'Tell us about your investment mandate and appetite.',    label: 'Profile' },
-  { title: 'Investment Intentions', subtitle: 'What opportunities are you looking for?',               label: 'Intentions' },
-  { title: 'Additional Notes',     subtitle: 'Anything else you\'d like us to know?',                  label: 'Notes' },
+  { title: 'Investment Profile',    subtitle: 'Tell us about your investment mandate and appetite.',  label: 'Profile' },
+  { title: 'Investment Intentions', subtitle: 'What opportunities are you looking for?',              label: 'Intentions' },
+  { title: 'Additional Notes',      subtitle: 'Anything else you\'d like us to know?',                label: 'Notes' },
   {},
 ];
 
+const LANDOWNER_OVERRIDES: Partial<StepMeta>[] = [
+  {},
+  { title: 'Land Profile',           subtitle: 'Tell us about your land and what you\'d like to do with it.', label: 'Land' },
+  { title: 'Partnership Preferences', subtitle: 'What outcome are you looking for?',                          label: 'Partnership' },
+  {},
+  {},
+];
+
+const PROFILE_OVERRIDES: Record<string, Partial<StepMeta>[]> = {
+  investor: INVESTOR_OVERRIDES,
+  landowner: LANDOWNER_OVERRIDES,
+};
+
 export function getStepMeta(stepIndex: number, profile?: string): StepMeta {
   const base = FORM_STEPS[stepIndex];
-  if (profile === 'investor') {
-    const override = INVESTOR_OVERRIDES[stepIndex];
+  if (profile && PROFILE_OVERRIDES[profile]) {
+    const override = PROFILE_OVERRIDES[profile][stepIndex];
     return { ...base, ...override };
   }
   return base;

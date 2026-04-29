@@ -60,12 +60,28 @@ function landownerFields(): string {
   return `
     <div class="fdiv">Land Profile</div>
     <div class="frow">
-      ${sel('b-size', 'Land Size', ['Less than 1,000 sqm', '1,000 – 5,000 sqm', 'Greater than 5,000 sqm'])}
+      ${sel('b-size', 'Land Size', ['Less than 1,000 sqm', '1,000 – 5,000 sqm', '5,000 – 10,000 sqm', 'Greater than 10,000 sqm'])}
       ${sel('b-zone', 'Zoning Status', ['Residential', 'Commercial', 'Mixed-Use', 'Unzoned', 'Awaiting Rezoning'])}
     </div>
     <div class="frow">
-      ${radio('b-serv', 'Is Land Serviced?', ['Yes (Water/Elec/Sewage)', 'No'])}
+      ${radio('b-serv', 'Is Land Serviced?', ['Yes (Water / Electricity / Sewage)', 'No', 'Partially'])}
       ${sel('b-own', 'Ownership Structure', ['Sole Owner', 'Partnership', 'Trust', 'Company'])}
+    </div>
+    <div class="fdiv">Development Appetite</div>
+    ${radio('b-appetite', 'What would you like to do with your land?', [
+      'Develop it myself',
+      'Partner with a developer (Joint Venture)',
+      'Sell to a developer',
+      'Open to all options',
+    ])}
+    <div class="frow">
+      ${sel('b-timeline', 'Timeline / Urgency', [
+        'Immediate — within 3 months',
+        'Short-term — 3 to 12 months',
+        'Long-term — 1 to 3 years',
+        'Exploratory — no firm timeline',
+      ])}
+      ${radio('b-bond', 'Does the land have an existing bond or mortgage?', ['Yes', 'No'])}
     </div>`;
 }
 
