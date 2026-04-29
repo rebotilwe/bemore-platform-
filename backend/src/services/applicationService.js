@@ -1,7 +1,7 @@
 import Application from '../models/Application.js';
 import { APPLICATION_STATUSES, FUNDER_NAMES, SORTABLE_FIELDS } from '../constants/enums.js';
 
-const ALLOWED_UPDATE_FIELDS = ['status', 'dealRoom', 'adminNotes', 'classification', 'followUp'];
+const ALLOWED_UPDATE_FIELDS = ['status', 'dealRoom', 'adminNotes', 'classification', 'followUp', 'allocatedProjects'];
 
 export async function createApplication(data) {
   // Extract engagement source from formData to top-level field

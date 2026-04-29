@@ -86,6 +86,24 @@ function renderBulkBar(): string {
   </div>`;
 }
 
+function getQuickInfo(userType: string, fd: Record<string, unknown>): string {
+  switch (userType) {
+    case 'developer':
+    case 'aspiring':
+      return (fd.estimatedValue as string) || '';
+    case 'investor':
+      return (fd.investmentAmount as string) || '';
+    case 'landowner':
+      return [fd.landSize as string, fd.zoningStatus as string].filter(Boolean).join(' · ');
+    case 'student':
+      return [fd.totalBedCount as string, fd.averageOccupancy as string].filter(Boolean).join(' · ');
+    case 'professional':
+      return [fd.profession as string, fd.typicalProjectValue as string].filter(Boolean).join(' · ');
+    default:
+      return '';
+  }
+}
+
 function renderCards(apps: Application[]): string {
   if (!apps.length) return renderEmptyState({ ...EMPTY_STATES.search, message: 'No leads match your filters.' });
 
@@ -99,7 +117,8 @@ function renderCards(apps: Application[]): string {
     const company = app.personal?.companyName ?? '';
     const date = app.submittedAt ? formatDate(app.submittedAt) : '';
     const tags = (app.tags ?? []).slice(0, 2).map(t => `<span class="tag-badge">${esc(t)}</span>`).join('');
-    const value = (app.formData as Record<string, unknown>)?.estimatedValue as string || '';
+    const fd = (app.formData as Record<string, unknown>) ?? {};
+    const quickInfo = getQuickInfo(app.userType, fd);
     const isShortlisted = app.status === 'shortlisted';
     const btnLabel = isShortlisted ? '&#10003; Shortlisted' : 'Shortlist';
     const btnCls = isShortlisted ? 'btn-action active' : 'btn-action';
@@ -123,7 +142,7 @@ function renderCards(apps: Application[]): string {
         </div>
       </div>
       <div class="lead-card-mid">
-        ${value ? `<div class="lead-card-value">${esc(value)}</div>` : ''}
+        ${quickInfo ? `<div class="lead-card-value">${esc(quickInfo)}</div>` : ''}
         ${tags ? `<div class="lead-card-tags">${tags}</div>` : ''}
       </div>
       <div class="lead-card-bottom">

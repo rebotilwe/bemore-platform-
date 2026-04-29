@@ -30,6 +30,7 @@ const applicationSchema = new mongoose.Schema({
     completedAt: Date,
   },
   adminNotes: String,
+  allocatedProjects: [{ type: String }],
   submittedAt: { type: Date, default: Date.now },
   updatedAt: Date,
 });

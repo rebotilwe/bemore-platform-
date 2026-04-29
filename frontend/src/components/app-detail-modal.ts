@@ -34,26 +34,58 @@ function renderProfileFields(type: string, fd: Record<string, unknown>): string 
     html += row('Years Experience', fd.yearsExperience as string);
     html += listRow('Development Types', fd.developmentTypes as string[]);
   } else if (type === 'landowner') {
-    html += sectionLabel('Landowner Profile');
+    html += sectionLabel('Land Profile');
     html += row('Land Size', fd.landSize as string);
     html += row('Zoning Status', fd.zoningStatus as string);
     html += row('Serviced', fd.isServiced as string);
     html += row('Ownership Structure', fd.ownershipStructure as string);
+    html += sectionLabel('Development Appetite');
+    html += row('Development Appetite', fd.developmentAppetite as string);
+    html += row('Timeline', fd.timeline as string);
+    html += row('Existing Bond', fd.existingBond as string);
+    html += sectionLabel('Partnership Preferences');
+    html += listRow('Seeking', fd.partnershipOutcome as string[]);
+    html += row('Recent Valuation', fd.recentValuation as string);
   } else if (type === 'investor') {
-    html += sectionLabel('Investor Profile');
-    html += listRow('Investment Focus', fd.investmentFocus as string[]);
-    html += row('Investment Ticket', fd.investmentTicket as string);
+    html += sectionLabel('Investment Profile');
+    html += listRow('Sectors of Interest', fd.investmentFocus as string[]);
+    html += row('Investment Amount', fd.investmentAmount as string);
+    html += row('Investment Horizon', fd.investmentHorizon as string);
+    html += listRow('Return Structure', fd.returnStructure as string[]);
+    html += row('Prior Experience', fd.priorInvestmentExperience as string);
+    html += sectionLabel('Investment Intentions');
+    html += listRow('Looking For', fd.investmentIntentions as string[]);
+    html += row('Decision Timeline', fd.decisionTimeline as string);
+    html += fullRow('Additional Notes', fd.additionalNotes as string);
   } else if (type === 'student') {
-    html += sectionLabel('Student Accommodation Operator');
-    html += row('Bed Count', fd.bedCount as string);
-    html += row('Occupancy Rate', fd.occupancyRate as string);
-    html += row('University Partnership', fd.universityPartnership as string);
+    html += sectionLabel('Portfolio Profile');
+    html += row('Total Bed Count', fd.totalBedCount as string);
+    html += row('Average Occupancy', fd.averageOccupancy as string);
+    html += listRow('Operating Provinces', fd.operatingProvinces as string[]);
+    html += row('Primary City', fd.primaryCity as string);
     html += row('Asset Type', fd.assetType as string);
+    html += row('Asset Ownership', fd.assetOwnership as string);
+    html += row('NSFAS Accreditation', fd.nsfasAccreditation as string);
+    html += row('University Partnership', fd.universityPartnership as string);
+    html += sectionLabel('Support Needs');
+    html += listRow('Support Needed', fd.supportNeeds as string[]);
+    html += row('Growth Intention', fd.growthIntention as string);
+    html += row('Previous Funding', fd.previousFunding as string);
+    html += fullRow('Portfolio Description', fd.portfolioDescription as string);
   } else if (type === 'professional') {
     html += sectionLabel('Professional Profile');
-    html += row('Profession', fd.profession as string);
-    html += row('Registration Status', fd.registrationStatus as string);
-    html += row('Project Scale', fd.projectScale as string);
+    html += row('Profession / Discipline', fd.profession as string);
+    html += row('Registration Body', fd.registrationBody as string);
+    html += row('Registration Number', fd.registrationNumber as string);
+    html += row('Years of Experience', fd.yearsExperience as string);
+    html += row('Typical Project Value', fd.typicalProjectValue as string);
+    html += listRow('Active Provinces', fd.activeProvinces as string[]);
+    html += sectionLabel('Association Interest');
+    html += row('Associate Database', fd.associateDatabase as string);
+    html += row('Current Capacity', fd.currentCapacity as string);
+    html += listRow('Preferred Work Types', fd.preferredWorkTypes as string[]);
+    html += fullRow('Motivation', fd.motivation as string);
+    html += fullRow('Additional Notes', fd.additionalNotes as string);
   } else if (type === 'aspiring') {
     html += sectionLabel('Aspiring Developer');
     html += listRow('Development Interests', fd.developmentInterests as string[]);
@@ -155,23 +187,30 @@ export function renderAppDetail(app: Application): string {
           ${row('Profile Type', typeLbl)}
         </div>
 
+        ${['developer', 'aspiring'].includes(app.userType) ? `
         ${sectionLabel('Readiness Assessment')}
         <div class="detail-grid">
           ${row('Land Status', fd.landStatus as string)}
           ${row('Project Stage', fd.projectStage as string)}
           ${row('Estimated Value', fd.estimatedValue as string)}
         </div>
-
         ${sectionLabel('Funding Requirements')}
         <div class="detail-grid">
           ${listRow('Seeking', Array.isArray(fd.seeking) ? fd.seeking as string[] : fd.seeking ? [fd.seeking as string] : undefined)}
           ${row('Previous Funding', fd.previousFunding as string)}
-        </div>
+        </div>` : ''}
 
         ${renderProfileFields(app.userType, fd)}
 
+        ${app.userType === 'professional' ? `
+        ${sectionLabel('Allocated Projects')}
+        ${(app as Application & { allocatedProjects?: string[] }).allocatedProjects?.length
+          ? `<div class="detail-tags-wrap">${((app as Application & { allocatedProjects?: string[] }).allocatedProjects ?? []).map(p => `<span class="tag-badge">${esc(p)}</span>`).join(' ')}</div>`
+          : '<p class="detail-empty">No projects allocated yet.</p>'}` : ''}
+
+        ${['developer', 'aspiring'].includes(app.userType) ? `
         ${sectionLabel('Project Narrative')}
-        ${fullRow('Project Description', fd.projectDescription as string)}
+        ${fullRow('Project Description', fd.projectDescription as string)}` : ''}
         ${sectionLabel('Consent')}
         <div class="detail-grid">
           ${row('T&Cs Accepted', fd.tcAccepted ? 'Yes' : 'No')}
