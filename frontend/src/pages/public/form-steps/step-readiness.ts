@@ -114,10 +114,47 @@ function professionalFields(): string {
   return `
     <div class="fdiv">Professional Profile</div>
     <div class="frow">
-      ${sel('d-prof', 'Profession', ['Architect', 'Civil Engineer', 'Quantity Surveyor', 'Project Manager', 'Other'])}
-      ${sel('d-reg', 'Registration Status', ['SACAP Registered', 'ECSA Registered', 'Unregistered'])}
+      ${sel('d-prof', 'Profession / Discipline', [
+        'Architect',
+        'Civil Engineer',
+        'Structural Engineer',
+        'Quantity Surveyor',
+        'Project Manager',
+        'Town Planner',
+        'Electrical Engineer',
+        'Mechanical Engineer',
+        'Interior Designer',
+        'Other',
+      ])}
+      ${sel('d-reg', 'Registration Body', [
+        'SACAP (Architects)',
+        'ECSA (Engineers)',
+        'ASAQS (Quantity Surveyors)',
+        'SACPCMP (Project Managers)',
+        'SACPLAN (Town Planners)',
+        'Not yet registered',
+        'Other',
+      ])}
     </div>
-    ${sel('d-scale', 'Project Scale Handled', ['Less than R5m', 'R5m – R20m', 'Greater than R20m'])}`;
+    <div class="fg">
+      <label class="flbl" for="d-regno">Registration / Professional Number <span class="flbl-hint">(optional)</span></label>
+      <input class="fi" id="d-regno" type="text" placeholder="e.g. PR-0012345" aria-required="false" aria-label="Registration number" />
+    </div>
+    <div class="frow">
+      ${sel('d-exp', 'Years of Experience', ['0–2 years', '3–5 years', '6–10 years', '10+ years'])}
+      ${sel('d-scale', 'Typical Project Value', ['Less than R5m', 'R5m – R20m', 'R20m – R100m', 'R100m+'])}
+    </div>
+    ${checks('d-province', 'Provinces Where You Are Active', [
+      'Gauteng',
+      'KwaZulu-Natal',
+      'Western Cape',
+      'Eastern Cape',
+      'Limpopo',
+      'Mpumalanga',
+      'North West',
+      'Free State',
+      'Northern Cape',
+    ])}`;
 }
 
 function aspiringFields(): string {
@@ -139,7 +176,7 @@ const categoryBlocks: Record<ProfileCategory, () => string> = {
 };
 
 /* profiles that skip the generic land / stage / value block */
-const SKIP_GENERIC = new Set<ProfileCategory>(['investor']);
+const SKIP_GENERIC = new Set<ProfileCategory>(['investor', 'professional']);
 
 /* ── Main render ── */
 

@@ -79,9 +79,55 @@ function renderInvestor(): string {
     </div>`;
 }
 
+function renderProfessional(): string {
+  return `
+    <div class="fdiv">Association & Collaboration Interest</div>
+
+    <div class="fg">
+      <label class="flbl req">Are you willing to join a built environment associate database?</label>
+      <div class="rg" id="r-assoc" role="radiogroup" aria-label="Willing to join associate database?">
+        <div class="ro" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span>Yes — actively looking for project opportunities</div>
+        <div class="ro" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span>Yes — open to opportunities as they arise</div>
+        <div class="ro" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span>No — not at this stage</div>
+      </div>
+    </div>
+
+    <div class="fg">
+      <label class="flbl req">Current capacity for new projects</label>
+      <div class="rg" id="r-capacity" role="radiogroup" aria-label="Capacity for new projects">
+        <div class="ro" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span>Immediately available</div>
+        <div class="ro" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span>Available within 3 months</div>
+        <div class="ro" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span>Limited capacity — selective opportunities only</div>
+        <div class="ro" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span>Not currently available</div>
+      </div>
+    </div>
+
+    <div class="fg">
+      <label class="flbl req">Preferred type of work <span class="flbl-hint">(select all that apply)</span></label>
+      <div class="cg" id="c-worktype" role="group" aria-label="Preferred type of work">
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>New residential developments</div>
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>Student accommodation projects</div>
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>Commercial developments</div>
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>Mixed-use developments</div>
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>Renovations &amp; upgrades</div>
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>Feasibility &amp; advisory work</div>
+      </div>
+    </div>
+
+    <div class="fg">
+      <label class="flbl" for="t-motivation">Brief motivation <span class="flbl-hint">(optional — why do you want to work with BeMore?)</span></label>
+      <textarea class="fta" id="t-motivation" name="motivation"
+                maxlength="500" rows="4"
+                placeholder="Share what excites you about this opportunity and what you can bring to projects."
+                aria-required="false" aria-label="Brief motivation"></textarea>
+      <div class="fta-count"><span>0</span> / 500 characters</div>
+    </div>`;
+}
+
 export function renderStepFunding(profile?: ProfileCategory): string {
-  if (profile === 'investor') return renderInvestor();
-  if (profile === 'landowner') return renderLandowner();
+  if (profile === 'investor')     return renderInvestor();
+  if (profile === 'landowner')    return renderLandowner();
+  if (profile === 'professional') return renderProfessional();
   return renderDefault();
 }
 

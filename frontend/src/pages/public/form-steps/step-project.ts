@@ -19,6 +19,20 @@ export function renderStepProject(profile?: ProfileCategory): string {
     </div>`;
   }
 
+  if (profile === 'professional') {
+    return `
+    <div class="fdiv">Additional Information</div>
+
+    <div class="fg">
+      <label class="flbl" for="t-project">Anything else you'd like us to know? <span class="flbl-hint">(optional)</span></label>
+      <textarea class="fta" id="t-project" name="projectDescription"
+                maxlength="1000" rows="5"
+                placeholder="Share any additional context about your work, notable projects, or what you're looking for."
+                aria-required="false" aria-label="Additional information"></textarea>
+      <div class="fta-count"><span>0</span> / 1,000 characters</div>
+    </div>`;
+  }
+
   return `
     <div class="fdiv">Project Details</div>
 

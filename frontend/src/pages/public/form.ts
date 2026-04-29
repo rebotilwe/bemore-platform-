@@ -227,6 +227,17 @@ function validate(): boolean {
       if (!ok) { toast('Please complete all required fields'); return false; }
       return true;
     }
+    if (profile === 'professional') {
+      setError('d-prof', false); setError('d-reg', false); setError('d-exp', false); setError('d-scale', false);
+      let ok = true;
+      if (!inputVal('d-prof'))  { setError('d-prof', true); ok = false; }
+      if (!inputVal('d-reg'))   { setError('d-reg', true); ok = false; }
+      if (!inputVal('d-exp'))   { setError('d-exp', true); ok = false; }
+      if (!inputVal('d-scale')) { setError('d-scale', true); ok = false; }
+      if (!getCheckedVals('d-province').length) { toast('Please select at least one active province'); return false; }
+      if (!ok) { toast('Please complete all required fields'); return false; }
+      return true;
+    }
     if (!getRadioVal('r-land')) { toast('Please select your land status'); return false; }
     setError('s-stage', false); setError('s-value', false);
     let ok = true;
@@ -237,6 +248,12 @@ function validate(): boolean {
   }
   if (step === 3) {
     const profile = store.get('selectedProfile');
+    if (profile === 'professional') {
+      if (!getRadioVal('r-assoc'))    { toast('Please indicate your willingness to join the associate database'); return false; }
+      if (!getRadioVal('r-capacity')) { toast('Please select your current capacity'); return false; }
+      if (!getCheckedVals('c-worktype').length) { toast('Please select at least one preferred work type'); return false; }
+      return true;
+    }
     if (!getCheckedVals('c-seeking').length) { toast('Please select at least one option'); return false; }
     if (profile === 'investor') {
       setError('inv-timeline', false);
@@ -248,7 +265,7 @@ function validate(): boolean {
   }
   if (step === 4) {
     const profile = store.get('selectedProfile');
-    if (profile === 'investor') return true; // optional for investors
+    if (profile === 'investor' || profile === 'professional') return true; // optional step
     setError('t-project', false);
     if (!minLength(inputVal('t-project'), 50)) { setError('t-project', true); toast('Please describe your project (min 50 characters)'); return false; }
     return true;
@@ -314,7 +331,22 @@ function collectAllFormData(): Record<string, unknown> {
     delete data.seeking; delete data.previousFunding; delete data.projectDescription;
   }
   else if (profile === 'student') { data.bedCount = get('c-beds'); data.occupancyRate = get('c-occ'); data.universityPartnership = getRad('c-uni'); data.assetType = get('c-asset'); }
-  else if (profile === 'professional') { data.profession = get('d-prof'); data.registrationStatus = get('d-reg'); data.projectScale = get('d-scale'); }
+  else if (profile === 'professional') {
+    data.profession         = get('d-prof');
+    data.registrationBody   = get('d-reg');
+    data.registrationNumber = get('d-regno');
+    data.yearsExperience    = get('d-exp');
+    data.typicalProjectValue = get('d-scale');
+    data.activeProvinces    = getChk('d-province');
+    data.associateDatabase  = getRad('r-assoc');
+    data.currentCapacity    = getRad('r-capacity');
+    data.preferredWorkTypes = getChk('c-worktype');
+    data.motivation         = get('t-motivation');
+    data.additionalNotes    = get('t-project');
+    // Clear generic fields not applicable to professionals
+    delete data.landStatus; delete data.projectStage; delete data.estimatedValue;
+    delete data.seeking; delete data.previousFunding; delete data.projectDescription;
+  }
   else if (profile === 'aspiring') { data.developmentInterests = getChk('asp-interest'); data.relevantExperience = get('asp-exp'); }
   return data;
 }
