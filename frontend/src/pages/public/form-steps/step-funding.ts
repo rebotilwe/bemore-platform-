@@ -79,6 +79,41 @@ function renderInvestor(): string {
     </div>`;
 }
 
+function renderStudent(): string {
+  return `
+    <div class="fdiv">Property Group Support Needs</div>
+
+    <div class="fg">
+      <label class="flbl req">What support are you seeking from BeMore? <span class="flbl-hint">(select all that apply)</span></label>
+      <div class="cg" id="c-seeking" role="group" aria-label="Support needs">
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>Portfolio management &amp; operations support</div>
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>NSFAS compliance &amp; accreditation assistance</div>
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>Capital raise / funding for expansion</div>
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>Bed placement &amp; student referral network</div>
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>Strategic partnerships &amp; joint ventures</div>
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>Technology &amp; property management systems</div>
+      </div>
+    </div>
+
+    <div class="fg">
+      <label class="flbl req">What is your growth intention over the next 2 years?</label>
+      <div class="rg" id="r-growth" role="radiogroup" aria-label="Growth intention">
+        <div class="ro" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span>Grow significantly — add 200+ beds</div>
+        <div class="ro" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span>Moderate growth — add 50–200 beds</div>
+        <div class="ro" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span>Maintain current size — optimise operations</div>
+        <div class="ro" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span>Exploring options — no firm plan yet</div>
+      </div>
+    </div>
+
+    <div class="fg">
+      <label class="flbl req">Have you previously received institutional or development funding?</label>
+      <div class="rg" id="r-prevfund" role="radiogroup" aria-label="Previous funding">
+        <div class="ro" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span>Yes</div>
+        <div class="ro" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span>No</div>
+      </div>
+    </div>`;
+}
+
 function renderProfessional(): string {
   return `
     <div class="fdiv">Association & Collaboration Interest</div>
@@ -128,6 +163,7 @@ export function renderStepFunding(profile?: ProfileCategory): string {
   if (profile === 'investor')     return renderInvestor();
   if (profile === 'landowner')    return renderLandowner();
   if (profile === 'professional') return renderProfessional();
+  if (profile === 'student')      return renderStudent();
   return renderDefault();
 }
 

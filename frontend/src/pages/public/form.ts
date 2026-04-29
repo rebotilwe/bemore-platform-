@@ -238,6 +238,20 @@ function validate(): boolean {
       if (!ok) { toast('Please complete all required fields'); return false; }
       return true;
     }
+    if (profile === 'student') {
+      setError('c-beds', false); setError('c-occ', false); setError('c-asset', false); setError('c-ownership', false); setError('c-city', false);
+      let ok = true;
+      if (!inputVal('c-beds'))      { setError('c-beds', true); ok = false; }
+      if (!inputVal('c-occ'))       { setError('c-occ', true); ok = false; }
+      if (!inputVal('c-asset'))     { setError('c-asset', true); ok = false; }
+      if (!inputVal('c-ownership')) { setError('c-ownership', true); ok = false; }
+      if (!inputVal('c-city'))      { setError('c-city', true); ok = false; }
+      if (!getCheckedVals('c-province').length) { toast('Please select at least one province'); return false; }
+      if (!getRadioVal('c-accred')) { toast('Please select your NSFAS accreditation status'); return false; }
+      if (!getRadioVal('c-uni'))    { toast('Please indicate your university partnership status'); return false; }
+      if (!ok) { toast('Please complete all required fields'); return false; }
+      return true;
+    }
     if (!getRadioVal('r-land')) { toast('Please select your land status'); return false; }
     setError('s-stage', false); setError('s-value', false);
     let ok = true;
@@ -254,6 +268,12 @@ function validate(): boolean {
       if (!getCheckedVals('c-worktype').length) { toast('Please select at least one preferred work type'); return false; }
       return true;
     }
+    if (profile === 'student') {
+      if (!getCheckedVals('c-seeking').length) { toast('Please select at least one support need'); return false; }
+      if (!getRadioVal('r-growth'))   { toast('Please select your growth intention'); return false; }
+      if (!getRadioVal('r-prevfund')) { toast('Please indicate prior funding status'); return false; }
+      return true;
+    }
     if (!getCheckedVals('c-seeking').length) { toast('Please select at least one option'); return false; }
     if (profile === 'investor') {
       setError('inv-timeline', false);
@@ -265,7 +285,7 @@ function validate(): boolean {
   }
   if (step === 4) {
     const profile = store.get('selectedProfile');
-    if (profile === 'investor' || profile === 'professional') return true; // optional step
+    if (profile === 'investor' || profile === 'professional') return true; // optional for these profiles
     setError('t-project', false);
     if (!minLength(inputVal('t-project'), 50)) { setError('t-project', true); toast('Please describe your project (min 50 characters)'); return false; }
     return true;
@@ -330,7 +350,23 @@ function collectAllFormData(): Record<string, unknown> {
     delete data.landStatus; delete data.projectStage; delete data.estimatedValue;
     delete data.seeking; delete data.previousFunding; delete data.projectDescription;
   }
-  else if (profile === 'student') { data.bedCount = get('c-beds'); data.occupancyRate = get('c-occ'); data.universityPartnership = getRad('c-uni'); data.assetType = get('c-asset'); }
+  else if (profile === 'student') {
+    data.totalBedCount          = get('c-beds');
+    data.averageOccupancy       = get('c-occ');
+    data.operatingProvinces     = getChk('c-province');
+    data.primaryCity            = get('c-city');
+    data.assetType              = get('c-asset');
+    data.assetOwnership         = get('c-ownership');
+    data.nsfasAccreditation     = getRad('c-accred');
+    data.universityPartnership  = getRad('c-uni');
+    data.supportNeeds           = getChk('c-seeking');
+    data.growthIntention        = getRad('r-growth');
+    data.previousFunding        = getRad('r-prevfund');
+    data.portfolioDescription   = get('t-project');
+    // Clear generic fields not applicable to student operators
+    delete data.landStatus; delete data.projectStage; delete data.estimatedValue;
+    delete data.seeking; delete data.projectDescription;
+  }
   else if (profile === 'professional') {
     data.profession         = get('d-prof');
     data.registrationBody   = get('d-reg');

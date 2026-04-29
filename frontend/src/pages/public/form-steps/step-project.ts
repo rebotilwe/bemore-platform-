@@ -33,6 +33,20 @@ export function renderStepProject(profile?: ProfileCategory): string {
     </div>`;
   }
 
+  if (profile === 'student') {
+    return `
+    <div class="fdiv">Tell Us About Your Portfolio</div>
+
+    <div class="fg">
+      <label class="flbl req" for="t-project">Describe your student accommodation portfolio</label>
+      <textarea class="fta" id="t-project" name="projectDescription"
+                minlength="50" maxlength="2000" rows="6"
+                placeholder="Describe your properties — locations, number of units/beds, current state of accreditation, target student market, and any expansion plans."
+                aria-required="true" aria-label="Portfolio description"></textarea>
+      <div class="fta-count"><span>0</span> / 2,000 characters</div>
+    </div>`;
+  }
+
   return `
     <div class="fdiv">Project Details</div>
 

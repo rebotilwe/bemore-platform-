@@ -99,14 +99,41 @@ function investorFields(): string {
 
 function studentFields(): string {
   return `
-    <div class="fdiv">Accommodation Profile</div>
+    <div class="fdiv">Portfolio Overview</div>
     <div class="frow">
-      ${sel('c-beds', 'Current Bed Count', ['Less than 50 beds', '50 – 200 beds', '200 – 500 beds', '500+ beds'])}
-      ${sel('c-occ', 'Occupancy Rate', ['Less than 60%', '60% – 80%', '80% – 95%', '95%+'])}
+      ${sel('c-beds', 'Total Bed Count Across Portfolio', ['Less than 50 beds', '50 – 200 beds', '200 – 500 beds', '500+ beds'])}
+      ${sel('c-occ', 'Current Average Occupancy Rate', ['Less than 60%', '60% – 80%', '80% – 95%', '95%+'])}
+    </div>
+    ${checks('c-province', 'Provinces Where You Operate', [
+      'Gauteng',
+      'KwaZulu-Natal',
+      'Western Cape',
+      'Eastern Cape',
+      'Limpopo',
+      'Mpumalanga',
+      'North West',
+      'Free State',
+      'Northern Cape',
+    ])}
+    <div class="fg">
+      <label class="flbl req" for="c-city">Primary City / Town of Operation</label>
+      <input class="fi" id="c-city" type="text"
+             placeholder="e.g. Johannesburg, Durban, Cape Town"
+             aria-required="true" aria-label="Primary city or town" />
+    </div>
+    <div class="fdiv">Asset &amp; Accreditation Details</div>
+    <div class="frow">
+      ${sel('c-asset', 'Asset Type', ['Converted Residential', 'Purpose-Built', 'Mixed Portfolio', 'Pending Acquisition'])}
+      ${sel('c-ownership', 'Asset Ownership', ['Owned outright', 'Leased / rented', 'Mix of owned and leased', 'Not yet acquired'])}
     </div>
     <div class="frow">
-      ${radio('c-uni', 'University Partnership', ['Yes (Formal Agreement)', 'No'])}
-      ${sel('c-asset', 'Asset Type', ['Converted Residential', 'Purpose-Built', 'Pending Acquisition'])}
+      ${radio('c-accred', 'NSFAS Accreditation Status', [
+        'Fully accredited',
+        'Provisionally accredited',
+        'Pending accreditation',
+        'Not accredited',
+      ])}
+      ${radio('c-uni', 'Formal University Partnership Agreement', ['Yes', 'No', 'In negotiation'])}
     </div>`;
 }
 
@@ -176,7 +203,7 @@ const categoryBlocks: Record<ProfileCategory, () => string> = {
 };
 
 /* profiles that skip the generic land / stage / value block */
-const SKIP_GENERIC = new Set<ProfileCategory>(['investor', 'professional']);
+const SKIP_GENERIC = new Set<ProfileCategory>(['investor', 'professional', 'student']);
 
 /* ── Main render ── */
 

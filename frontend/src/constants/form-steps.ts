@@ -28,6 +28,14 @@ const LANDOWNER_OVERRIDES: Partial<StepMeta>[] = [
   {},
 ];
 
+const STUDENT_OVERRIDES: Partial<StepMeta>[] = [
+  {},
+  { title: 'Portfolio Profile',        subtitle: 'Tell us about your student accommodation portfolio.',     label: 'Portfolio' },
+  { title: 'Support Needs',            subtitle: 'What kind of support are you looking for?',               label: 'Needs' },
+  { title: 'Portfolio Description',    subtitle: 'Describe your properties and expansion plans.',           label: 'Details' },
+  {},
+];
+
 const PROFESSIONAL_OVERRIDES: Partial<StepMeta>[] = [
   {},
   { title: 'Professional Profile',      subtitle: 'Tell us about your discipline and experience.',      label: 'Profile' },
@@ -40,6 +48,7 @@ const PROFILE_OVERRIDES: Record<string, Partial<StepMeta>[]> = {
   investor:     INVESTOR_OVERRIDES,
   landowner:    LANDOWNER_OVERRIDES,
   professional: PROFESSIONAL_OVERRIDES,
+  student:      STUDENT_OVERRIDES,
 };
 
 export function getStepMeta(stepIndex: number, profile?: string): StepMeta {
