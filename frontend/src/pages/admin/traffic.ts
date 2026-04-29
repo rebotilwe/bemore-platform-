@@ -22,7 +22,6 @@ function pageName(path: string): string {
     '/about': 'About',
     '/success': 'Success',
     '/landing': 'Landing',
-    '/mentee-meter': 'Mentee Meter',
     '/status': 'Status',
     '/admin/login': 'Admin Login',
     '/admin/dashboard': 'Dashboard',
@@ -33,7 +32,6 @@ function pageName(path: string): string {
     '/admin/traffic': 'Traffic',
     '/admin/audit-log': 'Audit Log',
     '/admin/qr': 'QR Codes',
-    '/admin/polls': 'Polls',
     '/admin/settings': 'Settings',
     '/admin/guide': 'Guide',
   };

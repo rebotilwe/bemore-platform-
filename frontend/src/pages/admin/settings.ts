@@ -11,22 +11,7 @@ interface SettingDef {
   defaultValue: string | boolean;
 }
 
-const SETTING_DEFS: SettingDef[] = [
-  {
-    key: 'polls_enabled',
-    label: 'Live Poll (Mentee Meter)',
-    description: 'Show or hide the live poll feature across the platform. When disabled, the Mentee Meter page and all links to it are hidden from visitors.',
-    type: 'boolean',
-    defaultValue: true,
-  },
-  {
-    key: 'mentimeter_id',
-    label: 'Mentimeter Embed ID',
-    description: 'The Mentimeter presentation ID for the live poll page (e.g., alhr8tvbfhhu). Found in your Mentimeter share URL.',
-    type: 'text',
-    defaultValue: 'alhr8tvbfhhu',
-  },
-];
+const SETTING_DEFS: SettingDef[] = [];
 
 
 function renderSettingField(def: SettingDef, value: unknown): string {
