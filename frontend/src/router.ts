@@ -8,7 +8,6 @@ import { gatewayPage } from './pages/public/gateway.ts';
 import { formPage } from './pages/public/form.ts';
 import { successPage } from './pages/public/success.ts';
 import { aboutPage } from './pages/public/about.ts';
-import { menteeMeterPage } from './pages/public/mentee-meter.ts';
 import { landingPage } from './pages/public/landing.ts';
 import { statusPage } from './pages/public/status.ts';
 import { loginPage } from './pages/admin/login.ts';
@@ -27,7 +26,6 @@ const routes: RouteConfig[] = [
   { path: '/register',      page: () => formPage,        layout: 'public' },
   { path: '/about',         page: () => aboutPage,       layout: 'public' },
   { path: '/success',       page: () => successPage,     layout: 'public' },
-  { path: '/mentee-meter',  page: () => menteeMeterPage, layout: 'public' },
   { path: '/landing',       page: () => landingPage,     layout: 'public' },
   { path: '/status',        page: () => statusPage,      layout: 'public' },
   { path: '/admin/login',   page: () => loginPage,       layout: 'public' },
@@ -40,7 +38,6 @@ const routes: RouteConfig[] = [
   { path: '/admin/audit-log', page: lazy(() => import('./pages/admin/audit-log.ts'), 'auditLogPage'),       layout: 'admin', guard: authGuard },
   { path: '/admin/qr',        page: lazy(() => import('./pages/admin/qr-generator.ts'), 'qrGeneratorPage'), layout: 'admin', guard: authGuard },
   { path: '/admin/guide',     page: lazy(() => import('./pages/admin/guide.ts'), 'guidePage'),              layout: 'admin', guard: authGuard },
-  { path: '/admin/polls',     page: lazy(() => import('./pages/admin/polls.ts'), 'pollsPage'),              layout: 'admin', guard: authGuard },
   { path: '/admin/traffic',   page: lazy(() => import('./pages/admin/traffic.ts'), 'trafficPage'),             layout: 'admin', guard: authGuard },
   { path: '/admin/settings',  page: lazy(() => import('./pages/admin/settings.ts'), 'settingsPage'),          layout: 'admin', guard: authGuard },
   { path: '/admin/admins',   page: lazy(() => import('./pages/admin/admins.ts'), 'adminsPage'),            layout: 'admin', guard: authGuard },

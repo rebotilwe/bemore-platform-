@@ -4,7 +4,6 @@ import { toast } from '../../components/toast.ts';
 import { CATEGORY_LABELS } from '../../constants/categories.ts';
 import { STATUS_LABELS } from '../../constants/status.ts';
 import { formatDate, esc } from '../../utils/format.ts';
-import { store } from '../../store.ts';
 
 const STATUS_TIMELINE: Record<string, number> = {
   new: 1, reviewing: 2, shortlisted: 3, invited: 4, funded: 5,
@@ -152,11 +151,6 @@ export const statusPage: Page = {
                 <div class="next-step-label">Submit Another Deal</div>
                 <div class="next-step-desc">Register a different project</div>
               </a>
-              ${store.get('pollsEnabled') ? `<a class="next-step-card" href="#/mentee-meter">
-                <div class="next-step-icon">&#9881;</div>
-                <div class="next-step-label">Live Poll</div>
-                <div class="next-step-desc">Join the Mentee Meter session</div>
-              </a>` : ''}
               <a class="next-step-card" href="#/about">
                 <div class="next-step-icon">&#9733;</div>
                 <div class="next-step-label">About BeMore</div>

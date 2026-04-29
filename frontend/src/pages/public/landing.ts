@@ -1,5 +1,4 @@
 import type { Page } from '../../types/index.ts';
-import { store } from '../../store.ts';
 
 export const landingPage: Page = {
   render() {
@@ -40,13 +39,6 @@ export const landingPage: Page = {
               <span class="landing-cta-desc">Submit your profile for merit-based review</span>
             </span>
           </a>
-          ${store.get('pollsEnabled') ? `<a class="landing-cta-secondary" href="#/mentee-meter" data-track="Landing — Join Live Session">
-            <span class="landing-cta-icon">&#9881;</span>
-            <span class="landing-cta-text">
-              <span class="landing-cta-title">Join Live Session</span>
-              <span class="landing-cta-desc">Engage with the Mentee Meter live poll</span>
-            </span>
-          </a>` : ''}
         </div>
 
         <!-- Quick Links -->

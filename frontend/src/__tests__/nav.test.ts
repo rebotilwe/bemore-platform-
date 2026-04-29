@@ -1,11 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderNav, mountNav, initNavScroll } from '../components/nav.ts';
-import { store } from '../store.ts';
 
 describe('Nav Component', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
-    store.set('pollsEnabled', false);
   });
 
   afterEach(() => {
@@ -35,20 +33,6 @@ describe('Nav Component', () => {
       expect(html).toContain('About Us');
       expect(html).toContain('My Status');
       expect(html).toContain('Apply Now');
-    });
-
-    it('should not show poll link when polls are disabled', () => {
-      store.set('pollsEnabled', false);
-      const html = renderNav('/');
-
-      expect(html).not.toContain('Live Poll');
-    });
-
-    it('should show poll link when polls are enabled', () => {
-      store.set('pollsEnabled', true);
-      const html = renderNav('/');
-
-      expect(html).toContain('Live Poll');
     });
 
     it('should include data-track attributes', () => {

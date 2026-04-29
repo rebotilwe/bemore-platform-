@@ -2,8 +2,6 @@ import request from 'supertest';
 import bcrypt from 'bcryptjs';
 import { createApp } from '../src/app.js';
 import AnalyticsEvent from '../src/models/AnalyticsEvent.js';
-import Poll from '../src/models/Poll.js';
-import PollResponse from '../src/models/PollResponse.js';
 import Admin from '../src/models/Admin.js';
 
 const app = createApp();
@@ -35,11 +33,6 @@ async function seedTestData() {
       category: 'auth',
       actor: { type: 'admin', id: '507f1f77bcf86cd799439011', email: 'test@test.com' },
       timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    },
-    {
-      event: 'poll.vote',
-      category: 'poll',
-      timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
     },
   ]);
 }

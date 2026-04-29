@@ -41,35 +41,15 @@ async function init(): Promise<void> {
     sessionStorage.setItem('bm_source', source);
   }
 
-  // Load feature flags before rendering (fast — single key lookup)
-  if (online) {
-    try {
-      const flagRes = await api.getSetting('polls_enabled');
-      if (flagRes.success && flagRes.data?.value !== undefined) {
-        store.set('pollsEnabled', flagRes.data.value === true || flagRes.data.value === 'true');
-      } else {
-        store.set('pollsEnabled', false); // Default to disabled if not set
-      }
-    } catch {
-      store.set('pollsEnabled', false); // Default to disabled on error
-    }
-  } else {
-    store.set('pollsEnabled', true); // Demo mode — show everything
-  }
-
   // Initialize tracker (visitor/session IDs, UTM capture, click listener)
   tracker.init();
 
   // Initialize router
   router.init();
 
-  // Register service worker only in production (caching interferes with staging/dev debugging)
-  const isProductionHost = window.location.hostname === 'bemore-tawny.vercel.app';
-  if (isProductionHost && 'serviceWorker' in navigator) {
+  // Register service worker for all environments
+  if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
-  } else if ('serviceWorker' in navigator) {
-    // Unregister any existing SW in staging/dev to avoid stale cache issues
-    navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
   }
 
   // PWA install prompt (shows after 15s if not dismissed)

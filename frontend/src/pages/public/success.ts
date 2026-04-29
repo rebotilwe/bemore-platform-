@@ -65,11 +65,6 @@ export const successPage: Page = {
               <div class="next-step-label">Submit Another Deal</div>
               <div class="next-step-desc">Register a different profile or project</div>
             </a>
-            ${store.get('pollsEnabled') ? `<a class="next-step-card" href="#/mentee-meter">
-              <div class="next-step-icon">&#9881;</div>
-              <div class="next-step-label">Live Poll</div>
-              <div class="next-step-desc">Join the Mentee Meter live session</div>
-            </a>` : ''}
             <a class="next-step-card" href="#/about">
               <div class="next-step-icon">&#9733;</div>
               <div class="next-step-label">Explore the Platform</div>
