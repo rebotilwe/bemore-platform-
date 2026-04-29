@@ -1,7 +1,7 @@
 import type { Page } from '../../types/index.ts';
 import { store } from '../../store.ts';
 import { navigate } from '../../router.ts';
-import { FORM_STEPS } from '../../constants/form-steps.ts';
+import { FORM_STEPS, getStepMeta } from '../../constants/form-steps.ts';
 import { toast } from '../../components/toast.ts';
 import { api } from '../../api.ts';
 import { inputVal, setError } from '../../utils/dom.ts';
@@ -105,13 +105,14 @@ function getStep(): number { return store.get('currentStep'); }
 function renderProgress(): string {
   const step = getStep();
   let html = `<div class="ps"><div class="ps-dot done">✓</div><div class="ps-lbl done">Profile</div></div>`;
+  const profile = store.get('selectedProfile') ?? undefined;
   for (let i = 0; i < TOTAL; i++) {
     const s = i + 1;
     const dotClass = s < step ? 'done' : s === step ? 'active' : 'idle';
     const lblClass = s <= step ? (s < step ? 'done' : 'active') : '';
     const lineClass = s <= step ? 'done' : '';
     html += `<div class="prog-line ${lineClass}"></div>`;
-    html += `<div class="ps"><div class="ps-dot ${dotClass}">${s < step ? '✓' : s + 1}</div><div class="ps-lbl ${lblClass}">${FORM_STEPS[i].label}</div></div>`;
+    html += `<div class="ps"><div class="ps-dot ${dotClass}">${s < step ? '✓' : s + 1}</div><div class="ps-lbl ${lblClass}">${getStepMeta(i, profile).label}</div></div>`;
   }
   return html;
 }
@@ -121,8 +122,8 @@ function renderStepContent(): string {
   switch (getStep()) {
     case 1: return renderStepBasic();
     case 2: return renderStepReadiness(profile);
-    case 3: return renderStepFunding();
-    case 4: return renderStepProject();
+    case 3: return renderStepFunding(profile);
+    case 4: return renderStepProject(profile);
     case 5: return renderStepConfirm();
     default: return '';
   }
@@ -150,7 +151,7 @@ function goToStep(newStep: number): void {
   if (!body || !prog || !foot) return;
 
   const step = newStep;
-  const meta = FORM_STEPS[step - 1];
+  const meta = getStepMeta(step - 1, store.get('selectedProfile') ?? undefined);
   const isLast = step === TOTAL;
 
   body.innerHTML = `
@@ -201,6 +202,18 @@ function validate(): boolean {
     return ok;
   }
   if (step === 2) {
+    const profile = store.get('selectedProfile');
+    if (profile === 'investor') {
+      setError('inv-amount', false); setError('inv-horizon', false);
+      let ok = true;
+      if (!inputVal('inv-amount')) { setError('inv-amount', true); ok = false; }
+      if (!inputVal('inv-horizon')) { setError('inv-horizon', true); ok = false; }
+      if (!getCheckedVals('inv-focus').length) { toast('Please select at least one sector of interest'); return false; }
+      if (!getCheckedVals('inv-return').length) { toast('Please select at least one return structure'); return false; }
+      if (!getRadioVal('inv-prev')) { toast('Please select your prior investment experience'); return false; }
+      if (!ok) { toast('Please complete all required fields'); return false; }
+      return true;
+    }
     if (!getRadioVal('r-land')) { toast('Please select your land status'); return false; }
     setError('s-stage', false); setError('s-value', false);
     let ok = true;
@@ -211,10 +224,17 @@ function validate(): boolean {
   }
   if (step === 3) {
     if (!getCheckedVals('c-seeking').length) { toast('Please select at least one option'); return false; }
-    if (!getRadioVal('r-prevfund')) { toast('Please select your funding history'); return false; }
+    const profile = store.get('selectedProfile');
+    if (profile !== 'investor' && !getRadioVal('r-prevfund')) { toast('Please select your funding history'); return false; }
+    if (profile === 'investor') {
+      setError('inv-timeline', false);
+      if (!inputVal('inv-timeline')) { setError('inv-timeline', true); toast('Please select your decision-making timeline'); return false; }
+    }
     return true;
   }
   if (step === 4) {
+    const profile = store.get('selectedProfile');
+    if (profile === 'investor') return true; // optional for investors
     setError('t-project', false);
     if (!minLength(inputVal('t-project'), 50)) { setError('t-project', true); toast('Please describe your project (min 50 characters)'); return false; }
     return true;
@@ -253,7 +273,19 @@ function collectAllFormData(): Record<string, unknown> {
 
   if (profile === 'developer') { data.yearsExperience = get('a-exp'); data.developmentTypes = getChk('a-dtype'); }
   else if (profile === 'landowner') { data.landSize = get('b-size'); data.zoningStatus = get('b-zone'); data.isServiced = getRad('b-serv'); data.ownershipStructure = get('b-own'); }
-  else if (profile === 'investor') { data.investmentFocus = getChk('inv-focus'); data.investmentTicket = get('inv-ticket'); }
+  else if (profile === 'investor') {
+    data.investmentFocus = getChk('inv-focus');
+    data.investmentAmount = get('inv-amount');
+    data.investmentHorizon = get('inv-horizon');
+    data.returnStructure = getChk('inv-return');
+    data.priorInvestmentExperience = getRad('inv-prev');
+    data.investmentIntentions = getChk('c-seeking');
+    data.decisionTimeline = get('inv-timeline');
+    data.additionalNotes = get('t-project');
+    // Clear generic fields not applicable to investors
+    delete data.landStatus; delete data.projectStage; delete data.estimatedValue;
+    delete data.seeking; delete data.previousFunding; delete data.projectDescription;
+  }
   else if (profile === 'student') { data.bedCount = get('c-beds'); data.occupancyRate = get('c-occ'); data.universityPartnership = getRad('c-uni'); data.assetType = get('c-asset'); }
   else if (profile === 'professional') { data.profession = get('d-prof'); data.registrationStatus = get('d-reg'); data.projectScale = get('d-scale'); }
   else if (profile === 'aspiring') { data.developmentInterests = getChk('asp-interest'); data.relevantExperience = get('asp-exp'); }
@@ -371,7 +403,7 @@ function addListener<K extends keyof HTMLElementEventMap>(
 export const formPage: Page = {
   render() {
     const step = getStep();
-    const meta = FORM_STEPS[step - 1];
+    const meta = getStepMeta(step - 1, store.get('selectedProfile') ?? undefined);
     const isLast = step === TOTAL;
     return `
     <section class="form-view">

@@ -11,3 +11,20 @@ export const FORM_STEPS: StepMeta[] = [
   { title: 'Project Details',        subtitle: 'Describe your project and what sets you apart.',            label: 'Project' },
   { title: 'Confirmation & Consent', subtitle: 'Review the terms and submit your application.',             label: 'Confirm' },
 ];
+
+const INVESTOR_OVERRIDES: Partial<StepMeta>[] = [
+  {},
+  { title: 'Investment Profile',   subtitle: 'Tell us about your investment mandate and appetite.',    label: 'Profile' },
+  { title: 'Investment Intentions', subtitle: 'What opportunities are you looking for?',               label: 'Intentions' },
+  { title: 'Additional Notes',     subtitle: 'Anything else you\'d like us to know?',                  label: 'Notes' },
+  {},
+];
+
+export function getStepMeta(stepIndex: number, profile?: string): StepMeta {
+  const base = FORM_STEPS[stepIndex];
+  if (profile === 'investor') {
+    const override = INVESTOR_OVERRIDES[stepIndex];
+    return { ...base, ...override };
+  }
+  return base;
+}

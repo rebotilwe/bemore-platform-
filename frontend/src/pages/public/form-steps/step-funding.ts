@@ -1,8 +1,10 @@
 /* ---------------------------------------------------------------
-   Step 3 — Funding & Partnership
+   Step 3 — Funding & Partnership (profile-aware)
    ---------------------------------------------------------------*/
 
-export function renderStepFunding(): string {
+import type { ProfileCategory } from '../../../types/index.ts';
+
+function renderDefault(): string {
   return `
     <div class="fdiv">Funding & Partnership Intention</div>
 
@@ -24,6 +26,39 @@ export function renderStepFunding(): string {
         <div class="ro" role="radio" aria-checked="false" tabindex="0"><span class="rdot"></span>No</div>
       </div>
     </div>`;
+}
+
+function renderInvestor(): string {
+  return `
+    <div class="fdiv">Investment Intentions</div>
+
+    <div class="fg">
+      <label class="flbl req">What are you looking for? <span class="flbl-hint">(select all that apply)</span></label>
+      <div class="cg" id="c-seeking" role="group" aria-label="What are you looking for?">
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>Co-Investment Opportunity</div>
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>Deal Flow Access</div>
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>Fund Placement</div>
+        <div class="co" role="checkbox" aria-checked="false" tabindex="0"><span class="cbox"></span>Institutional Joint Venture</div>
+      </div>
+    </div>
+
+    <div class="fg">
+      <label class="flbl req">What is your decision-making timeline?</label>
+      <div class="sw">
+        <select class="fs" id="inv-timeline" aria-required="true" aria-label="Decision-making timeline">
+          <option value="">Select…</option>
+          <option>Immediate — ready to deploy capital now</option>
+          <option>Within 3 months</option>
+          <option>3 – 6 months</option>
+          <option>Exploratory only — no firm timeline</option>
+        </select>
+      </div>
+    </div>`;
+}
+
+export function renderStepFunding(profile?: ProfileCategory): string {
+  if (profile === 'investor') return renderInvestor();
+  return renderDefault();
 }
 
 export function mountStepFunding(): void {

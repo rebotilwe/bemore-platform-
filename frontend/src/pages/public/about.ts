@@ -52,43 +52,76 @@ const SECTION_CONTENT: Record<Tab, string> = {
   overview: `
     <div class="about-section" id="about-overview">
       <div class="about-container">
+
+        <!-- Intro -->
         <div class="about-section-label">01 — Executive Summary</div>
         <h2 class="about-section-title display">Who We Are</h2>
-        <div class="about-two-col">
-          <div class="about-prose">
-            <p>
-              The BeMore Social Infrastructure Equity is a purpose-built <strong>R1.6 billion</strong>
-              blended equity and debt vehicle focused on scaling <strong>student accommodation</strong>
-              and <strong>social infrastructure</strong> across South Africa.
-            </p>
-            <p>
-              BeMore Group seeks <strong>R400 million institutional equity investment</strong> as a
-              cornerstone Limited Partner (LP) to catalyse this impact-focused platform. The vehicle
-              targets over <strong>10,000 student beds</strong> and key health infrastructure assets,
-              including the <strong>Baobab Private Hospital</strong>, aligning with national priorities
-              and SDG targets.
-            </p>
-            <p>
-              BeMore is a Property Development Company which has successfully operated in the
-              affordable rental housing and student accommodation sectors in South Africa for
-              over a decade.
-            </p>
+        <p class="about-section-sub">
+          BeMore is a purpose-built <strong>R1.6 billion</strong> blended equity and debt vehicle
+          scaling student accommodation and social infrastructure across South Africa.
+          Explore the sections below to learn more about what drives us.
+        </p>
+
+        <!-- Key stats strip -->
+        <div class="overview-stats">
+          <div class="overview-stat">
+            <div class="overview-stat-value display">R1.6B</div>
+            <div class="overview-stat-label">Pipeline Value</div>
           </div>
-          <div class="about-highlights">
-            <div class="about-highlight-card">
-              <div class="about-highlight-value display">R1.6B</div>
-              <div class="about-highlight-label">Pipeline Value</div>
-            </div>
-            <div class="about-highlight-card">
-              <div class="about-highlight-value display">R400M</div>
-              <div class="about-highlight-label">Institutional Equity Sought</div>
-            </div>
-            <div class="about-highlight-card">
-              <div class="about-highlight-value display">10,000+</div>
-              <div class="about-highlight-label">Student Beds Target</div>
-            </div>
+          <div class="overview-stat">
+            <div class="overview-stat-value display">R400M</div>
+            <div class="overview-stat-label">Equity Sought</div>
+          </div>
+          <div class="overview-stat">
+            <div class="overview-stat-value display">10,000+</div>
+            <div class="overview-stat-label">Student Beds Target</div>
+          </div>
+          <div class="overview-stat">
+            <div class="overview-stat-value display">10+</div>
+            <div class="overview-stat-label">Years Operating</div>
           </div>
         </div>
+
+        <!-- Section teaser cards -->
+        <div class="overview-cards">
+          <a class="overview-card" href="#/about/group">
+            <div class="overview-card-num">02</div>
+            <h3 class="overview-card-title">Group Structure</h3>
+            <p class="overview-card-desc">An integrated HoldCo with four subsidiaries delivering end-to-end social infrastructure solutions — from development to architecture and asset management.</p>
+            <span class="overview-card-link">Explore →</span>
+          </a>
+          <a class="overview-card" href="#/about/vision">
+            <div class="overview-card-num">03</div>
+            <h3 class="overview-card-title">Vision & Mission</h3>
+            <p class="overview-card-desc">Inspiring people to be more. Our mission is to create value, proclaim new standards, and build a R100bn diverse portfolio by 2035.</p>
+            <span class="overview-card-link">Explore →</span>
+          </a>
+          <a class="overview-card" href="#/about/empowerment">
+            <div class="overview-card-num">04</div>
+            <h3 class="overview-card-title">Empowerment</h3>
+            <p class="overview-card-desc">A six-step HDI inclusion model that incubates, onboards, and transfers skills to 18+ associates — with a minimum 40% women ownership target.</p>
+            <span class="overview-card-link">Explore →</span>
+          </a>
+          <a class="overview-card" href="#/about/impact">
+            <div class="overview-card-num">05</div>
+            <h3 class="overview-card-title">Impact</h3>
+            <p class="overview-card-desc">9 completed projects, 2,184 student beds delivered, and R0.77B in business value created between 2013 and 2023.</p>
+            <span class="overview-card-link">Explore →</span>
+          </a>
+          <a class="overview-card" href="#/about/performance">
+            <div class="overview-card-num">06</div>
+            <h3 class="overview-card-title">Performance</h3>
+            <p class="overview-card-desc">1,472 NSFAS-accredited beds, 95%+ occupancy, R0.5B market value, and a balanced 50% gearing ratio across the current portfolio.</p>
+            <span class="overview-card-link">Explore →</span>
+          </a>
+          <a class="overview-card" href="#/about/opportunity">
+            <div class="overview-card-num">07</div>
+            <h3 class="overview-card-title">Opportunity</h3>
+            <p class="overview-card-desc">500,000+ bed shortfall nationwide. A validated model ready to scale. BeMore is deploying R1.6B across income-generating, shovel-ready assets.</p>
+            <span class="overview-card-link">Explore →</span>
+          </a>
+        </div>
+
       </div>
     </div>`,
 

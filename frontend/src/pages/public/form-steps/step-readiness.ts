@@ -72,10 +72,13 @@ function landownerFields(): string {
 function investorFields(): string {
   return `
     <div class="fdiv">Investment Profile</div>
-    ${checks('inv-focus', 'Investment Focus', ['Student Accommodation', 'Residential', 'Commercial', 'Mixed-Use'])}
+    ${checks('inv-focus', 'Sectors of Interest', ['Student Accommodation', 'Residential', 'Commercial', 'Mixed-Use', 'Healthcare / Social Infrastructure'])}
     <div class="frow">
-      ${sel('inv-ticket', 'Investment Ticket Size', ['Less than R5m', 'R5m – R20m', 'R20m – R100m', 'R100m+'])}
-    </div>`;
+      ${sel('inv-amount', 'Amount Willing to Invest (R)', ['Less than R5m', 'R5m – R20m', 'R20m – R100m', 'R100m+'])}
+      ${sel('inv-horizon', 'Investment Horizon', ['Less than 1 year', '1 – 3 years', '3 – 5 years', '5+ years'])}
+    </div>
+    ${checks('inv-return', 'Preferred Return Structure', ['Equity Stake', 'Profit Share', 'Interest-Bearing Loan', 'Combination of the above'])}
+    ${radio('inv-prev', 'Do you have prior property investment experience?', ['Yes', 'No'])}`;
 }
 
 function studentFields(): string {
@@ -119,10 +122,18 @@ const categoryBlocks: Record<ProfileCategory, () => string> = {
   professional: professionalFields, aspiring: aspiringFields,
 };
 
+/* profiles that skip the generic land / stage / value block */
+const SKIP_GENERIC = new Set<ProfileCategory>(['investor']);
+
 /* ── Main render ── */
 
 export function renderStepReadiness(profile: ProfileCategory): string {
   const extra = categoryBlocks[profile]?.() ?? '';
+
+  if (SKIP_GENERIC.has(profile)) {
+    return extra;
+  }
+
   return `
     <div class="fdiv">Development Readiness</div>
 

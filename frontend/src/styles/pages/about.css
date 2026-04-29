@@ -581,6 +581,95 @@
   color: var(--cream);
 }
 
+/* ── Overview stats strip ── */
+.overview-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-14);
+}
+
+.overview-stat {
+  padding: var(--sp-6);
+  background: var(--ink-soft);
+  border: 1px solid rgba(201,168,76,0.12);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--r-md);
+  text-align: center;
+}
+
+.overview-stat-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: var(--fs-display-sm);
+  font-weight: 600;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: var(--sp-1);
+}
+
+.overview-stat-label {
+  font-size: var(--fs-label-sm);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+/* ── Overview teaser cards ── */
+.overview-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-4);
+}
+
+.overview-card {
+  display: block;
+  padding: var(--sp-7);
+  background: var(--ink-soft);
+  border: 1px solid rgba(249,245,238,0.06);
+  border-radius: var(--r-lg);
+  text-decoration: none;
+  transition: all var(--dur-med) var(--ease-std);
+  position: relative;
+}
+
+.overview-card:hover {
+  border-color: rgba(201,168,76,0.25);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.overview-card-num {
+  font-family: 'DM Mono', monospace;
+  font-size: var(--fs-overline);
+  letter-spacing: 0.16em;
+  color: var(--gold);
+  opacity: 0.6;
+  margin-bottom: var(--sp-3);
+}
+
+.overview-card-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: var(--fs-headline-sm);
+  font-weight: 600;
+  color: var(--cream);
+  margin-bottom: var(--sp-3);
+}
+
+.overview-card-desc {
+  font-size: var(--fs-body-sm);
+  color: var(--steel-light);
+  line-height: var(--lh-body);
+  margin-bottom: var(--sp-4);
+}
+
+.overview-card-link {
+  font-size: var(--fs-label-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 500;
+}
+
 /* ── CTA ── */
 .about-cta {
   padding: var(--sp-20) var(--sp-4);
@@ -628,6 +717,14 @@
   .about-nav-link {
     padding: var(--sp-4) var(--sp-5);
     font-size: var(--fs-label-md);
+  }
+
+  .overview-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .overview-cards {
+    grid-template-columns: 1fr 1fr;
   }
 }
 
@@ -681,5 +778,9 @@
 
   .about-impact-featured {
     grid-column: auto;
+  }
+
+  .overview-cards {
+    grid-template-columns: repeat(3, 1fr);
   }
 }
