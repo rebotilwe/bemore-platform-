@@ -47,9 +47,9 @@ async function init(): Promise<void> {
   // Initialize router
   router.init();
 
-  // Register service worker for all environments
+  // Service worker disabled — unregister any existing registrations
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
   }
 
   // PWA install prompt (shows after 15s if not dismissed)
