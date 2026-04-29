@@ -1,0 +1,11 @@
+frontend/
+docs/
+agents/
+invoices/
+frontend_Next/
+*.pdf
+*.pptx
+*.md
+.github/
+node_modules/
+.git/
