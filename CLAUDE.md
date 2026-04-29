@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Last updated**: 24 Apr 2026
+**Last updated**: 29 Apr 2026
 
 ## Project Overview
 
@@ -24,12 +24,12 @@ BeMore/
 │       ├── store.ts          # Reactive state (get/set/subscribe)
 │       ├── auth.ts           # JWT auth + session verify
 │       ├── pages/
-│       │   ├── public/       # hero, gateway, form, success, about, landing, mentee-meter, status
-│       │   └── admin/        # login, dashboard, leads, analytics, reports, deal-room, audit-log, qr-generator, polls, guide, settings
-│       ├── components/       # nav, toast, confirm-dialog, loading-button, empty-state, error-boundary, app-detail-modal, poll-results-chart
-│       ├── constants/        # categories, funders (PBSA), status, tags, form-steps, summit-config
+│       │   ├── public/       # hero, gateway, form (profile-aware 5-step), success, about (7 sub-routes), landing, status
+│       │   └── admin/        # login, dashboard, leads, analytics, reports, deal-room, audit-log, qr-generator, traffic, guide, settings
+│       ├── components/       # nav, toast, confirm-dialog, loading-button, empty-state, error-boundary, app-detail-modal
+│       ├── constants/        # categories, funders (PBSA), status, tags, form-steps (getStepMeta), summit-config
 │       ├── types/            # application, api, routes
-│       ├── services/         # poll-sse (Server-Sent Events client)
+│       ├── services/         # tracker (page views, events, heartbeat)
 │       ├── utils/            # validation (SA phone), auto-tag, format, csv, dom, pdf-report
 │       └── styles/           # tokens, reset, typography, base, components/*, pages/*
 ├── backend/                  # Express + MongoDB (Mongoose) API
@@ -37,13 +37,13 @@ BeMore/
 │   ├── src/
 │   │   ├── app.js            # Express app factory (trust proxy, compression, CORS, helmet)
 │   │   ├── config/           # index.js (env validation), rateLimit.js (6 limiters), db.js (retry logic)
-│   │   ├── models/           # Application, Admin, AdminAuditLog, AnalyticsEvent, EmailLog, Poll, PollResponse, SiteSettings, PageView, TrackingEvent
-│   │   ├── controllers/      # application, auth, analytics, report, poll, traffic
-│   │   ├── services/         # applicationService (duplicate check), authService, analyticsService, reportService, pollService, pollSSE, trafficService
-│   │   ├── routes/           # applications (POPIA endpoints), auth, health, analytics, reports, polls, settings, tracking
+│   │   ├── models/           # Application (+ allocatedProjects), Admin, AdminAuditLog, AnalyticsEvent, EmailLog, SiteSettings, PageView, TrackingEvent
+│   │   ├── controllers/      # application, auth, analytics, report, traffic
+│   │   ├── services/         # applicationService (duplicate check, ALLOWED_UPDATE_FIELDS), authService, analyticsService, reportService, trafficService
+│   │   ├── routes/           # applications (POPIA endpoints), auth, health, analytics, reports, settings, tracking
 │   │   ├── middleware/       # auth (JWT + Bearer), csrfProtection, errorHandler, requestLogger, validate
-│   │   └── utils/            # autoTag, mailer (Resend + SMTP), logger (winston), redactPII (POPIA)
-│   └── __tests__/            # Jest + mongodb-memory-server (184 tests)
+│   │   └── utils/            # autoTag (all 6 profiles), mailer (Resend + SMTP), logger (winston), redactPII (POPIA)
+│   └── __tests__/            # Jest + mongodb-memory-server (215 tests)
 ├── docs/
 │   ├── api/openapi.yaml      # OpenAPI 3.1 spec (50+ endpoints)
 │   ├── architecture.md       # System architecture with ASCII diagrams
@@ -72,9 +72,9 @@ npm install && npm run dev          # nodemon auto-restart
 cd frontend && npm run typecheck    # tsc --noEmit
 
 # Tests
-cd backend && npm test              # 184 Jest tests (sequential, --runInBand, cross-env)
+cd backend && npm test              # 215 Jest tests (sequential, --runInBand, cross-env)
 cd backend && npm run test:coverage # with coverage report
-cd frontend && npx vitest run       # 185 Vitest tests (17 test files)
+cd frontend && npx vitest run       # 196 Vitest tests (17 test files)
 cd frontend && npm run test:coverage
 
 # Run a single test file
@@ -90,14 +90,13 @@ cd frontend && npx vitest run -t "pattern"
 
 ### Routing (Frontend)
 Hash-based SPA router (`/#/path`). Routes defined in `src/router.ts`:
-- **Public**: `/`, `/gateway`, `/register`, `/about`, `/success`, `/landing`, `/mentee-meter`, `/status`
-- **Admin** (auth guarded): `/admin/login`, `/admin/dashboard`, `/admin/leads`, `/admin/analytics`, `/admin/traffic`, `/admin/reports`, `/admin/deal-room`, `/admin/audit-log`, `/admin/qr`, `/admin/polls`, `/admin/guide`, `/admin/settings`
+- **Public**: `/`, `/gateway`, `/register`, `/about`, `/about/overview`, `/about/group`, `/about/vision`, `/about/empowerment`, `/about/impact`, `/about/performance`, `/about/opportunity`, `/success`, `/landing`, `/status`
+- **Admin** (auth guarded): `/admin/login`, `/admin/dashboard`, `/admin/leads`, `/admin/analytics`, `/admin/traffic`, `/admin/reports`, `/admin/deal-room`, `/admin/audit-log`, `/admin/qr`, `/admin/guide`, `/admin/settings`
 
 ### API (Backend)
-- **Public**: `POST /api/applications`, `POST /api/applications/lookup`, `POST /api/applications/data-export`, `POST /api/applications/data-delete`, `GET /api/health`, `GET /api/settings/public/:key`
+- **Public**: `POST /api/applications`, `POST /api/applications/lookup` (returns `allocatedProjects`), `POST /api/applications/data-export`, `POST /api/applications/data-delete`, `GET /api/health`, `GET /api/settings/public/:key`
 - **Admin** (JWT): `GET/PATCH /api/applications`, `GET /api/applications/stats`, `GET /api/applications/export/csv`, `POST /api/applications/bulk-status`, `POST /api/applications/send-reminders`, `GET /api/reports/:name`, `POST /api/auth/login`, `GET /api/auth/verify`, `GET/PUT /api/settings`, `GET /api/emails/:refNumber`
 - **Analytics** (JWT): `GET /api/analytics/{dashboard,funnel,trends,tags,demographics,deal-room,events}` (also aliased at `/api/insights/*`)
-- **Polls** (mixed): `GET /api/polls/active` (public), `POST /api/polls/:id/vote` (public), `GET /api/polls/:id/live` (SSE, public), `GET/POST/PATCH/DELETE /api/polls` (JWT), `PATCH /api/polls/:id/status` (JWT), `PATCH /api/polls/:id/activate` (JWT), `GET /api/polls/:id/results` (JWT)
 - **Tracking** (public, rate-limited): `POST /api/track/pageview`, `POST /api/track/event`, `POST /api/track/heartbeat`
 - **Traffic** (JWT): `GET /api/insights/traffic`, `GET /api/insights/traffic/{trends,referrers,devices,hours,form-funnel,clicks}`
 - **Reports** (JWT): `GET /api/reports/{high-value-developers,pipeline-ready-land,institutional-grade-housing,deal-room-shortlist}`
@@ -105,26 +104,34 @@ Hash-based SPA router (`/#/path`). Routes defined in `src/router.ts`:
 ### Application Data Model
 ```
 Application {
-  refNumber       BM-XXXXXXXX (auto-generated, unique)
-  userType        developer | landowner | investor | student | professional | aspiring
-  personal        { firstName, surname, email, phone (+27 normalized), companyName? }
-  formData        Mixed (5-step form data: readiness, funding, project, consent)
-  tags            [] (auto-generated: HIGH_VALUE, PIPELINE_READY, INSTITUTIONAL_GRADE, etc.)
-  status          new -> reviewing -> shortlisted -> invited -> funded
-  engagementSource  direct | qr | qr-brochure | qr-banner | etc.
-  classification    unclassified | hot | warm | cold (admin-set)
-  followUp        { required, dueDate, notes, completedAt }
-  dealRoom        { summitAccess, dealRoomEntry, funders: ['PBSA'] }
-  adminNotes      String
+  refNumber          BM-XXXXXXXX (auto-generated, unique)
+  userType           developer | landowner | investor | student | professional | aspiring
+  personal           { firstName, surname, email, phone (+27 normalized), companyName? }
+  formData           Mixed — profile-specific fields per userType (see form-steps/ for schema)
+  tags               [] (auto-generated by autoTag engine)
+  status             new -> reviewing -> shortlisted -> invited -> funded
+  engagementSource   direct | qr | qr-brochure | qr-banner | etc.
+  classification     unclassified | hot | warm | cold (admin-set)
+  followUp           { required, dueDate, notes, completedAt }
+  dealRoom           { summitAccess, dealRoomEntry, funders: ['PBSA'] }
+  adminNotes         String
+  allocatedProjects  [String] — project refs assigned by admin (professionals only)
 }
 ```
 
+### Profile-Aware Form
+The 5-step registration form branches per `userType`. Each profile has tailored fields, step labels, validation rules, and `formData` structure:
+- `getStepMeta(stepIndex, profile)` in `form-steps.ts` returns profile-specific step titles and labels
+- `SKIP_GENERIC` in `step-readiness.ts` — investor, professional, student skip the generic land/stage/value block
+- `collectAllFormData()` in `form.ts` captures only the relevant fields per profile, deleting inapplicable generic keys before submission
+
 ### Auto-Tagging Engine
-Mongoose `pre('save')` hook applies intelligence tags based on `formData`:
+Mongoose `pre('save')` hook applies intelligence tags based on `formData`. Mirror runs client-side in `auto-tag.ts`:
 - Value: `HIGH_VALUE`, `LARGE_CAPITAL`, `MID_VALUE`
 - Stage: `LAND_SECURED`, `FUNDING_STAGE`, `SHOVEL_READY`
 - Composite: `PIPELINE_READY`, `INSTITUTIONAL_GRADE`
-- Profile-specific: `EXPERIENCED`, `STUDENT_FOCUS`, `LARGE_OPERATOR`, `REGISTERED`, etc.
+- Intent: `SEEKS_EQUITY`, `SEEKS_DEBT`, `FUNDED_BEFORE`, `INSTITUTIONAL_TRACK`
+- Profile-specific: `EXPERIENCED`, `STUDENT_FOCUS`, `LARGE_OPERATOR`, `HIGH_OCCUPANCY`, `UNI_ACCREDITED`, `NSFAS_ACCREDITED`, `REGISTERED`, `LARGE_SCALE`, `LARGE_INVESTOR`, `INVESTOR`
 
 ### Email System
 Nodemailer via SMTP (`mail.bts-app.co.za:465`). Templates in `backend/src/utils/mailer.js`:
@@ -144,7 +151,7 @@ Same email + userType combination returns 409 with existing refNumber. Frontend 
 Public endpoints at `/api/applications/data-export` and `/api/applications/data-delete` allow applicants to export or permanently delete their data using refNumber + email. TTL index auto-deletes after 24 months.
 
 ### Site Settings
-Key-value store (`SiteSettings` model) for admin-configurable values (e.g., Mentimeter embed ID, summit config). Public read at `GET /api/settings/public/:key`, admin write at `PUT /api/settings/:key`. Write endpoint enforces an `ALLOWED_SETTINGS` whitelist.
+Key-value store (`SiteSettings` model) for admin-configurable values (e.g., summit config). Public read at `GET /api/settings/public/:key`, admin write at `PUT /api/settings/:key`. Write endpoint enforces an `ALLOWED_SETTINGS` whitelist.
 
 ### Summit Config Toggle
 `summit_config` setting (JSON object with `active`, `date`, `venue`, etc.) controls summit-specific content across hero, landing, success, and form-confirm pages. Toggle via `/#/admin/settings`. When `active: false`, all summit banners, dates, and venue references are hidden.

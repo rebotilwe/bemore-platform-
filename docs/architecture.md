@@ -1,6 +1,6 @@
 # BeMore Platform Architecture
 
-**Last updated**: 24 Apr 2026
+**Last updated**: 29 Apr 2026
 
 ---
 
@@ -48,7 +48,6 @@ The platform is a full-stack SPA with an offline-capable demo mode, deployed acr
                                               |                  |
                                               | Applications     |
                                               | Admins           |
-                                              | Polls            |
                                               | AnalyticsEvents  |
                                               | PageViews        |
                                               | TrackingEvents   |
@@ -116,14 +115,16 @@ frontend/src/
   store.ts           Reactive state (get/set/subscribe pattern)
   auth.ts            JWT auth + CSRF + session verification
   pages/
-    public/          hero, gateway, form, success, about, landing, mentee-meter, status
+    public/          hero, gateway, form (profile-aware 5-step), success,
+                     about (7 sub-routes), landing, status
     admin/           login, dashboard, leads, analytics, reports, deal-room,
-                     audit-log, qr-generator, polls, traffic, guide, settings, admins
+                     audit-log, qr-generator, traffic, guide, settings, admins
   components/        nav, toast, confirm-dialog, loading-button, empty-state,
-                     error-boundary, app-detail-modal, poll-results-chart
-  constants/         categories, funders (PBSA), status, tags, form-steps, summit-config
+                     error-boundary, app-detail-modal
+  constants/         categories, funders (PBSA), status, tags, form-steps
+                     (with getStepMeta), summit-config
   types/             application, api, routes
-  services/          poll-sse (SSE client), tracker (page views, events, heartbeat)
+  services/          tracker (page views, events, heartbeat)
   utils/             validation, auto-tag, format, csv, dom, pdf-report
   styles/            tokens, reset, typography, base, components/*, pages/*
 ```
@@ -159,7 +160,6 @@ Key state:
 - `isAuthenticated` / `adminEmail` -- auth state
 - `selectedProfile` / `formData` / `currentStep` -- multi-step form wizard
 - `applications` / `filters` / `stats` -- admin data
-- `pollsEnabled` -- feature toggle from site settings
 
 ### API Client
 
@@ -183,11 +183,9 @@ On startup, `main.ts` calls `api.checkBackend()` (probes `GET /api/health`). If 
 
 ### PWA / Service Worker
 
-- **Manifest**: `public/manifest.json` with app name, icons, theme color
-- **Service Worker v2**: Registered from `main.ts`, uses stale-while-revalidate strategy
-- **Precache**: Logo, icons, and app shell
-- **Install prompt**: Banner prompts users to install on supported browsers
-- **Cache headers**: Hashed assets (`/assets/*`) get `Cache-Control: public, max-age=31536000, immutable`
+- **Service Worker**: Disabled. On load, `main.ts` unregisters any existing service worker registrations to prevent stale caching.
+- **Manifest**: `public/manifest.json` with app name, icons, theme color (PWA installable but no offline cache)
+- **Cache headers**: Hashed assets (`/assets/*`) get `Cache-Control: public, max-age=31536000, immutable` via Vercel headers
 
 ---
 
@@ -253,16 +251,13 @@ Controllers:
 - `adminController` -- admin CRUD (list, create, update, delete)
 - `analyticsController` -- dashboard, funnel, trends, tags, demographics, deal room
 - `reportController` -- pre-built reports (high-value, pipeline-ready, etc.)
-- `pollController` -- poll CRUD, voting, SSE live stream, results
 - `trafficController` -- traffic overview, trends, referrers, devices, hours, funnel, clicks
 
 Services:
-- `applicationService` -- duplicate detection (email + userType), sanitized updates
+- `applicationService` -- duplicate detection (email + userType), sanitized updates, `ALLOWED_UPDATE_FIELDS` allowlist
 - `authService` -- bcrypt password verification, JWT signing/verification
 - `analyticsService` -- MongoDB aggregation pipelines with date/timezone handling
 - `reportService` -- filtered queries for curated report views
-- `pollService` -- poll lifecycle management, vote recording, result aggregation
-- `pollSSE` -- in-memory SSE pub/sub (Map of pollId to Set of client responses)
 - `trafficService` -- page view and event aggregation with UA parsing
 
 ### Structured Logging (Winston)
@@ -291,47 +286,30 @@ Log points:
   | userType          |        | password (bcrypt)|
   | personal          |        | name             |
   | formData (Mixed)  |        | createdAt        |
-  | tags []           |        +--------+---------+
-  | status            |                 |
-  | classification    |                 | creates
-  | engagementSource  |                 v
-  | dealRoom          |        +------------------+
-  | followUp          |        |     Poll         |
-  | adminNotes        |        |------------------|
-  | submittedAt       |        | title            |
-  | updatedAt         |        | description      |
-  +-------------------+        | questions []     |
-         |                     |   text           |
-         | TTL: 24 months      |   type (MC/WC/   |
-         |                     |     rating/text) |
-         |                     |   options []     |
-  +-------------------+       |   settings       |
-  |   EmailLog        |        | activeQuestionIdx|
-  |-------------------|        | status (draft/   |
-  | to (redacted)     |        |   active/paused/ |
-  | subject           |        |   closed)        |
-  | template          |        | createdBy -> Admin
-  | refNumber         |        +--------+---------+
-  | status (sent/fail)|                 |
-  | error             |                 v
-  | sentAt            |        +------------------+
-  | TTL: 24 months    |        |  PollResponse    |
-  +-------------------+        |------------------|
-                               | pollId -> Poll   |
-                               | questionId       |
-  +-------------------+        | sessionId        |
-  | AdminAuditLog     |        | optionId         |
-  |-------------------|        | textResponse     |
-  | admin.id/email    |        | ratingValue      |
-  | action            |        | engagementSource |
-  | target            |        | ip, timestamp    |
-  | details (Mixed)   |        +------------------+
-  | ip, userAgent     |        unique: (sessionId,
-  | requestId         |                questionId)
+  | tags []           |        +------------------+
   | status            |
-  | errorMessage      |
-  | timestamp         |
-  | TTL: 7 years      |
+  | classification    |        +------------------+
+  | engagementSource  |        | AdminAuditLog    |
+  | dealRoom          |        |------------------|
+  | followUp          |        | admin.id/email   |
+  | adminNotes        |        | action           |
+  | allocatedProjects |        | target           |
+  | submittedAt       |        | details (Mixed)  |
+  | updatedAt         |        | ip, userAgent    |
+  | TTL: 24 months    |        | requestId        |
+  +-------------------+        | status           |
+                               | errorMessage     |
+  +-------------------+        | timestamp        |
+  |   EmailLog        |        | TTL: 7 years     |
+  |-------------------|        +------------------+
+  | to (redacted)     |
+  | subject           |
+  | template          |
+  | refNumber         |
+  | status (sent/fail)|
+  | error             |
+  | sentAt            |
+  | TTL: 24 months    |
   +-------------------+
 
 
@@ -372,14 +350,20 @@ Log points:
 
 ### Auto-Tagging Engine
 
-A Mongoose `pre('save')` hook on the Application model runs `autoTag(userType, formData)` to assign intelligence tags:
+A Mongoose `pre('save')` hook on the Application model runs `autoTag(userType, formData)` to assign intelligence tags. The same logic runs client-side in `frontend/src/utils/auto-tag.ts` for demo/offline mode.
 
 | Category | Tags |
 |----------|------|
 | Value | `HIGH_VALUE`, `LARGE_CAPITAL`, `MID_VALUE` |
 | Stage | `LAND_SECURED`, `FUNDING_STAGE`, `SHOVEL_READY` |
 | Composite | `PIPELINE_READY`, `INSTITUTIONAL_GRADE` |
-| Profile | `EXPERIENCED`, `STUDENT_FOCUS`, `LARGE_OPERATOR`, `REGISTERED` |
+| Funding history | `FUNDED_BEFORE`, `INSTITUTIONAL_TRACK` |
+| Intent | `SEEKS_EQUITY`, `SEEKS_DEBT` |
+| Developer | `EXPERIENCED`, `STUDENT_FOCUS` |
+| Landowner | `LARGE_LAND`, `SERVICED`, `ZONED` |
+| Investor | `INVESTOR`, `LARGE_INVESTOR` |
+| Student operator | `LARGE_OPERATOR`, `HIGH_OCCUPANCY`, `UNI_ACCREDITED`, `NSFAS_ACCREDITED` |
+| Professional | `LARGE_SCALE`, `REGISTERED` |
 
 Tags drive the four pre-built reports: High-Value Developers, Pipeline-Ready Land, Institutional-Grade Housing, and Deal Room Shortlist.
 
