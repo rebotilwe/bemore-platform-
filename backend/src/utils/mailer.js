@@ -176,7 +176,7 @@ export async function sendDataExportReceipt(to, refNumber, firstName) {
     <strong>Request timestamp:</strong> ${requestedAt}
     <br><br>
     If you did not make this request, please contact us immediately at
-    <a href="mailto:info@bts-app.co.za" style="color:#c9a84c">info@bts-app.co.za</a>.
+    <a href="mailto:hello@bemorecapital.co.za" style="color:#c9a84c">hello@bemorecapital.co.za</a>.
   `, [
     { label: 'Check My Status', url: `${PLATFORM_URL}/#/status` },
   ]);
@@ -214,7 +214,7 @@ export async function sendDataDeleteReceipt(to, refNumber, firstName) {
     SME Access Initiative again, you are welcome to submit a new application.
     <br><br>
     If you did not request this deletion, please contact us immediately at
-    <a href="mailto:info@bts-app.co.za" style="color:#c9a84c">info@bts-app.co.za</a>.
+    <a href="mailto:hello@bemorecapital.co.za" style="color:#c9a84c">hello@bemorecapital.co.za</a>.
   `);
 
   const result = await sendEmail({

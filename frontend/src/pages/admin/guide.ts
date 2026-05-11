@@ -357,7 +357,7 @@ const GUIDE_SECTIONS = [
       </div>
 
       <div class="guide-tip">
-        <strong>Important:</strong> Every email includes the BeMore x PBSA co-branding, the applicant's reference number, and buttons linking back to the platform. All emails come from <code>info@bts-app.co.za</code>.
+        <strong>Important:</strong> Every email includes the BeMore x PBSA co-branding, the applicant's reference number, and buttons linking back to the platform. All emails come from <code>noreply@bemorecapital.co.za</code>; replies to support questions go to <code>hello@bemorecapital.co.za</code>.
       </div>`,
   },
 ];

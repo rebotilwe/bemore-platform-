@@ -42,8 +42,9 @@ info:
     A 24-month TTL index auto-deletes stale records.
   version: 3.0.0
   contact:
-    name: Bukani Tech Solutions
-    url: https://bts-app.co.za
+    name: BeMore Group
+    email: hello@bemorecapital.co.za
+    url: https://bemorecapital.co.za
 
 servers:
   - url: http://localhost:5000/api

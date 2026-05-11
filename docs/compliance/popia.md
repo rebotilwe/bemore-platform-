@@ -375,7 +375,7 @@ Per POPIA Section 1, the **responsible party** is the entity that determines the
 | **Operator** | Bukani Tech Solutions (Pty) Ltd |
 | **Information Officer** | _[To be appointed -- POPIA Section 55 requires designation]_ |
 | **Physical address** | _[Insert registered address]_ |
-| **Email** | info@bts-app.co.za |
+| **Email** | hello@bemorecapital.co.za |
 | **Phone** | _[Insert contact number]_ |
 | **Website** | https://bemore-tawny.vercel.app |
 | **Information Regulator registration** | _[Insert registration number once obtained]_ |

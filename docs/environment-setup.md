@@ -130,7 +130,7 @@ succeeds (fire-and-forget pattern).
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `RESEND_API_KEY` | *(empty)* | **REQUIRED in production/staging.** API key from [resend.com](https://resend.com). |
-| `EMAIL_FROM` | `onboarding@resend.dev` | Sender address. The default works for any Resend account but only delivers to the API key owner; use a verified domain (e.g. `info@bts-app.co.za`) for real traffic. |
+| `EMAIL_FROM` | `onboarding@resend.dev` | Sender address. The default works for any Resend account but only delivers to the API key owner; use a verified domain (production currently uses `noreply@bemorecapital.co.za`) for real traffic. |
 | `EMAIL_FROM_NAME` | `BeMore` | Sender display name. |
 
 **Backwards compatibility:** legacy `SMTP_FROM` and `SMTP_FROM_NAME` env vars are
