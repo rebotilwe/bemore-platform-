@@ -450,11 +450,13 @@ Mongoose `pre('save')` hook on `Application` — runs only on `isNew`. Mirror en
 
 ### 9.1 Universal tags
 
+`activityLevel` is stored as the canonical three-value enum defined in §14 (display wording can vary per profile question text, but the stored value is one of these three).
+
 | Tag | Rule |
 |---|---|
-| `ACTIVELY_LOOKING` | `activityLevel ∈ {'Immediately', 'Active', 'Actively looking'}` |
-| `OPEN_TO_OPPORTUNITY` | `activityLevel ∈ {'Within 3–6 months', 'Selective', 'Open to the right opportunity'}` |
-| `LOW_INTENT` | `activityLevel ∈ {'Longer term', 'Not currently', 'Not actively looking'}` |
+| `ACTIVELY_LOOKING` | `activityLevel === 'Actively looking'` |
+| `OPEN_TO_OPPORTUNITY` | `activityLevel === 'Open to the right opportunity'` |
+| `LOW_INTENT` | `activityLevel === 'Not actively looking'` |
 
 ### 9.2 Per-profile tags
 
@@ -644,10 +646,14 @@ After implementation + QA approval:
 
 ---
 
-## 14. Open Questions (None blocking)
+## 14. Resolved Decisions
 
-- Should the *Land Owner* "Exploring" softening (Step 3 conditional) be reviewed by Workstream C before ship, or is this our call? Default: our call, flag in QA notes.
-- Naming consistency: PDF uses "Active / Selective / Not currently" for investors but "Actively looking / Open / Not actively looking" for professionals. Universal `activityLevel` enum normalises these. Confirm wording with Workstream C before shipping.
+- **Land Owner "Exploring" softening (Step 3 conditional)** — our call. Ship as designed; flag in QA notes for Workstream C visibility, no sign-off blocker.
+- **Universal `activityLevel` enum wording** — our call. Normalise the per-flow wording from the PDF into a single enum with three values:
+  - `'Actively looking'` (covers PDF: Active / Immediately / Actively looking)
+  - `'Open to the right opportunity'` (covers PDF: Selective / Within 3–6 months / Open to the right opportunity)
+  - `'Not actively looking'` (covers PDF: Not currently / Longer term / Not actively looking)
+  - Display labels per profile may still vary in the question text, but the **stored value** uses the canonical three-value enum.
 
 ---
 
