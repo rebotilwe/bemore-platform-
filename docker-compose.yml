@@ -1,0 +1,85 @@
+# Local dev stack for BeMore.
+# Ports chosen to avoid clashes with the user's running psahouses-app (3000)
+# and psahouses-db (5433):
+#   frontend → 3001
+#   backend  → 5000
+#   mongo    → 27018 (mapped from 27017 inside the container)
+#
+# Bring up:    docker compose up --build
+# Tear down:   docker compose down
+# Wipe data:   docker compose down -v   (DESTRUCTIVE — drops mongo volume)
+
+services:
+  mongo:
+    image: mongo:7-jammy
+    container_name: bemore-mongo
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bemore-backend
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      MONGODB_URI: mongodb://mongo:27017/bemore
+      JWT_SECRET: dev-jwt-secret-not-for-production-please-change
+      JWT_EXPIRES_IN: 8h
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX_REQUESTS: 1000
+      CORS_ORIGIN: http://localhost:3001
+      UPLOAD_DIR: /app/uploads
+      ADMIN_SEED_EMAIL: admin@bemore.local
+      ADMIN_SEED_PASSWORD: changeme123
+      PLATFORM_URL: http://localhost:3001
+    volumes:
+      # Source mounts for hot-reload via nodemon (server.js, src/, seed.js).
+      # node_modules is intentionally NOT mounted — we use the image's copy.
+      - ./backend/src:/app/src
+      - ./backend/server.js:/app/server.js
+      - ./backend/seed.js:/app/seed.js
+      # Uploads bind-mount so files are visible on the host for inspection.
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: bemore-frontend
+    ports:
+      - "3001:3001"
+    environment:
+      # Vite proxies /api to the backend service over the docker network.
+      VITE_API_PROXY_TARGET: http://backend:5000
+      # Disable browser auto-open inside the container (no DISPLAY).
+      VITE_NO_OPEN: "true"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/public:/app/public
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+      - ./frontend/manifest.json:/app/manifest.json
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  mongo-data:

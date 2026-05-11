@@ -2,7 +2,8 @@ import type { Page, Application, ReportName } from '../../types/index.ts';
 import { api } from '../../api.ts';
 import { CATEGORY_LABELS } from '../../constants/categories.ts';
 import { STATUS_CSS, STATUS_LABELS } from '../../constants/status.ts';
-import { formatDate } from '../../utils/format.ts';
+import { LEGACY_TAGS, TAG_LABELS } from '../../constants/tags.ts';
+import { formatDate, esc } from '../../utils/format.ts';
 import { exportCsv } from '../../utils/csv.ts';
 import { toast } from '../../components/toast.ts';
 import { mountAdminLayout } from './layout.ts';
@@ -33,9 +34,9 @@ const REPORTS: ReportMeta[] = [
     color: '#c9a84c',
   },
   {
-    name: 'pipeline-ready-land',
-    title: 'Land Readiness',
-    description: 'Landowners with PIPELINE_READY assets — land secured with active project stage.',
+    name: 'pipeline-ready-developers',
+    title: 'Pipeline-Ready Developers',
+    description: 'Developers flagged PIPELINE_READY — land secured with active project stage.',
     icon: '&#9632;',
     color: '#4cb87a',
   },
@@ -93,11 +94,17 @@ function renderResults(meta: ReportMeta, apps: Application[]): string {
     const name = `${app.personal?.firstName ?? ''} ${app.personal?.surname ?? ''}`.trim() || 'Unknown';
     const typeLbl = (CATEGORY_LABELS as Record<string, string>)[app.userType] || app.userType;
     const typeCls = TAG_CSS[app.userType] || '';
-    const tags = (app.tags ?? []).slice(0, 3).map(t => `<span class="tag-badge">${t}</span>`).join(' ');
+    const tags = (app.tags ?? []).filter(t => !LEGACY_TAGS.has(t)).slice(0, 3).map(t => `<span class="tag-badge">${esc(TAG_LABELS[t] ?? t)}</span>`).join(' ');
     const statusCls = (STATUS_CSS as Record<string, string>)[app.status] || '';
     const statusLbl = (STATUS_LABELS as Record<string, string>)[app.status] || app.status;
     const date = app.submittedAt ? formatDate(app.submittedAt) : '';
-    const value = (app.formData as Record<string, unknown>)?.estimatedValue as string || '';
+    const fd = (app.formData as Record<string, unknown>) ?? {};
+    // New keys first, legacy fallback (FE-4 risk callout).
+    const value = (fd.projectValue as string)
+      || (fd.investmentRange as string)
+      || (fd.avgProjectSize as string)
+      || (fd.estimatedValue as string)
+      || '';
 
     return `<tr class="rpt-row" data-id="${app._id}">
       <td><span class="nc">${name}</span></td>
@@ -139,8 +146,13 @@ function renderResults(meta: ReportMeta, apps: Application[]): string {
         const typeCls2 = TAG_CSS[app.userType] || '';
         const statusLbl2 = (STATUS_LABELS as Record<string, string>)[app.status] || app.status;
         const statusCls2 = (STATUS_CSS as Record<string, string>)[app.status] || '';
-        const val2 = (app.formData as Record<string, unknown>)?.estimatedValue as string || '';
-        const tags2 = (app.tags ?? []).slice(0, 2).map(t => `<span class="tag-badge">${t}</span>`).join(' ');
+        const fd2 = (app.formData as Record<string, unknown>) ?? {};
+        const val2 = (fd2.projectValue as string)
+          || (fd2.investmentRange as string)
+          || (fd2.avgProjectSize as string)
+          || (fd2.estimatedValue as string)
+          || '';
+        const tags2 = (app.tags ?? []).filter(t => !LEGACY_TAGS.has(t)).slice(0, 2).map(t => `<span class="tag-badge">${esc(TAG_LABELS[t] ?? t)}</span>`).join(' ');
         return `
         <div class="rpt-mcard" data-id="${app._id}">
           <div class="rpt-mcard-top">

@@ -29,6 +29,7 @@ async function seedTestData() {
       userType: 'developer',
       personal: { firstName: 'Popia', surname: 'Test', email: 'popia@example.co.za', phone: '+27821234567' },
       formData: { landStatus: 'Land Secured', projectStage: 'Funding Stage', estimatedValue: 'R20m – R100m' },
+      consent: { tc: true, popia: true },
     });
   testRefNumber = appRes.body.data.refNumber;
 }
@@ -47,6 +48,7 @@ describe('Duplicate Application Prevention', () => {
         userType: 'developer',
         personal: { firstName: 'Duplicate', surname: 'User', email: 'popia@example.co.za', phone: '+27829999999' },
         formData: {},
+        consent: { tc: true, popia: true },
       });
     expect(res.status).toBe(409);
     expect(res.body.success).toBe(false);
@@ -60,6 +62,7 @@ describe('Duplicate Application Prevention', () => {
         userType: 'landowner',
         personal: { firstName: 'Popia', surname: 'Test', email: 'popia@example.co.za', phone: '+27821234567' },
         formData: {},
+        consent: { tc: true, popia: true },
       });
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
@@ -110,6 +113,7 @@ describe('POST /api/applications/data-delete', () => {
         userType: 'investor',
         personal: { firstName: 'Delete', surname: 'Me', email: 'deleteme@example.co.za', phone: '+27831111111' },
         formData: {},
+        consent: { tc: true, popia: true },
       });
     deleteRefNumber = res.body.data.refNumber;
   });
@@ -201,7 +205,7 @@ describe('GET /api/emails/:refNumber', () => {
   beforeAll(async () => {
     await EmailLog.create([
       { to: 'test@example.co.za', subject: 'Test 1', template: 'submission_confirmation', refNumber: testRefNumber, status: 'sent' },
-      { to: 'test@example.co.za', subject: 'Test 2', template: 'status_notification', refNumber: testRefNumber, status: 'failed', error: 'SMTP timeout' },
+      { to: 'test@example.co.za', subject: 'Test 2', template: 'status_notification', refNumber: testRefNumber, status: 'failed', error: 'Resend timeout' },
     ]);
   });
 

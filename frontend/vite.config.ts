@@ -6,10 +6,10 @@ export default defineConfig({
   publicDir: 'public',
   server: {
     port: 3000,
-    open: true,
+    open: !process.env.VITE_NO_OPEN,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:5000',
         changeOrigin: true
       }
     }

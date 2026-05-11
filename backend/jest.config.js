@@ -12,6 +12,7 @@ export default {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
+  setupFiles: ['./jest.env-setup.js'],
   setupFilesAfterEnv: ['./jest.setup.js'],
   testTimeout: 30000,
   verbose: true,

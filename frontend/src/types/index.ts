@@ -1,6 +1,7 @@
 export type {
   ProfileCategory, ApplicationStatus, FunderName, ReportName, Classification, FollowUp,
-  Personal, DealRoom, Application, SubmitPayload, UpdatePayload, FilterParams
+  Personal, DealRoom, Application, SubmitPayload, UpdatePayload, FilterParams,
+  AttachmentRef, AttachmentRecord, UploadResponse,
 } from './application.ts';
 
 export type {

@@ -195,7 +195,7 @@ We will provide updates every <15 min / 30 min / 1 hour>.
 
 1. **Check rate limits**: Review Railway logs for 429 responses. The platform has 5 rate limit tiers (health: 200/min, public: 100/15min, admin: 300/15min, auth: 10/15min, vote: 60/15min).
 2. **Check database performance**: Look for slow query warnings in MongoDB Atlas. Common culprits: unindexed queries on `applications` collection, large aggregation pipelines in analytics endpoints.
-3. **Check external services**: Email delivery depends on `mail.bts-app.co.za:465`. If the SMTP server is down, `sendSubmissionConfirmation` calls will fail but should not block form submissions (email is async).
+3. **Check external services**: Email delivery depends on the Resend HTTPS API (`api.resend.com`). If Resend is down, `sendSubmissionConfirmation` and the POPIA receipt sends will fail but should not block form submissions (email is fire-and-forget). SMTP fallback was removed 2026-05-11.
 4. **Check memory/CPU**: Railway dashboard shows resource usage. If the Node.js process is running out of memory, consider increasing the Railway plan or optimizing the offending endpoint.
 5. **Identify the endpoint**: Filter Railway logs by HTTP status 500. Common patterns:
    - `/api/applications` — database query timeout
@@ -211,7 +211,7 @@ We will provide updates every <15 min / 30 min / 1 hour>.
 
 1. **Contain immediately**:
    - Rotate `JWT_SECRET` to invalidate all sessions.
-   - Rotate `SMTP_PASS` if email credentials are compromised.
+   - Rotate `RESEND_API_KEY` (via the Resend dashboard) if email credentials are compromised.
    - Rotate MongoDB credentials and update `MONGODB_URI` if database access is compromised.
    - If the breach is through the API, enable maintenance mode or take the backend offline.
 
@@ -339,7 +339,7 @@ configuration values, or infrastructure details as relevant.>
 - Leads page data is read from MongoDB; no separate cache to rebuild.
 
 **Supporting tier (4 hours RTO)**:
-- Email delivery depends on external SMTP (`mail.bts-app.co.za`). Queued emails in `EmailLog` with `pending` status can be retried.
+- Email delivery depends on the Resend HTTPS API (sole provider as of 2026-05-11). Failed sends are logged to `EmailLog` with `failed` status and an error string prefixed `Resend …`; sends are fire-and-forget and never block API responses.
 - Reports are computed on-the-fly from `Application` data; no pre-computed state to recover.
 - Poll SSE connections will auto-reconnect on the client side.
 - CSV exports can be re-triggered by admin users.

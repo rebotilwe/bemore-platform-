@@ -125,10 +125,10 @@ describe('EmailLog Model — POPIA Compliance', () => {
         subject: 'Test',
         template: 'submission_confirmation',
         status: 'failed',
-        error: 'SMTP connection failed',
+        error: 'Resend connection failed',
       });
       expect(failedEntry.status).toBe('failed');
-      expect(failedEntry.error).toBe('SMTP connection failed');
+      expect(failedEntry.error).toBe('Resend connection failed');
     });
 
     it('should reject invalid status', async () => {
@@ -170,9 +170,9 @@ describe('EmailLog Model — POPIA Compliance', () => {
         subject: 'Test',
         template: 'submission_confirmation',
         status: 'failed',
-        error: 'SMTP timeout after 10s',
+        error: 'Resend timeout after 10s',
       });
-      expect(entry.error).toBe('SMTP timeout after 10s');
+      expect(entry.error).toBe('Resend timeout after 10s');
     });
   });
 
@@ -227,7 +227,7 @@ describe('EmailLog Model — POPIA Compliance', () => {
           subject: 'Reminder',
           template: 'summit_reminder',
           status: 'failed',
-          error: 'SMTP failed',
+          error: 'Resend failed',
           sentAt: new Date('2026-03-10'),
         },
       ]);
@@ -244,7 +244,7 @@ describe('EmailLog Model — POPIA Compliance', () => {
 
       const failed = await EmailLog.find({ status: 'failed' });
       expect(failed.length).toBe(1);
-      expect(failed[0].error).toBe('SMTP failed');
+      expect(failed[0].error).toBe('Resend failed');
     });
 
     it('should query by recipient email', async () => {

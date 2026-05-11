@@ -52,7 +52,7 @@ No critical vulnerabilities should be present. High-severity findings should be 
 
 - Verify any new environment variables are added to the target environment (Railway/Vercel) **before** deploying.
 - Confirm `.env.example` is updated if new variables were introduced.
-- Ensure secrets (JWT_SECRET, SMTP_PASS, RESEND_API_KEY) are not committed to the repository.
+- Ensure secrets (JWT_SECRET, RESEND_API_KEY) are not committed to the repository.
 
 ### Database
 
@@ -149,7 +149,7 @@ After staging deploys successfully, verify these manually:
 - [ ] Production site loads at `https://bemore-tawny.vercel.app`
 - [ ] Public form submission works end-to-end
 - [ ] Admin login and dashboard load correctly
-- [ ] Confirmation email sends from production SMTP/Resend
+- [ ] Confirmation email sends from production Resend (SMTP fallback removed 2026-05-11)
 - [ ] Check Railway logs for any startup errors
 - [ ] Check Vercel deployment logs for build warnings
 
@@ -216,13 +216,9 @@ Only required if the deployment included data migrations or destructive schema c
 | `JWT_SECRET` | Yes | 32+ character random string. App exits on startup if missing in production/staging |
 | `JWT_EXPIRES_IN` | No | Token lifetime (default: `8h`) |
 | `CORS_ORIGIN` | No | Comma-separated allowed origins. Uses built-in defaults if blank |
-| `RESEND_API_KEY` | No | Resend API key for email delivery (preferred over SMTP) |
-| `SMTP_HOST` | No | SMTP server hostname (fallback: `mail.bts-app.co.za`) |
-| `SMTP_PORT` | No | SMTP port (default: `465`) |
-| `SMTP_USER` | No | SMTP username |
-| `SMTP_PASS` | No | SMTP password |
-| `SMTP_FROM` | No | Sender email address |
-| `SMTP_FROM_NAME` | No | Sender display name (default: `BeMore Group`) |
+| `RESEND_API_KEY` | **Yes** (prod/staging) | Resend API key — sole email provider as of 2026-05-11. Sends are no-ops if missing |
+| `EMAIL_FROM` | No | Sender email address (default: `onboarding@resend.dev`). Use a verified Resend domain in production |
+| `EMAIL_FROM_NAME` | No | Sender display name (default: `BeMore`). Legacy `SMTP_FROM`/`SMTP_FROM_NAME` are still read as fallback |
 | `PLATFORM_URL` | No | Base URL for email template links (e.g., `https://bemore-tawny.vercel.app`) |
 | `ADMIN_SEED_EMAIL` | No | Email for auto-created admin account on first startup |
 | `ADMIN_SEED_PASSWORD` | No | Password for auto-created admin account |

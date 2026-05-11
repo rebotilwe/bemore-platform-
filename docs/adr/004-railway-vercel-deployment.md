@@ -15,7 +15,7 @@ The BeMore platform consists of a static frontend SPA and an Express.js backend 
 - Automatic deploys from Git branches (`main` for production, `staging` for pre-production).
 - Custom domain support (`bemorecapital.co.za` for staging).
 - HTTPS with automatic TLS certificates.
-- Environment variable management for secrets (JWT, SMTP, MongoDB URI).
+- Environment variable management for secrets (JWT, Resend API key, MongoDB URI; SMTP removed 2026-05-11).
 - Cost-effective hosting for a platform with moderate traffic (hundreds of concurrent users during summit events, lower baseline).
 - South African audience — latency to Johannesburg matters.
 

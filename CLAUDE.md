@@ -2,7 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Last updated**: 29 Apr 2026
+**Last updated**: 11 May 2026
+
+## Sprint state
+
+**Active sprint:** _none — last sprint completed 2026-05-11._
+
+**Last completed sprint:** Onboarding Flow Update — All 6 Stakeholder Profiles (closed 2026-05-11)
+- **Spec:** `docs/superpowers/specs/2026-05-11-onboarding-flow-update-design.md`
+- **Task manifest:** `docs/superpowers/specs/2026-05-11-onboarding-flow-task-manifest.md`
+- **Outcome:** All 6 profile question sets realigned to the Workstream C memorandum (4 May 2026); universal Step-5 feedback layer shipped; optional CV upload live for Built Environment Professionals (Railway volume `/app/uploads`); auto-tagging + admin views updated. No DB migration performed.
+- **QA verdict:** APPROVED (after blocker #1 fix — Submit button silent-bail; QA-1..4 green).
+- **Outstanding follow-ups:** DV-1 (production Railway volume) still pending; everything else closed.
+- **Post-sprint cleanup (2026-05-11) included:** SMTP fully removed (Resend is the sole email provider), `pipeline-ready-land` report renamed to `pipeline-ready-developers`, two new POPIA receipt email templates (`sendDataExportReceipt`, `sendDataDeleteReceipt`), HTML escaping in `buildEmail()`, stale Professional whitelist keys (`activityLookingNow`, `whyNotLooking`) removed.
 
 ## Project Overview
 
@@ -42,8 +54,8 @@ BeMore/
 │   │   ├── services/         # applicationService (duplicate check, ALLOWED_UPDATE_FIELDS), authService, analyticsService, reportService, trafficService
 │   │   ├── routes/           # applications (POPIA endpoints), auth, health, analytics, reports, settings, tracking
 │   │   ├── middleware/       # auth (JWT + Bearer), csrfProtection, errorHandler, requestLogger, validate
-│   │   └── utils/            # autoTag (all 6 profiles), mailer (Resend + SMTP), logger (winston), redactPII (POPIA)
-│   └── __tests__/            # Jest + mongodb-memory-server (215 tests)
+│   │   └── utils/            # autoTag (all 6 profiles), mailer (Resend only — SMTP removed 2026-05-11), logger (winston), redactPII (POPIA)
+│   └── __tests__/            # Jest + mongodb-memory-server (308 tests)
 ├── docs/
 │   ├── api/openapi.yaml      # OpenAPI 3.1 spec (50+ endpoints)
 │   ├── architecture.md       # System architecture with ASCII diagrams
@@ -65,16 +77,16 @@ BeMore/
 cd frontend && npm install && npm run dev
 
 # Backend (runs on http://localhost:5000)
-cd backend && cp .env.example .env  # fill in MongoDB URI + SMTP
+cd backend && cp .env.example .env  # fill in MongoDB URI + RESEND_API_KEY
 npm install && npm run dev          # nodemon auto-restart
 
 # Type check (frontend only — backend is plain JS)
 cd frontend && npm run typecheck    # tsc --noEmit
 
 # Tests
-cd backend && npm test              # 215 Jest tests (sequential, --runInBand, cross-env)
+cd backend && npm test              # 308 Jest tests (sequential, --runInBand, cross-env)
 cd backend && npm run test:coverage # with coverage report
-cd frontend && npx vitest run       # 196 Vitest tests (17 test files)
+cd frontend && npx vitest run       # 386 Vitest tests
 cd frontend && npm run test:coverage
 
 # Run a single test file
@@ -99,7 +111,7 @@ Hash-based SPA router (`/#/path`). Routes defined in `src/router.ts`:
 - **Analytics** (JWT): `GET /api/analytics/{dashboard,funnel,trends,tags,demographics,deal-room,events}` (also aliased at `/api/insights/*`)
 - **Tracking** (public, rate-limited): `POST /api/track/pageview`, `POST /api/track/event`, `POST /api/track/heartbeat`
 - **Traffic** (JWT): `GET /api/insights/traffic`, `GET /api/insights/traffic/{trends,referrers,devices,hours,form-funnel,clicks}`
-- **Reports** (JWT): `GET /api/reports/{high-value-developers,pipeline-ready-land,institutional-grade-housing,deal-room-shortlist}`
+- **Reports** (JWT): `GET /api/reports/{high-value-developers,pipeline-ready-developers,institutional-grade-housing,deal-room-shortlist}`
 
 ### Application Data Model
 ```
@@ -134,12 +146,14 @@ Mongoose `pre('save')` hook applies intelligence tags based on `formData`. Mirro
 - Profile-specific: `EXPERIENCED`, `STUDENT_FOCUS`, `LARGE_OPERATOR`, `HIGH_OCCUPANCY`, `UNI_ACCREDITED`, `NSFAS_ACCREDITED`, `REGISTERED`, `LARGE_SCALE`, `LARGE_INVESTOR`, `INVESTOR`
 
 ### Email System
-Nodemailer via SMTP (`mail.bts-app.co.za:465`). Templates in `backend/src/utils/mailer.js`:
+Resend is the sole email provider as of **2026-05-11**. `nodemailer` and all SMTP code paths (`SMTP_HOST/PORT/USER/PASS`, SMTP fallback branch, `checkSmtp()` health probe) were removed. If `RESEND_API_KEY` is missing, sends are short-circuited with a logged error and the API call still succeeds (fire-and-forget). The `/api/health` `email` field reports `'ok'` when `RESEND_API_KEY` is set, otherwise `'not configured'`. Templates in `backend/src/utils/mailer.js`:
 - `sendSubmissionConfirmation()` — on application submit
 - `sendStatusNotification()` — on status change (reviewing, shortlisted, invited, funded)
 - `sendSummitReminder()` — admin-triggered via bulk "Send Reminders" button on leads page or `POST /api/applications/send-reminders`
+- `sendDataExportReceipt()` — fire-and-forget after `POST /api/applications/data-export`; confirms the export was honoured, includes timestamp + refNumber. Does NOT include the signed download URL (5-min TTL would expire before the email is read).
+- `sendDataDeleteReceipt()` — fire-and-forget after `POST /api/applications/data-delete`; confirms permanent erasure, includes timestamp + refNumber, no CTA buttons (record no longer exists). Identity is captured BEFORE `findOneAndDelete` runs.
 
-All emails: co-branded (BeMore x PBSA), logo header, reference number, CTA buttons, summit card. Every send logged to `EmailLog` collection with status (sent/failed).
+All emails: co-branded (BeMore x PBSA), logo header, reference number, CTA buttons, summit card. Every send logged to `EmailLog` collection with status (sent/failed). The shared `buildEmail()` template now defence-in-depth-escapes `firstName` and `refNumber` via an internal `escapeHtml()` helper (inputs are already sanitised at the route boundary, but the escape protects against future regressions).
 
 ### Source Tracking (QR)
 URL param `?src=qr` captured in `sessionStorage`, attached to submissions as `engagementSource`. Admin dashboard shows source breakdown. QR generator at `/#/admin/qr`.
@@ -194,6 +208,8 @@ Frontend auto-detects backend via `GET /api/health`. If offline, falls back to `
 - **Input validation**: Classification validated in sanitizeUpdate, email max 254 chars
 - **Date aggregations**: All MongoDB `$dateToString` uses `Africa/Johannesburg` timezone
 - **Poll updates**: Whitelist-based field assignment (no prototype pollution)
+- **Email provider**: Resend only as of 2026-05-11 (SMTP removed). Missing `RESEND_API_KEY` short-circuits sends without blocking API responses; `/api/health` reports email status as `'ok'` or `'not configured'`
+- **Email template hardening**: `buildEmail()` HTML-escapes `firstName` + `refNumber` (defence-in-depth — inputs are already validator-escaped at the route boundary)
 
 ## Environment Variables (Backend)
 
@@ -214,14 +230,10 @@ RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX_REQUESTS=100
 CORS_ORIGIN=                       # Omit to use defaults, or comma-separated origins
 
-# Email (Resend preferred, SMTP fallback)
-RESEND_API_KEY=
-SMTP_HOST=mail.bts-app.co.za
-SMTP_PORT=587
-SMTP_USER=info@bts-app.co.za
-SMTP_PASS=<password>
-SMTP_FROM=info@bts-app.co.za
-SMTP_FROM_NAME=BeMore
+# Email (Resend — sole provider; SMTP removed 2026-05-11)
+RESEND_API_KEY=                    # REQUIRED in production/staging
+EMAIL_FROM=onboarding@resend.dev   # Verified sender. Legacy SMTP_FROM still read as fallback.
+EMAIL_FROM_NAME=BeMore             # Legacy SMTP_FROM_NAME still read as fallback.
 
 # Platform
 PLATFORM_URL=https://bemore-tawny.vercel.app
@@ -267,7 +279,7 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on PR/push to `main`, `develop`
 
 ## Key Dependencies
 
-**Backend**: express, mongoose, jsonwebtoken, bcryptjs, helmet, cors, compression, cookie-parser, express-rate-limit, express-validator, nodemailer, winston, uuid
+**Backend**: express, mongoose, jsonwebtoken, bcryptjs, helmet, cors, compression, cookie-parser, express-rate-limit, express-validator, resend, winston, uuid
 **Frontend**: vite, typescript (vanilla TS, no framework), @vercel/analytics, @vercel/speed-insights
 **Testing**: jest, cross-env, mongodb-memory-server, supertest (backend); vitest, jsdom, @testing-library/dom (frontend)
 

@@ -290,6 +290,41 @@
   text-decoration: none;
 }
 
+/* Question-group renderer (shared) — spec §6.5 */
+.question-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.qg-help {
+  font-size: var(--fs-label-sm);
+  color: var(--steel);
+  margin: 0 0 var(--sp-1);
+  line-height: var(--lh-snug);
+}
+
+.qg-err {
+  font-size: var(--fs-label-sm);
+  color: var(--red);
+  margin: var(--sp-1) 0 0;
+  line-height: var(--lh-snug);
+}
+
+.qg-err[hidden] { display: none; }
+
+.qg-file { padding: 10px 12px; }
+
+.qg-file-meta {
+  font-size: var(--fs-label-sm);
+  color: var(--steel);
+  margin-top: var(--sp-1);
+}
+
+.qg-file-meta[hidden] { display: none; }
+
+.qg-file-name { color: var(--cream); }
+.qg-file-size { color: var(--steel); }
+
 /* 600px+ — 2-column grids */
 @media (min-width: 600px) {
   .frow {

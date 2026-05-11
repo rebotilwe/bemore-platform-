@@ -31,6 +31,37 @@ const applicationSchema = new mongoose.Schema({
   },
   adminNotes: String,
   allocatedProjects: [{ type: String }],
+  // POPIA audit trail (spec §3 — Protection of Personal Information Act).
+  // Captured at submission; both flags must be true (route validator enforces).
+  // IMPORTANT: subdocument is `default: undefined` so that legacy applications
+  // submitted BEFORE 2026-05-11 (when consent persistence was added) do NOT
+  // have a fake consent block hydrated on read. Without this, Mongoose would
+  // silently inject `{tc:false, popia:false, capturedAt:<now>}` for every
+  // legacy doc on every read — corrupting the POPIA audit trail by:
+  //   1. marking historic applicants as having NOT consented (false)
+  //   2. stamping a fake `capturedAt` timestamp for the moment of read
+  // The admin lead-detail modal falls back to legacy `formData.tcAccepted` /
+  // `formData.popiaConsent` keys when `consent` is undefined.
+  consent: {
+    type: {
+      tc: { type: Boolean, required: true },
+      popia: { type: Boolean, required: true },
+      capturedAt: { type: Date, default: Date.now },
+    },
+    default: undefined,
+    _id: false,
+  },
+  attachments: {
+    type: [{
+      field: { type: String, required: true },        // 'cv' for Professional Q13
+      filename: { type: String, required: true },     // sanitised original name
+      storedAs: { type: String, required: true },     // UUID-based filename on disk
+      size: { type: Number, required: true },
+      mimeType: { type: String, required: true },
+      uploadedAt: { type: Date, default: Date.now },
+    }],
+    default: [],
+  },
   submittedAt: { type: Date, default: Date.now },
   updatedAt: Date,
 });

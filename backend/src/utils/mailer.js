@@ -1,4 +1,3 @@
-import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 import { config } from '../config/index.js';
 import logger from './logger.js';
@@ -13,110 +12,54 @@ function logEmail(to, subject, template, refNumber, status, error) {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  RESEND CONFIGURATION
-// ══════════════════════════════════════════════════════
+//  RESEND CLIENT (sole email provider — SMTP removed 2026-05-11)
+// ══════════════════════════════════════════════════════════════
 let resendClient = null;
 
 function getResendClient() {
   if (!resendClient && config.mail.resendApiKey) {
     resendClient = new Resend(config.mail.resendApiKey);
-    logger.info(`Resend client initialized`);
+    logger.info('Resend client initialized');
   }
   return resendClient;
 }
 
-// ══════════════════════════════════════════════════════
-//  SMTP CONFIGURATION (legacy fallback)
 // ══════════════════════════════════════════════════════════════
-let transporter = null;
-
-function getTransporter() {
-  if (!transporter && config.mail.host) {
-    if (!config.mail.user || !config.mail.pass) {
-      logger.warn('SMTP credentials missing — emails will not be sent. Set SMTP_USER and SMTP_PASS env vars.');
-      return null;
-    }
-    transporter = nodemailer.createTransport({
-      host: config.mail.host,
-      port: config.mail.port,
-      secure: config.mail.port === 465,
-      auth: { user: config.mail.user, pass: config.mail.pass },
-      connectionTimeout: 15000,
-      greetingTimeout: 15000,
-      socketTimeout: 30000,
-      tls: { rejectUnauthorized: false },
-    });
-    logger.info(`Mail transporter created: ${config.mail.host}:${config.mail.port} (user: ${redactEmail(config.mail.user || '')})`);
-
-    // Verify connection on startup (non-blocking)
-    transporter.verify().then(() => {
-      logger.info('SMTP connection verified — emails ready');
-    }).catch(err => {
-      logger.error(`SMTP verification failed: ${err.code || err.message}. Emails may not send.`);
-    });
-  }
-  return transporter;
-}
-
-function fromAddress() {
-  // Sanitize fromName to prevent email header injection (strip CR/LF)
-  const safeName = (config.mail.fromName || 'BeMore').replace(/[\r\n\t]/g, '');
-  return `"${safeName}" <${config.mail.from}>`;
-}
-
-// ══════════════════════════════════════════════════════════════
-//  EMAIL SEND WRAPPER (Resend with SMTP fallback)
+//  EMAIL SEND WRAPPER
 // ══════════════════════════════════════════════════════════════
 async function sendEmail({ to, subject, html, text }) {
   const resend = getResendClient();
-  const transporter = getTransporter();
-
-  // Try Resend first if API key is configured
-  if (resend) {
-    try {
-      const { data, error } = await resend.emails.send({
-        from: config.mail.fromName && config.mail.from
-          ? `${config.mail.fromName} <${config.mail.from}>`
-          : 'BeMore <onboarding@resend.dev>',
-        to: Array.isArray(to) ? to : [to],
-        subject,
-        html,
-        text,
-      });
-
-      if (error) {
-        logger.error(`Resend error: ${JSON.stringify(error)}`);
-        // Fall through to try SMTP
-      } else {
-        logger.info(`Email sent via Resend: ${data?.id}`);
-        return { success: true, provider: 'resend', id: data?.id };
-      }
-    } catch (err) {
-      logger.error(`Resend exception: ${err.message}`);
-    }
+  if (!resend) {
+    logger.error('Email send aborted — RESEND_API_KEY not configured');
+    return { success: false, error: 'RESEND_API_KEY not configured' };
   }
 
-  // Fallback to SMTP
-  if (transporter) {
-    try {
-      await transporter.sendMail({
-        from: fromAddress(),
-        to,
-        subject,
-        html,
-        text,
-      });
-      logger.info(`Email sent via SMTP`);
-      return { success: true, provider: 'smtp' };
-    } catch (err) {
-      logger.error(`SMTP send failed: ${err.message}`);
-      return { success: false, error: err.message, provider: 'smtp' };
-    }
-  }
+  // Sanitize fromName to prevent header injection (strip CR/LF/tab).
+  const safeName = (config.mail.fromName || 'BeMore').replace(/[\r\n\t]/g, '');
+  const fromAddress = config.mail.from
+    ? `${safeName} <${config.mail.from}>`
+    : `${safeName} <onboarding@resend.dev>`;
 
-  // Neither provider available
-  logger.error('No email provider configured (neither Resend nor SMTP available)');
-  return { success: false, error: 'No email provider configured' };
+  try {
+    const { data, error } = await resend.emails.send({
+      from: fromAddress,
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      html,
+      text,
+    });
+
+    if (error) {
+      logger.error(`Resend error: ${JSON.stringify(error)}`);
+      return { success: false, error: error.message || JSON.stringify(error), provider: 'resend' };
+    }
+
+    logger.info(`Email sent via Resend: ${data?.id}`);
+    return { success: true, provider: 'resend', id: data?.id };
+  } catch (err) {
+    logger.error(`Resend exception: ${err.message}`);
+    return { success: false, error: err.message, provider: 'resend' };
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -218,7 +161,76 @@ export async function sendStatusNotification(to, refNumber, firstName, newStatus
 }
 
 // ══════════════════════════════════════════════════════════════
-//  3. REMINDER (callable from admin)
+//  3. POPIA — Data Export Receipt
+// ══════════════════════════════════════════════════════════════
+// Sent after a successful `POST /api/applications/data-export`. The signed
+// download URL returned by the API expires after 5 minutes (see signedLinks.js
+// SIGNED_LINK_TTL_SECONDS), so we do NOT include it in the email. The email
+// is a POPIA audit-trail receipt confirming the export request was honoured.
+export async function sendDataExportReceipt(to, refNumber, firstName) {
+  const requestedAt = new Date().toUTCString();
+  const html = buildEmail(firstName, refNumber, 'Data Export Confirmed', `
+    We have processed your POPIA data export request for application <strong>${refNumber}</strong>.
+    A copy of your data was returned to your browser at the time of the request.
+    <br><br>
+    <strong>Request timestamp:</strong> ${requestedAt}
+    <br><br>
+    If you did not make this request, please contact us immediately at
+    <a href="mailto:info@bts-app.co.za" style="color:#c9a84c">info@bts-app.co.za</a>.
+  `, [
+    { label: 'Check My Status', url: `${PLATFORM_URL}/#/status` },
+  ]);
+
+  const result = await sendEmail({
+    to,
+    subject: `POPIA Data Export Confirmed — ${refNumber}`,
+    html,
+  });
+
+  logEmail(to, `POPIA Data Export Confirmed — ${refNumber}`, 'data_export_receipt', refNumber, result.success ? 'sent' : 'failed', result.error);
+  if (result.success) {
+    logger.info(`Data export receipt sent to ${redactEmail(to)} (${refNumber})`);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  4. POPIA — Data Delete Receipt
+// ══════════════════════════════════════════════════════════════
+// Sent after a successful `POST /api/applications/data-delete`. The record is
+// already permanently erased by the time this fires — we use the destination
+// email + firstName supplied via the request itself (the request handler must
+// capture these BEFORE deletion). No CTA buttons because the application no
+// longer exists.
+export async function sendDataDeleteReceipt(to, refNumber, firstName) {
+  const deletedAt = new Date().toUTCString();
+  const html = buildEmail(firstName, refNumber, 'Data Deletion Confirmed', `
+    We have permanently deleted all personal and project-related information
+    associated with application <strong>${refNumber}</strong> from our records,
+    in accordance with the <strong>Protection of Personal Information Act (POPIA)</strong>.
+    <br><br>
+    <strong>Deletion timestamp:</strong> ${deletedAt}
+    <br><br>
+    This action cannot be reversed. Should you wish to engage with the BeMore
+    SME Access Initiative again, you are welcome to submit a new application.
+    <br><br>
+    If you did not request this deletion, please contact us immediately at
+    <a href="mailto:info@bts-app.co.za" style="color:#c9a84c">info@bts-app.co.za</a>.
+  `);
+
+  const result = await sendEmail({
+    to,
+    subject: `POPIA Data Deletion Confirmed — ${refNumber}`,
+    html,
+  });
+
+  logEmail(to, `POPIA Data Deletion Confirmed — ${refNumber}`, 'data_delete_receipt', refNumber, result.success ? 'sent' : 'failed', result.error);
+  if (result.success) {
+    logger.info(`Data delete receipt sent to ${redactEmail(to)} (${refNumber})`);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  5. REMINDER (callable from admin)
 // ══════════════════════════════════════════════════════
 export async function sendSummitReminder(to, refNumber, firstName) {
   const html = buildEmail(firstName, refNumber, 'Reminder', `
@@ -247,7 +259,26 @@ export async function sendSummitReminder(to, refNumber, firstName) {
 // ══════════════════════════════════════════════════════════════
 //  HTML EMAIL TEMPLATE
 // ══════════════════════════════════════════════════════════════
+// Defence-in-depth: even though firstName is sanitised at the route boundary
+// (`validator.escape` on personal name fields) and refNumber is server-
+// generated as `BM-XXXXXXXX`, we still escape any non-trusted interpolation
+// inside the template. `heading`, `bodyHtml`, and button `label`/`url` are
+// supplied by THIS module only — they are constant template literals — so
+// they don't need escaping. firstName + refNumber are the user-derived
+// inputs flowing through.
+function escapeHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function buildEmail(firstName, refNumber, heading, bodyHtml, buttons = []) {
+  const safeFirstName = escapeHtml(firstName);
+  const safeRefNumber = escapeHtml(refNumber);
+
   const buttonHtml = buttons.length
     ? `<div style="text-align:center;margin:24px 0">
         ${buttons.map(b => `
@@ -276,7 +307,7 @@ function buildEmail(firstName, refNumber, heading, bodyHtml, buttons = []) {
       <!-- Body -->
       <div style="padding:32px;background:#f9f5ee">
         <h2 style="color:#0a0a0f;margin:0 0 16px;font-size:22px">${heading}</h2>
-        <p style="font-size:15px;line-height:1.6;color:#333">Dear ${firstName},</p>
+        <p style="font-size:15px;line-height:1.6;color:#333">Dear ${safeFirstName},</p>
         <div style="font-size:15px;line-height:1.7;color:#333">${bodyHtml}</div>
 
         <!-- Reference Number -->
@@ -284,7 +315,7 @@ function buildEmail(firstName, refNumber, heading, bodyHtml, buttons = []) {
           <p style="color:#8a8a9a;font-size:11px;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px">
             Your Reference Number
           </p>
-          <p style="font-size:24px;font-weight:700;color:#0a0a0f;margin:0;letter-spacing:3px;font-family:'Courier New',monospace">${refNumber}</p>
+          <p style="font-size:24px;font-weight:700;color:#0a0a0f;margin:0;letter-spacing:3px;font-family:'Courier New',monospace">${safeRefNumber}</p>
         </div>
 
         <!-- CTA Buttons -->

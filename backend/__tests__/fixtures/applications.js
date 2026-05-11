@@ -1,3 +1,7 @@
+// POPIA — every test fixture that exercises the public submit endpoint must
+// include consent.tc + consent.popia = true (validator rejects otherwise).
+const VALID_CONSENT = { tc: true, popia: true };
+
 export const validApplication = {
   userType: 'developer',
   personal: {
@@ -14,6 +18,7 @@ export const validApplication = {
     location: 'Johannesburg',
     description: 'A test project',
   },
+  consent: VALID_CONSENT,
 };
 
 export const validLandowner = {
@@ -32,6 +37,7 @@ export const validLandowner = {
     projectStage: 'Funding Stage',
     estimatedValue: 'R20m – R100m',
   },
+  consent: VALID_CONSENT,
 };
 
 export const invalidApplication = {
@@ -52,6 +58,7 @@ export const duplicateEmailApplication = {
     email: 'john.doe@example.com',
     phone: '+27729999999',
   },
+  consent: VALID_CONSENT,
 };
 
 export const adminCredentials = {

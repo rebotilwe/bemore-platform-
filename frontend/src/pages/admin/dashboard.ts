@@ -247,7 +247,13 @@ function renderRecentTable(apps: Application[]): string {
     const statusCls = (STATUS_CSS as Record<string, string>)[app.status] || '';
     const tags = (app.tags ?? []).slice(0, 2).map(t => `<span class="tag-badge">${esc(t)}</span>`).join(' ');
     const date = app.submittedAt ? formatDate(app.submittedAt) : '';
-    const value = (app.formData as Record<string, unknown>)?.estimatedValue as string || '';
+    const fd = (app.formData as Record<string, unknown>) ?? {};
+    // New keys first, legacy fallback second (spec §7.2 + FE-4 risk callouts).
+    const value = (fd.projectValue as string)
+      || (fd.investmentRange as string)
+      || (fd.avgProjectSize as string)
+      || (fd.estimatedValue as string)
+      || '';
 
     return `<tr class="clickable-row" data-id="${app._id}">
       <td><span class="nc" data-id="${app._id}">${esc(name)}</span></td>

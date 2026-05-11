@@ -3,8 +3,25 @@
 **Date:** 2026-05-11
 **Owner:** Workstream C / Platform Engineering
 **Source brief:** `New/MEMORANDUM - Onboarding Flows for All 6 Stakeholder Types.pdf` (Workstream C Team, BeMore Group, 4 May 2026)
-**Status:** Draft — pending user approval before implementation
+**Status:** **Sprint complete 2026-05-11.** All BE-1..5, FE-1..5, QA-1..4, DOC-1..3 closed. DV-1 (production Railway volume) remains pending and is the only carry-over.
 **Related:** `docs/superpowers/specs/2026-05-11-sprint-hardening-design.md`
+
+---
+
+## Sprint complete — 2026-05-11
+
+- **Closed manifest tasks:** BE-1, BE-2, BE-3, BE-4, BE-5, FE-1, FE-2, FE-3, FE-4, FE-5, QA-1, QA-2, QA-3, QA-4, DOC-1, DOC-2, DOC-3.
+- **Carry-over:** DV-1 (production Railway volume mount) — staging volume is live; production volume to be provisioned ahead of next professional CV upload campaign.
+- **QA verdict:** **APPROVED** after blocker #1 fix (Submit button silent-bail in `frontend/src/pages/public/form.ts` — wrapped `handleSubmit` body in `try/finally` releasing the in-flight lock; defensive reset on `formPage.mount()`; `getMissingItems()` helper from `step-readiness.ts` now toasts specific missing field labels).
+- **Live Resend confirmed:** 3 message ids logged in this session against the production Resend account.
+- **Test counts (final):** Backend Jest 308/308 passing; Frontend Vitest 386/386 passing; Frontend typecheck clean.
+- **Post-QA cleanup that landed under this spec (not in original manifest):**
+  1. SMTP fully removed from backend (`nodemailer` dep, mailer SMTP fallback, health-check `checkSmtp()`, `mail.host/port/user/pass` config keys, `.env.example` SMTP block). Resend is the sole provider. Canonical envs: `EMAIL_FROM`, `EMAIL_FROM_NAME`. Legacy `SMTP_FROM`/`SMTP_FROM_NAME` still read as a fallback for existing Railway deployments.
+  2. Two new POPIA receipt email templates: `sendDataExportReceipt`, `sendDataDeleteReceipt` — both fire-and-forget; both wired to the existing POPIA endpoints; identity for delete receipt captured BEFORE `findOneAndDelete`.
+  3. `pipeline-ready-land` report renamed to `pipeline-ready-developers` (semantic correctness — `PIPELINE_READY` only emits for the developer profile per §9.3). Touched: `backend/src/services/reportService.js`, `backend/src/constants/enums.js`, `backend/__tests__/reports.test.js`, `frontend/src/types/application.ts`, `frontend/src/api.ts`, `frontend/src/pages/admin/reports.ts`.
+  4. Defence-in-depth HTML escaping in `buildEmail()` for `firstName` + `refNumber` via new `escapeHtml()` helper.
+  5. Stale Professional whitelist keys removed from `backend/src/routes/applications.js`: `activityLookingNow`, `whyNotLooking`. New key `notActiveReasonOther` added (Q15 Other-branch). Universal `activityLevel` + `notActiveReason` per §14 now own the activity surface.
+- **Follow-ups deferred to next sprint:** **None.** All five cleanup items in this list completed.
 
 ---
 

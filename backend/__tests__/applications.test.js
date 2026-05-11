@@ -86,6 +86,85 @@ describe('POST /api/applications', () => {
     expect(response.body.data.refNumber).toBeDefined();
   });
 
+  // POPIA — consent (tc + popia) must be persisted on the Application
+  // document and rejected when missing or false. The frontend gates the
+  // submit button but server-side enforcement is the load-bearing check.
+  it('should persist consent.tc + consent.popia + capturedAt on submission', async () => {
+    const before = Date.now();
+    const response = await request(app)
+      .post('/api/applications')
+      .send(validApplication);
+
+    expect(response.status).toBe(201);
+    const saved = await Application.findOne({ refNumber: response.body.data.refNumber });
+    expect(saved.consent.tc).toBe(true);
+    expect(saved.consent.popia).toBe(true);
+    expect(saved.consent.capturedAt).toBeInstanceOf(Date);
+    expect(saved.consent.capturedAt.getTime()).toBeGreaterThanOrEqual(before);
+  });
+
+  it('should reject submission missing consent', async () => {
+    // Strip the consent block — should 400.
+    const { consent: _omit, ...withoutConsent } = validApplication;
+    void _omit;
+    const response = await request(app)
+      .post('/api/applications')
+      .send({ ...withoutConsent, personal: { ...withoutConsent.personal, email: 'no-consent@example.com' } });
+
+    expect(response.status).toBe(400);
+  });
+
+  it('should reject submission with consent.tc=false', async () => {
+    const response = await request(app)
+      .post('/api/applications')
+      .send({
+        ...validApplication,
+        personal: { ...validApplication.personal, email: 'declined-tc@example.com' },
+        consent: { tc: false, popia: true },
+      });
+
+    expect(response.status).toBe(400);
+  });
+
+  // Regression test for QA blocker #1 — Professional Q15 "Other" branch.
+  // The route-level formData whitelist must permit `notActiveReasonOther`
+  // (free-text reason) alongside `notActiveReason='Other'`. Before the fix,
+  // the field was silently stripped → data loss.
+  it('should persist Professional notActiveReasonOther when Q15 is "Other"', async () => {
+    const response = await request(app)
+      .post('/api/applications')
+      .send({
+        userType: 'professional',
+        personal: {
+          firstName: 'Lerato',
+          surname: 'Mokoena',
+          email: 'lerato.q15@example.co.za',
+          phone: '+27821234567',
+        },
+        formData: {
+          primaryRole: 'Architect',
+          experienceLevel: 'Senior (10+ years)',
+          provinces: ['Gauteng'],
+          workStructure: 'Independent',
+          projectTypes: ['Residential'],
+          avgProjectSize: 'Mid-scale (R5M–R20M)',
+          workStyle: 'Project-based contracts',
+          proWhatMatters: ['Project scale'],
+          activityLevel: 'Not actively looking',
+          notActiveReason: 'Other',
+          notActiveReasonOther: 'Sabbatical year',
+        },
+        consent: { tc: true, popia: true },
+        engagementSource: 'direct',
+      });
+    // (test continues below)
+
+    expect(response.status).toBe(201);
+    const saved = await Application.findOne({ refNumber: response.body.data.refNumber });
+    expect(saved.formData.notActiveReason).toBe('Other');
+    expect(saved.formData.notActiveReasonOther).toBe('Sabbatical year');
+  });
+
   it('should create landowner application', async () => {
     const response = await request(app)
       .post('/api/applications')
@@ -290,6 +369,89 @@ describe('PATCH /api/applications/:id (admin)', () => {
       .send({ status: 'reviewing' });
 
     expect(response.status).toBe(404);
+  });
+});
+
+describe('POST /api/applications — attachments[] (spec §8.2)', () => {
+  // Use the CV_DIR that the uploadService computed at import time.
+  // For these tests we just write directly to whatever CV_DIR resolved to.
+  let CV_DIR;
+  beforeAll(async () => {
+    const fs = (await import('node:fs')).default;
+    const svc = await import('../src/services/uploadService.js');
+    CV_DIR = svc.CV_DIR;
+    try {
+      fs.mkdirSync(CV_DIR, { recursive: true, mode: 0o755 });
+    } catch (err) {
+      // If we can't write to /app/uploads/cv (e.g. local dev without volume),
+      // skip these tests with a clear message.
+      // eslint-disable-next-line no-console
+      console.warn(`Cannot create ${CV_DIR}: ${err.message}. Set UPLOAD_DIR env var.`);
+    }
+  });
+
+  async function writeFakeCv(name, body = '%PDF-1.4\nfake\n') {
+    const path = (await import('node:path')).default;
+    const fsp = (await import('node:fs/promises')).default;
+    const target = path.join(CV_DIR, name);
+    await fsp.writeFile(target, body);
+    return name;
+  }
+
+  it('persists attachments[] when storedAs exists on disk', async () => {
+    const stored = await writeFakeCv('aa11aa11-aa11-4a11-aa11-aa11aa11aa11.pdf');
+    const res = await request(app)
+      .post('/api/applications')
+      .send({
+        ...validApplication,
+        personal: { ...validApplication.personal, email: 'pro1@example.com' },
+        userType: 'professional',
+        attachments: [{ field: 'cv', storedAs: stored, filename: 'alex-cv.pdf' }],
+      });
+    expect(res.status).toBe(201);
+    const saved = await Application.findOne({ refNumber: res.body.data.refNumber });
+    expect(saved.attachments).toHaveLength(1);
+    expect(saved.attachments[0].field).toBe('cv');
+    expect(saved.attachments[0].storedAs).toBe(stored);
+    expect(saved.attachments[0].filename).toBe('alex-cv.pdf');
+    expect(saved.attachments[0].mimeType).toBe('application/pdf');
+    expect(saved.attachments[0].size).toBeGreaterThan(0);
+  });
+
+  it('returns 400 ATTACHMENT_NOT_FOUND when storedAs is missing on disk', async () => {
+    const res = await request(app)
+      .post('/api/applications')
+      .send({
+        ...validApplication,
+        personal: { ...validApplication.personal, email: 'pro2@example.com' },
+        userType: 'professional',
+        attachments: [{ field: 'cv', storedAs: 'missing-file.pdf' }],
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('ATTACHMENT_NOT_FOUND');
+  });
+
+  it('returns 400 ATTACHMENT_FIELD_INVALID for unknown field', async () => {
+    const stored = await writeFakeCv('bb22bb22-bb22-4b22-bb22-bb22bb22bb22.pdf');
+    const res = await request(app)
+      .post('/api/applications')
+      .send({
+        ...validApplication,
+        personal: { ...validApplication.personal, email: 'pro3@example.com' },
+        userType: 'professional',
+        attachments: [{ field: 'passport', storedAs: stored }],
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('ATTACHMENT_FIELD_INVALID');
+  });
+
+  it('submitting without attachments still works (no regression)', async () => {
+    const res = await request(app)
+      .post('/api/applications')
+      .send({ ...validApplication, personal: { ...validApplication.personal, email: 'plain@example.com' } });
+    expect(res.status).toBe(201);
+    const saved = await Application.findOne({ refNumber: res.body.data.refNumber });
+    expect(saved.attachments).toEqual([]);
   });
 });
 

@@ -1,97 +1,150 @@
-import type { Application, ApplicationStatus, Classification } from '../types/index.ts';
+import type { Application, ApplicationStatus, Classification, ProfileCategory } from '../types/index.ts';
 import { CATEGORY_LABELS } from '../constants/categories.ts';
 import { STATUS_LABELS, STATUS_CSS } from '../constants/status.ts';
 import { APPLICATION_STATUSES } from '../constants/status.ts';
+import { LEGACY_TAGS, TAG_LABELS } from '../constants/tags.ts';
+import { getFieldLabel } from '../constants/profile-field-labels.ts';
 import { formatDate, esc } from '../utils/format.ts';
 import { api } from '../api.ts';
 import { toast } from './toast.ts';
 
-function row(key: string, value: string | undefined | null): string {
-  if (!value) return '';
-  return `<div class="detail-row"><div class="detail-key">${esc(key)}</div><div class="detail-val">${esc(value)}</div></div>`;
+// ── Profile question configs (FE-2). Used here to derive section
+// membership for the lead detail formData renderer.
+import developerQuestions from '../constants/profiles/developer.questions.ts';
+import landownerQuestions from '../constants/profiles/landowner.questions.ts';
+import investorQuestions from '../constants/profiles/investor.questions.ts';
+import studentQuestions from '../constants/profiles/student.questions.ts';
+import professionalQuestions from '../constants/profiles/professional.questions.ts';
+import aspiringQuestions from '../constants/profiles/aspiring.questions.ts';
+import type { ProfileQuestions } from '../types/question.ts';
+
+const PROFILE_CONFIGS: Record<ProfileCategory, ProfileQuestions> = {
+  developer: developerQuestions,
+  landowner: landownerQuestions,
+  investor: investorQuestions,
+  student: studentQuestions,
+  professional: professionalQuestions,
+  aspiring: aspiringQuestions,
+};
+
+const SECTION_TITLES = {
+  position: 'Position & Activity',
+  constraints: 'Constraints & Alignment',
+  feedback: 'Feedback',
+  legacy: 'Additional Information',
+} as const;
+
+/** Activity tag → palette token. spec §6.6. */
+const ACTIVITY_BADGE_VARIANT: Record<string, { label: string; cls: string }> = {
+  ACTIVELY_LOOKING: { label: 'Actively Looking', cls: 'activity-badge activity-gold' },
+  OPEN_TO_OPPORTUNITY: { label: 'Open to Opportunity', cls: 'activity-badge activity-neutral' },
+  LOW_INTENT: { label: 'Low Intent', cls: 'activity-badge activity-grey' },
+};
+
+function fmtValue(v: unknown): string {
+  if (v == null || v === '') return '';
+  if (Array.isArray(v)) return v.filter((x) => x != null && x !== '').map((x) => String(x)).join(' · ');
+  if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+  return String(v);
 }
 
-function fullRow(key: string, value: string | undefined | null): string {
-  if (!value) return '';
-  return `<div class="detail-row full"><div class="detail-key">${esc(key)}</div><div class="detail-val">${esc(value)}</div></div>`;
-}
-
-function listRow(key: string, values: string | string[] | undefined): string {
-  const arr = Array.isArray(values) ? values : values ? [values] : [];
-  if (!arr.length) return '';
-  const chips = arr.map(v => `<span class="tag-badge">${esc(v)}</span>`).join(' ');
-  return `<div class="detail-row"><div class="detail-key">${esc(key)}</div><div class="detail-val">${chips}</div></div>`;
+function detailRow(label: string, value: unknown): string {
+  const text = fmtValue(value);
+  if (!text) return '';
+  return `<div class="detail-row"><div class="detail-key">${esc(label)}</div><div class="detail-val">${esc(text)}</div></div>`;
 }
 
 function sectionLabel(label: string): string {
-  return `<div class="detail-section-label">${label}</div>`;
+  return `<div class="detail-section-label">${esc(label)}</div>`;
 }
 
-function renderProfileFields(type: string, fd: Record<string, unknown>): string {
-  let html = '';
-  if (type === 'developer') {
-    html += sectionLabel('Developer Profile');
-    html += row('Years Experience', fd.yearsExperience as string);
-    html += listRow('Development Types', fd.developmentTypes as string[]);
-  } else if (type === 'landowner') {
-    html += sectionLabel('Land Profile');
-    html += row('Land Size', fd.landSize as string);
-    html += row('Zoning Status', fd.zoningStatus as string);
-    html += row('Serviced', fd.isServiced as string);
-    html += row('Ownership Structure', fd.ownershipStructure as string);
-    html += sectionLabel('Development Appetite');
-    html += row('Development Appetite', fd.developmentAppetite as string);
-    html += row('Timeline', fd.timeline as string);
-    html += row('Existing Bond', fd.existingBond as string);
-    html += sectionLabel('Partnership Preferences');
-    html += listRow('Seeking', fd.partnershipOutcome as string[]);
-    html += row('Recent Valuation', fd.recentValuation as string);
-  } else if (type === 'investor') {
-    html += sectionLabel('Investment Profile');
-    html += listRow('Sectors of Interest', fd.investmentFocus as string[]);
-    html += row('Investment Amount', fd.investmentAmount as string);
-    html += row('Investment Horizon', fd.investmentHorizon as string);
-    html += listRow('Return Structure', fd.returnStructure as string[]);
-    html += row('Prior Experience', fd.priorInvestmentExperience as string);
-    html += sectionLabel('Investment Intentions');
-    html += listRow('Looking For', fd.investmentIntentions as string[]);
-    html += row('Decision Timeline', fd.decisionTimeline as string);
-    html += fullRow('Additional Notes', fd.additionalNotes as string);
-  } else if (type === 'student') {
-    html += sectionLabel('Portfolio Profile');
-    html += row('Total Bed Count', fd.totalBedCount as string);
-    html += row('Average Occupancy', fd.averageOccupancy as string);
-    html += listRow('Operating Provinces', fd.operatingProvinces as string[]);
-    html += row('Primary City', fd.primaryCity as string);
-    html += row('Asset Type', fd.assetType as string);
-    html += row('Asset Ownership', fd.assetOwnership as string);
-    html += row('NSFAS Accreditation', fd.nsfasAccreditation as string);
-    html += row('University Partnership', fd.universityPartnership as string);
-    html += sectionLabel('Support Needs');
-    html += listRow('Support Needed', fd.supportNeeds as string[]);
-    html += row('Growth Intention', fd.growthIntention as string);
-    html += row('Previous Funding', fd.previousFunding as string);
-    html += fullRow('Portfolio Description', fd.portfolioDescription as string);
-  } else if (type === 'professional') {
-    html += sectionLabel('Professional Profile');
-    html += row('Profession / Discipline', fd.profession as string);
-    html += row('Registration Body', fd.registrationBody as string);
-    html += row('Registration Number', fd.registrationNumber as string);
-    html += row('Years of Experience', fd.yearsExperience as string);
-    html += row('Typical Project Value', fd.typicalProjectValue as string);
-    html += listRow('Active Provinces', fd.activeProvinces as string[]);
-    html += sectionLabel('Association Interest');
-    html += row('Associate Database', fd.associateDatabase as string);
-    html += row('Current Capacity', fd.currentCapacity as string);
-    html += listRow('Preferred Work Types', fd.preferredWorkTypes as string[]);
-    html += fullRow('Motivation', fd.motivation as string);
-    html += fullRow('Additional Notes', fd.additionalNotes as string);
-  } else if (type === 'aspiring') {
-    html += sectionLabel('Aspiring Developer');
-    html += listRow('Development Interests', fd.developmentInterests as string[]);
-    html += row('Relevant Experience', fd.relevantExperience as string);
+/**
+ * Build the section → field-id mapping for a profile from its question
+ * config. Step 2 → Position & Activity, Step 3 → Constraints & Alignment,
+ * Step 5 → Feedback. Step 4 (contact) is part of `personal`, not formData.
+ * Step 1 fields (if any in formData) are also surfaced under Position.
+ */
+function getSectionKeys(profile: ProfileCategory): {
+  position: string[];
+  constraints: string[];
+  feedback: string[];
+  known: Set<string>;
+} {
+  const cfg = PROFILE_CONFIGS[profile];
+  const collect = (qs: { id: string }[]): string[] => qs.map((q) => q.id);
+  const position = [...collect(cfg.step1 ?? []), ...collect(cfg.step2 ?? [])];
+  const constraints = collect(cfg.step3 ?? []);
+  // Feedback section: universal step-5 keys, but skip the `cv` file id which
+  // is rendered separately via the attachments block.
+  const feedback = collect(cfg.step5 ?? []).filter((id) => id !== 'cv');
+  const known = new Set<string>([...position, ...constraints, ...feedback, 'cv']);
+  return { position, constraints, feedback, known };
+}
+
+function renderSection(
+  title: string,
+  keys: string[],
+  fd: Record<string, unknown>,
+  profile: ProfileCategory,
+): string {
+  const rows = keys
+    .map((k) => detailRow(getFieldLabel(profile, k), fd[k]))
+    .filter(Boolean)
+    .join('');
+  if (!rows) return '';
+  return `${sectionLabel(title)}<div class="detail-grid">${rows}</div>`;
+}
+
+/** Render any keys that aren't part of the profile's known schema. */
+function renderLegacyExtras(
+  fd: Record<string, unknown>,
+  known: Set<string>,
+  profile: ProfileCategory,
+): string {
+  const SKIP_KEYS = new Set(['tcAccepted', 'popiaConsent']);
+  const rows = Object.keys(fd)
+    .filter((k) => !known.has(k) && !SKIP_KEYS.has(k))
+    .map((k) => detailRow(getFieldLabel(profile, k), fd[k]))
+    .filter(Boolean)
+    .join('');
+  if (!rows) return '';
+  return `${sectionLabel(SECTION_TITLES.legacy)}<div class="detail-grid">${rows}</div>`;
+}
+
+function renderActivityBadge(tags: readonly string[]): string {
+  for (const t of tags) {
+    const variant = ACTIVITY_BADGE_VARIANT[t];
+    if (variant) {
+      return `<div class="${variant.cls}" data-activity-tag="${esc(t)}">${esc(variant.label)}</div>`;
+    }
   }
-  return html;
+  return '';
+}
+
+function renderAttachments(app: Application): string {
+  const atts = app.attachments ?? [];
+  if (app.userType !== 'professional' || !atts.length) return '';
+  const items = atts
+    .filter((a) => a && a.field === 'cv' && a.storedAs)
+    .map((a) => {
+      const sizeKb = a.size ? ` · ${(a.size / 1024).toFixed(0)} KB` : '';
+      return `
+        <div class="attachment-row">
+          <div class="attachment-meta">
+            <span class="attachment-filename">${esc(a.filename)}</span>
+            <span class="attachment-size">${esc(sizeKb.replace(/^ · /, ''))}</span>
+          </div>
+          <button class="btn-action attachment-download"
+                  data-ref="${esc(app.refNumber)}"
+                  data-stored="${esc(a.storedAs)}"
+                  data-filename="${esc(a.filename)}">
+            Download CV
+          </button>
+        </div>`;
+    })
+    .join('');
+  if (!items) return '';
+  return `${sectionLabel('Attachments')}<div class="detail-attachments">${items}</div>`;
 }
 
 export function renderAppDetail(app: Application): string {
@@ -99,17 +152,30 @@ export function renderAppDetail(app: Application): string {
   const typeLbl = (CATEGORY_LABELS as Record<string, string>)[app.userType] || app.userType;
   const statusLbl = (STATUS_LABELS as Record<string, string>)[app.status] || app.status;
   const statusCls = (STATUS_CSS as Record<string, string>)[app.status] || '';
-  const tags = (app.tags ?? []).map(t => `<span class="tag-badge">${esc(t)}</span>`).join(' ');
-  const funders = (app.dealRoom?.funders ?? []).map(f => `<span class="tag-badge">${esc(f)}</span>`).join(' ');
+
+  // Tag chips — strip legacy tags first (spec §9.5). Never mutate the source array.
+  const visibleTagList = (app.tags ?? []).filter((t) => !LEGACY_TAGS.has(t));
+  const tags = visibleTagList
+    .map((t) => `<span class="tag-badge">${esc(TAG_LABELS[t] ?? t)}</span>`)
+    .join(' ');
+  const funders = (app.dealRoom?.funders ?? [])
+    .map((f) => `<span class="tag-badge">${esc(f)}</span>`)
+    .join(' ');
+
   const fd = (app.formData as Record<string, unknown>) ?? {};
+  const profile = app.userType as ProfileCategory;
+  const sections = getSectionKeys(profile);
 
   // Engagement source
   const sourceTag = app.engagementSource && app.engagementSource !== 'direct'
     ? `<span class="tag-badge tag-source">${esc(app.engagementSource.toUpperCase())}</span>`
     : '';
 
+  // Activity badge — only the first matching activity tag drives the badge.
+  const activityBadgeHtml = renderActivityBadge(visibleTagList);
+
   // Classification options
-  const classificationOptions = ['unclassified', 'hot', 'warm', 'cold'].map(c => {
+  const classificationOptions = ['unclassified', 'hot', 'warm', 'cold'].map((c) => {
     const sel = (app.classification || 'unclassified') === c ? ' selected' : '';
     return `<option value="${c}"${sel}>${c.charAt(0).toUpperCase() + c.slice(1)}</option>`;
   }).join('');
@@ -118,11 +184,22 @@ export function renderAppDetail(app: Application): string {
   const followUp = app.followUp ?? { required: false };
 
   // Status options
-  const statusOptions = APPLICATION_STATUSES.map(s => {
+  const statusOptions = APPLICATION_STATUSES.map((s) => {
     const sel = app.status === s ? ' selected' : '';
     const lbl = (STATUS_LABELS as Record<string, string>)[s] || s;
     return `<option value="${s}"${sel}>${lbl}</option>`;
   }).join('');
+
+  // Section HTML
+  const positionHtml = renderSection(SECTION_TITLES.position, sections.position, fd, profile);
+  const constraintsHtml = renderSection(SECTION_TITLES.constraints, sections.constraints, fd, profile);
+  const feedbackHtml = renderSection(SECTION_TITLES.feedback, sections.feedback, fd, profile);
+  const legacyHtml = renderLegacyExtras(fd, sections.known, profile);
+
+  const formDataEmpty = !positionHtml && !constraintsHtml && !feedbackHtml && !legacyHtml;
+  const emptyStateHtml = formDataEmpty
+    ? '<p class="detail-empty">No additional information captured.</p>'
+    : '';
 
   return `
     <div class="modal-card" data-app-id="${app._id}">
@@ -134,6 +211,7 @@ export function renderAppDetail(app: Application): string {
             <span class="tag ${statusCls}" id="modal-status-badge">${statusLbl}</span>
             ${sourceTag}
           </div>
+          ${activityBadgeHtml}
         </div>
         <button class="modal-close" id="modal-close-btn" aria-label="Close">&times;</button>
       </div>
@@ -179,61 +257,94 @@ export function renderAppDetail(app: Application): string {
 
         ${sectionLabel('Personal Details')}
         <div class="detail-grid">
-          ${row('First Name', app.personal?.firstName)}
-          ${row('Surname', app.personal?.surname)}
-          ${row('Email', app.personal?.email)}
-          ${row('Phone', app.personal?.phone)}
-          ${row('Company', app.personal?.companyName)}
-          ${row('Profile Type', typeLbl)}
+          ${detailRow('First Name', app.personal?.firstName)}
+          ${detailRow('Surname', app.personal?.surname)}
+          ${detailRow('Email', app.personal?.email)}
+          ${detailRow('Phone', app.personal?.phone)}
+          ${detailRow('Company', app.personal?.companyName)}
+          ${detailRow('Profile Type', typeLbl)}
         </div>
 
-        ${['developer', 'aspiring'].includes(app.userType) ? `
-        ${sectionLabel('Readiness Assessment')}
-        <div class="detail-grid">
-          ${row('Land Status', fd.landStatus as string)}
-          ${row('Project Stage', fd.projectStage as string)}
-          ${row('Estimated Value', fd.estimatedValue as string)}
-        </div>
-        ${sectionLabel('Funding Requirements')}
-        <div class="detail-grid">
-          ${listRow('Seeking', Array.isArray(fd.seeking) ? fd.seeking as string[] : fd.seeking ? [fd.seeking as string] : undefined)}
-          ${row('Previous Funding', fd.previousFunding as string)}
-        </div>` : ''}
+        ${positionHtml}
+        ${constraintsHtml}
+        ${feedbackHtml}
+        ${legacyHtml}
+        ${emptyStateHtml}
 
-        ${renderProfileFields(app.userType, fd)}
+        ${renderAttachments(app)}
 
         ${app.userType === 'professional' ? `
         ${sectionLabel('Allocated Projects')}
         ${(app as Application & { allocatedProjects?: string[] }).allocatedProjects?.length
-          ? `<div class="detail-tags-wrap">${((app as Application & { allocatedProjects?: string[] }).allocatedProjects ?? []).map(p => `<span class="tag-badge">${esc(p)}</span>`).join(' ')}</div>`
+          ? `<div class="detail-tags-wrap">${((app as Application & { allocatedProjects?: string[] }).allocatedProjects ?? []).map((p) => `<span class="tag-badge">${esc(p)}</span>`).join(' ')}</div>`
           : '<p class="detail-empty">No projects allocated yet.</p>'}` : ''}
 
-        ${['developer', 'aspiring'].includes(app.userType) ? `
-        ${sectionLabel('Project Narrative')}
-        ${fullRow('Project Description', fd.projectDescription as string)}` : ''}
         ${sectionLabel('Consent')}
-        <div class="detail-grid">
-          ${row('T&Cs Accepted', fd.tcAccepted ? 'Yes' : 'No')}
-          ${row('POPIA Consent', fd.popiaConsent ? 'Yes' : 'No')}
-        </div>
+        ${(() => {
+          // Read from the persisted consent block (POPIA audit trail). Falls
+          // back to the legacy `fd.tcAccepted` / `fd.popiaConsent` keys for
+          // applications submitted before consent was persisted on the
+          // Application document (2026-05-11).
+          const consent = (app as Application & { consent?: { tc?: boolean; popia?: boolean; capturedAt?: string } }).consent;
+          const tcOk = consent ? consent.tc === true : Boolean(fd.tcAccepted);
+          const popiaOk = consent ? consent.popia === true : Boolean(fd.popiaConsent);
+          const capturedAt = consent?.capturedAt ? formatDate(consent.capturedAt) : null;
+          return `<div class="detail-grid">
+            ${detailRow('T&Cs Accepted', tcOk ? 'Yes' : 'No')}
+            ${detailRow('POPIA Consent', popiaOk ? 'Yes' : 'No')}
+            ${capturedAt ? detailRow('Consent Captured', capturedAt) : ''}
+          </div>`;
+        })()}
 
         ${sectionLabel('Intelligence Tags')}
         ${tags ? `<div class="detail-tags-wrap">${tags}</div>` : '<p class="detail-empty">No tags assigned.</p>'}
 
         ${sectionLabel('Application Timeline')}
         <div class="detail-grid">
-          ${row('Submitted', app.submittedAt ? formatDate(app.submittedAt) : '')}
-          ${row('Last Updated', app.updatedAt ? formatDate(app.updatedAt) : 'N/A')}
+          ${detailRow('Submitted', app.submittedAt ? formatDate(app.submittedAt) : '')}
+          ${detailRow('Last Updated', app.updatedAt ? formatDate(app.updatedAt) : 'N/A')}
         </div>
 
         ${sectionLabel('Deal Room')}
         <div class="detail-grid">
-          ${row('Deal Room Entry', app.dealRoom?.dealRoomEntry ? 'Yes — Granted' : 'No')}
+          ${detailRow('Deal Room Entry', app.dealRoom?.dealRoomEntry ? 'Yes — Granted' : 'No')}
         </div>
         ${funders ? `<div class="detail-row"><div class="detail-key">Assigned Funders</div><div class="detail-val">${funders}</div></div>` : ''}
 
       </div>
     </div>`;
+}
+
+/**
+ * Triggers a CV download via authenticated fetch — avoids the limitations
+ * of `<a download>` (which can't carry the Bearer token through Vercel
+ * proxy rewrites). Uses a Blob URL so the browser saves the file natively.
+ */
+async function downloadAttachment(refNumber: string, storedAs: string, filename: string): Promise<void> {
+  const token = sessionStorage.getItem('bm_token');
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  try {
+    const res = await fetch(
+      `/api/applications/${encodeURIComponent(refNumber)}/attachment/${encodeURIComponent(storedAs)}`,
+      { headers, credentials: 'include' },
+    );
+    if (!res.ok) {
+      toast(`Failed to download CV (${res.status})`);
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'cv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch {
+    toast('Network error — could not download CV');
+  }
 }
 
 export function openModal(html: string, app?: Application, onUpdate?: (updated: Application) => void): void {
@@ -258,6 +369,22 @@ export function openModal(html: string, app?: Application, onUpdate?: (updated: 
     if (e.key === 'Escape') close();
   };
   document.addEventListener('keydown', escHandler);
+
+  // ── Attachment downloads ──
+  overlay.querySelectorAll<HTMLButtonElement>('.attachment-download').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const ref = btn.dataset.ref || '';
+      const stored = btn.dataset.stored || '';
+      const filename = btn.dataset.filename || 'cv';
+      if (!ref || !stored) return;
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = 'Downloading...';
+      await downloadAttachment(ref, stored, filename);
+      btn.disabled = false;
+      btn.textContent = original;
+    });
+  });
 
   // ── Status change ──
   if (app) {

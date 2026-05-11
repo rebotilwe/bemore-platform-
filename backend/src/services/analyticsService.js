@@ -207,16 +207,21 @@ export async function getDemographics() {
       { $group: { _id: '$userType', count: { $sum: 1 }, avgTags: { $avg: { $size: '$tags' } } } },
       { $sort: { count: -1 } },
     ]),
+    // Spec 2026-05-11 §12 risk: legacy field names (estimatedValue, previousFunding,
+    // landStatus) produce empty buckets after the BE-5 cutover. Fall back to the
+    // new spec §7.2 keys (projectValue, fundingPosition, landOutcome) so legacy +
+    // new docs both aggregate. Old docs missing the new key fall through to the
+    // legacy key; new docs missing the legacy key use the new key.
     Application.aggregate([
-      { $group: { _id: '$formData.estimatedValue', count: { $sum: 1 } } },
+      { $group: { _id: { $ifNull: ['$formData.projectValue', '$formData.estimatedValue'] }, count: { $sum: 1 } } },
       { $sort: { count: -1 } },
     ]),
     Application.aggregate([
-      { $group: { _id: '$formData.previousFunding', count: { $sum: 1 } } },
+      { $group: { _id: { $ifNull: ['$formData.fundingPosition', '$formData.previousFunding'] }, count: { $sum: 1 } } },
       { $sort: { count: -1 } },
     ]),
     Application.aggregate([
-      { $group: { _id: '$formData.landStatus', count: { $sum: 1 } } },
+      { $group: { _id: { $ifNull: ['$formData.landOutcome', '$formData.landStatus'] }, count: { $sum: 1 } } },
       { $sort: { count: -1 } },
     ]),
   ]);

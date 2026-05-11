@@ -4,6 +4,7 @@ import { store } from '../../store.ts';
 import { toast } from '../../components/toast.ts';
 import { CATEGORY_LABELS } from '../../constants/categories.ts';
 import { STATUS_LABELS, STATUS_CSS } from '../../constants/status.ts';
+import { LEGACY_TAGS, TAG_LABELS } from '../../constants/tags.ts';
 import { formatDate, esc } from '../../utils/format.ts';
 import { exportCsv } from '../../utils/csv.ts';
 import { mountAdminLayout } from './layout.ts';
@@ -27,9 +28,63 @@ const FILTER_CATEGORIES: { value: string; label: string }[] = [
   { value: 'aspiring', label: 'Aspiring' },
 ];
 
+/** Always-visible composite / universal tag chips. Spec §6.7. */
+const UNIVERSAL_CHIPS: { tag: string; label: string }[] = [
+  { tag: 'ACTIVELY_LOOKING', label: 'Actively looking' },
+  { tag: 'OPEN_TO_OPPORTUNITY', label: 'Open' },
+  { tag: 'LOW_INTENT', label: 'Low intent' },
+  { tag: 'PIPELINE_READY', label: 'Pipeline ready' },
+  { tag: 'HOT_INVESTOR', label: 'Hot investor' },
+  { tag: 'INSTITUTIONAL_OPERATOR', label: 'Institutional operator' },
+];
+
+/** Profile-conditional chips. Spec §6.7.1 — verbatim. */
+const PROFILE_CHIPS: Record<string, { tag: string; label: string }[]> = {
+  developer: [
+    { tag: 'SHOVEL_READY', label: 'Shovel ready' },
+    { tag: 'FUNDING_GAP', label: 'Funding gap' },
+    { tag: 'HIGH_VALUE', label: 'High value' },
+    { tag: 'STUDENT_FOCUS', label: 'Student focus' },
+  ],
+  landowner: [
+    { tag: 'LAND_SELLER', label: 'Sellers' },
+    { tag: 'LAND_DEVELOPER', label: 'Developers' },
+    { tag: 'LAND_JV', label: 'JV' },
+    { tag: 'LAND_INCOME', label: 'Income' },
+    { tag: 'WORK_STARTED', label: 'Work started' },
+  ],
+  investor: [
+    { tag: 'LARGE_INVESTOR', label: 'Large' },
+    { tag: 'EQUITY_INVESTOR', label: 'Equity' },
+    { tag: 'DEBT_FUNDER', label: 'Debt' },
+    { tag: 'JV_PARTNER', label: 'JV' },
+    { tag: 'ACTIVE_DEPLOYER', label: 'Active deployer' },
+  ],
+  student: [
+    { tag: 'LARGE_OPERATOR', label: 'Large' },
+    { tag: 'MID_OPERATOR', label: 'Mid-size' },
+    { tag: 'HIGH_OCCUPANCY', label: 'High occupancy' },
+    { tag: 'GROWTH_FOCUS', label: 'Growth focus' },
+  ],
+  professional: [
+    { tag: 'SENIOR_PRO', label: 'Senior' },
+    { tag: 'MULTI_PROVINCE', label: 'Multi-province' },
+    { tag: 'STUDENT_ACC_EXP', label: 'Student acc exp' },
+    { tag: 'MAJOR_PROJECTS', label: 'Major projects' },
+    { tag: 'INDEPENDENT', label: 'Independent' },
+  ],
+  aspiring: [
+    { tag: 'HAS_LAND', label: 'Has land' },
+    { tag: 'READY_NOW', label: 'Ready now' },
+    { tag: 'NEEDS_FUNDING', label: 'Needs funding' },
+    { tag: 'NEEDS_KNOWLEDGE', label: 'Needs knowledge' },
+  ],
+};
+
 let currentApps: Application[] = [];
 let totalCount = 0;
 let selectedIds = new Set<string>();
+let activeChipTags = new Set<string>();
 let sortField = 'submittedAt';
 let sortDir: 'asc' | 'desc' = 'desc';
 let searchTimer: ReturnType<typeof setTimeout>;
@@ -63,7 +118,50 @@ function renderFilterBar(): string {
     </div>
     <select id="leads-status" class="tbl-select">${statusOptions}</select>
     <div class="ft-tabs">${tabs}</div>
+  </div>
+  ${renderChipBar()}`;
+}
+
+/**
+ * Render the tag-chip filter bar. Universal/composite chips are always
+ * visible; profile-conditional chips appear only when a profile filter
+ * is active (spec §6.7 + §6.7.1). Active chips render in gold, inactive
+ * neutral. Multiple chips combine with AND semantics in `chipFilter()`.
+ * Legacy tags (spec §9.5) are NEVER rendered.
+ */
+function renderChipBar(): string {
+  const filters = store.get('filters');
+  const profile = filters.userType;
+  const profileChips = (profile && profile !== 'all' && PROFILE_CHIPS[profile]) || [];
+
+  const renderChip = (c: { tag: string; label: string }): string => {
+    if (LEGACY_TAGS.has(c.tag)) return '';
+    const active = activeChipTags.has(c.tag) ? ' active' : '';
+    return `<button class="chip-filter${active}" data-chip="${esc(c.tag)}" type="button">${esc(c.label)}</button>`;
+  };
+
+  const universalHtml = UNIVERSAL_CHIPS.map(renderChip).join('');
+  const profileHtml = profileChips.map(renderChip).join('');
+  const sep = profileHtml ? '<span class="chip-sep" aria-hidden="true">·</span>' : '';
+
+  return `
+  <div class="chip-bar" id="leads-chip-bar" role="group" aria-label="Tag filters">
+    ${universalHtml}
+    ${sep}
+    ${profileHtml}
   </div>`;
+}
+
+/** Apply active chip-filter set to the loaded apps with AND semantics. */
+function applyChipFilter(apps: Application[]): Application[] {
+  if (!activeChipTags.size) return apps;
+  return apps.filter((a) => {
+    const tagSet = new Set(a.tags ?? []);
+    for (const t of activeChipTags) {
+      if (!tagSet.has(t)) return false;
+    }
+    return true;
+  });
 }
 
 function renderResultCount(): string {
@@ -87,22 +185,45 @@ function renderBulkBar(): string {
 }
 
 function getQuickInfo(userType: string, fd: Record<string, unknown>): string {
+  // New keys first, legacy fallbacks second so old applications still display.
   switch (userType) {
     case 'developer':
-      return (fd.estimatedValue as string) || '';
-    case 'aspiring':
-      return (fd.developmentInterests as string[])?.slice(0, 2).join(' · ') || 'Aspiring Developer';
+      return (fd.projectValue as string) || (fd.estimatedValue as string) || '';
+    case 'aspiring': {
+      const newType = (fd.aspiringDevType as string) || '';
+      const legacy = (fd.developmentInterests as string[])?.slice(0, 2).join(' · ');
+      return newType || legacy || 'Aspiring Developer';
+    }
     case 'investor':
-      return (fd.investmentAmount as string) || '';
+      return (fd.investmentRange as string) || (fd.investmentAmount as string) || '';
     case 'landowner':
-      return [fd.landSize as string, fd.zoningStatus as string].filter(Boolean).join(' · ');
+      return [
+        (fd.landSize as string) || '',
+        (fd.landOutcome as string) || (fd.zoningStatus as string) || '',
+      ].filter(Boolean).join(' · ');
     case 'student':
-      return [fd.totalBedCount as string, fd.averageOccupancy as string].filter(Boolean).join(' · ');
+      return [
+        (fd.portfolioSize as string) || (fd.totalBedCount as string) || '',
+        (fd.occupancyLevel as string) || (fd.averageOccupancy as string) || '',
+      ].filter(Boolean).join(' · ');
     case 'professional':
-      return [fd.profession as string, fd.typicalProjectValue as string].filter(Boolean).join(' · ');
+      return [
+        (fd.primaryRole as string) || (fd.profession as string) || '',
+        (fd.avgProjectSize as string) || (fd.typicalProjectValue as string) || '',
+      ].filter(Boolean).join(' · ');
     default:
       return '';
   }
+}
+
+/** Strip legacy tags before rendering chip badges (spec §9.5). */
+function visibleTagBadges(tags: readonly string[] | undefined, limit = 2): string {
+  if (!tags) return '';
+  return tags
+    .filter((t) => !LEGACY_TAGS.has(t))
+    .slice(0, limit)
+    .map((t) => `<span class="tag-badge">${esc(TAG_LABELS[t] ?? t)}</span>`)
+    .join(' ');
 }
 
 function renderCards(apps: Application[]): string {
@@ -117,7 +238,7 @@ function renderCards(apps: Application[]): string {
     const email = app.personal?.email ?? '';
     const company = app.personal?.companyName ?? '';
     const date = app.submittedAt ? formatDate(app.submittedAt) : '';
-    const tags = (app.tags ?? []).slice(0, 2).map(t => `<span class="tag-badge">${esc(t)}</span>`).join('');
+    const tags = visibleTagBadges(app.tags, 2);
     const fd = (app.formData as Record<string, unknown>) ?? {};
     const quickInfo = getQuickInfo(app.userType, fd);
     const isShortlisted = app.status === 'shortlisted';
@@ -166,8 +287,16 @@ function renderTable(apps: Application[]): string {
     const email = app.personal?.email ?? '';
     const company = app.personal?.companyName ?? '';
     const date = app.submittedAt ? formatDate(app.submittedAt) : '';
-    const tags = (app.tags ?? []).slice(0, 2).map(t => `<span class="tag-badge">${esc(t)}</span>`).join(' ');
-    const value = (app.formData as Record<string, unknown>)?.estimatedValue as string || '';
+    const tags = visibleTagBadges(app.tags, 2);
+    const fd = (app.formData as Record<string, unknown>) ?? {};
+    // New keys take precedence; fall back to legacy keys for old applications.
+    const value = (fd.projectValue as string)
+      || (fd.investmentRange as string)
+      || (fd.avgProjectSize as string)
+      || (fd.estimatedValue as string)
+      || (fd.investmentAmount as string)
+      || (fd.typicalProjectValue as string)
+      || '';
     const isShortlisted = app.status === 'shortlisted';
     const btnLabel = isShortlisted ? 'Remove' : 'Shortlist';
     const btnCls = isShortlisted ? 'btn-action active' : 'btn-action';
@@ -237,7 +366,8 @@ async function loadLeads(): Promise<void> {
     return;
   }
 
-  currentApps = res.data;
+  const filtered = applyChipFilter(res.data);
+  currentApps = filtered;
   totalCount = res.pagination?.total ?? res.data.length;
 
   selectedIds.clear();
@@ -246,6 +376,34 @@ async function loadLeads(): Promise<void> {
   bindDetailModal();
   bindBulkActions();
   bindSortHeaders();
+}
+
+/** Re-render the chip bar after a profile filter or chip toggle. */
+function refreshChipBar(): void {
+  const bar = document.getElementById('leads-chip-bar');
+  if (!bar) return;
+  const wrap = document.createElement('div');
+  wrap.innerHTML = renderChipBar();
+  const fresh = wrap.firstElementChild;
+  if (fresh) bar.replaceWith(fresh);
+  bindChipFilter();
+}
+
+function bindChipFilter(): void {
+  document.querySelectorAll<HTMLButtonElement>('.chip-filter').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const tag = btn.dataset.chip!;
+      if (!tag || LEGACY_TAGS.has(tag)) return;
+      if (activeChipTags.has(tag)) {
+        activeChipTags.delete(tag);
+        btn.classList.remove('active');
+      } else {
+        activeChipTags.add(tag);
+        btn.classList.add('active');
+      }
+      loadLeads();
+    });
+  });
 }
 
 function bindSortHeaders(): void {
@@ -422,9 +580,20 @@ export const leadsPage: Page = {
         store.set('filters', filters);
         document.querySelectorAll('.ft').forEach(b => b.classList.remove('active'));
         target.classList.add('active');
+
+        // Drop any active profile-conditional chips that no longer apply.
+        const validTags = new Set<string>(UNIVERSAL_CHIPS.map((c) => c.tag));
+        const profileChipList = (type !== 'all' && PROFILE_CHIPS[type]) || [];
+        profileChipList.forEach((c) => validTags.add(c.tag));
+        for (const t of [...activeChipTags]) {
+          if (!validTags.has(t)) activeChipTags.delete(t);
+        }
+        refreshChipBar();
         loadLeads();
       });
     });
+
+    bindChipFilter();
 
     document.getElementById('leads-status')?.addEventListener('change', (e) => {
       const val = (e.target as HTMLSelectElement).value;

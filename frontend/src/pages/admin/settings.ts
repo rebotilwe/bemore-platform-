@@ -11,27 +11,78 @@ interface SettingDef {
   defaultValue: string | boolean;
 }
 
-const SETTING_DEFS: SettingDef[] = [];
+// Setting definitions — backed by the `SiteSettings` collection on the
+// server. Keys must be in the backend's ALLOWED_SETTINGS whitelist
+// (`backend/src/routes/settings.js`) or the PUT will 400.
+const SETTING_DEFS: SettingDef[] = [
+  {
+    key: 'registrationOpen',
+    label: 'Registration Open',
+    description: 'When disabled, the public registration form is hidden and the gateway shows a "registrations closed" notice.',
+    type: 'boolean',
+    defaultValue: true,
+  },
+  {
+    key: 'maintenanceMode',
+    label: 'Maintenance Mode',
+    description: 'When enabled, the platform shows a maintenance banner across all public pages.',
+    type: 'boolean',
+    defaultValue: false,
+  },
+  {
+    key: 'platformAnnouncement',
+    label: 'Platform Announcement',
+    description: 'Short banner message shown at the top of public pages. Leave blank to hide the banner.',
+    type: 'text',
+    defaultValue: '',
+  },
+  {
+    key: 'summit_config',
+    label: 'Summit Config',
+    description: 'JSON object controlling summit-specific content (e.g. { "active": true, "date": "30-31 March 2026", "venue": "Sandton Convention Centre" }). Set "active": false after the summit to hide all summit banners.',
+    type: 'textarea',
+    defaultValue: '{"active": false}',
+  },
+];
 
+
+// Defence-in-depth — even though SETTING_DEFS values originate from this
+// module and the server rejects unknown keys, persisted values can contain
+// arbitrary admin-typed text (e.g. summit_config JSON) that round-trips
+// through innerHTML. Escape every interpolation.
+function escAttr(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;');
+}
+
+function escText(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
 
 function renderSettingField(def: SettingDef, value: unknown): string {
   const val = value ?? def.defaultValue;
+  const safeKey = escAttr(def.key);
 
   if (def.type === 'boolean') {
     const checked = val === true || val === 'true';
     return `
       <label class="settings-toggle">
-        <input type="checkbox" data-key="${def.key}" ${checked ? 'checked' : ''} />
+        <input type="checkbox" data-key="${safeKey}" ${checked ? 'checked' : ''} />
         <span class="settings-toggle-slider"></span>
         <span class="settings-toggle-label">${checked ? 'Enabled' : 'Disabled'}</span>
       </label>`;
   }
 
   if (def.type === 'textarea') {
-    return `<textarea class="settings-input" data-key="${def.key}" rows="3">${String(val)}</textarea>`;
+    return `<textarea class="settings-input" data-key="${safeKey}" rows="3">${escText(String(val))}</textarea>`;
   }
 
-  return `<input type="text" class="settings-input" data-key="${def.key}" value="${String(val)}" />`;
+  return `<input type="text" class="settings-input" data-key="${safeKey}" value="${escAttr(String(val))}" />`;
 }
 
 export const settingsPage: Page = {
@@ -62,17 +113,17 @@ export const settingsPage: Page = {
     container.innerHTML = `
       <div class="settings-grid">
         ${SETTING_DEFS.map(def => `
-          <div class="settings-card" data-setting="${def.key}">
+          <div class="settings-card" data-setting="${escAttr(def.key)}">
             <div class="settings-card-header">
-              <h3 class="settings-card-title">${def.label}</h3>
-              <p class="settings-card-desc">${def.description}</p>
+              <h3 class="settings-card-title">${escText(def.label)}</h3>
+              <p class="settings-card-desc">${escText(def.description)}</p>
             </div>
             <div class="settings-card-body">
               ${renderSettingField(def, settings[def.key])}
             </div>
             <div class="settings-card-footer">
-              <button class="btn-primary btn-sm settings-save" data-key="${def.key}">Save</button>
-              <span class="settings-saved-msg" id="saved-${def.key}"></span>
+              <button class="btn-primary btn-sm settings-save" data-key="${escAttr(def.key)}">Save</button>
+              <span class="settings-saved-msg" id="saved-${escAttr(def.key)}"></span>
             </div>
           </div>
         `).join('')}

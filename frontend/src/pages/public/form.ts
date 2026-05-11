@@ -1,106 +1,53 @@
-import type { Page } from '../../types/index.ts';
+import type { Page, ProfileCategory, AttachmentRef } from '../../types/index.ts';
 import { store } from '../../store.ts';
 import { navigate } from '../../router.ts';
 import { FORM_STEPS, getStepMeta } from '../../constants/form-steps.ts';
 import { toast } from '../../components/toast.ts';
 import { api } from '../../api.ts';
-import { inputVal, setError } from '../../utils/dom.ts';
-import { isEmail, isPhone, minLength, required, normalizePhone } from '../../utils/validation.ts';
-import { renderStepBasic } from './form-steps/step-basic.ts';
-import { renderStepReadiness, mountStepReadiness } from './form-steps/step-readiness.ts';
-import { renderStepFunding, mountStepFunding } from './form-steps/step-funding.ts';
-import { renderStepProject } from './form-steps/step-project.ts';
-import { renderStepConfirm, mountStepConfirm } from './form-steps/step-confirm.ts';
+import { normalizePhone } from '../../utils/validation.ts';
+import { getMissingItems } from '../../utils/step-readiness.ts';
+import { PROFILE_CONFIG } from '../../utils/step-readiness.ts';
+import { renderStepIdentity, mountStepIdentity } from './form-steps/step-identity.ts';
+import { renderStepPosition, mountStepPosition } from './form-steps/step-position.ts';
+import { renderStepConstraints, mountStepConstraints } from './form-steps/step-constraints.ts';
+import { renderStepContact, mountStepContact } from './form-steps/step-contact.ts';
+import { renderStepFeedbackConsent, mountStepFeedbackConsent } from './form-steps/step-feedback-consent.ts';
 import { tracker } from '../../services/tracker.ts';
 
 const TOTAL = 5;
 
 /* ══════════════════════════════════════════════
-   State persistence — save DOM values to store
-   before leaving a step, restore when returning
+   formData layout (in store):
+     {
+       personal: { firstName, surname, email, phone, companyName? },
+       attachments?: [{ field: 'cv', filename, storedAs }],
+       consent?:    { tc: bool, popia: bool },
+       __uploadInFlight?: boolean,    // step-contact transient flag
+       ...question-config field IDs (spec §7.2)...
+     }
    ══════════════════════════════════════════════ */
 
-function saveCurrentStepData(): void {
-  const saved = (store.get('formData') ?? {}) as Record<string, unknown>;
-  // Save all text inputs and selects
-  document.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
-    '.form-step.active input, .form-step.active select, .form-step.active textarea'
-  ).forEach(el => {
-    if (el.id) saved[`__input_${el.id}`] = el.value;
-  });
-  // Save radio selections
-  document.querySelectorAll<HTMLElement>('.form-step.active .rg').forEach(rg => {
-    if (!rg.id) return;
-    const sel = rg.querySelector('.ro.sel');
-    saved[`__radio_${rg.id}`] = sel?.textContent?.trim() ?? '';
-  });
-  // Save checkbox selections
-  document.querySelectorAll<HTMLElement>('.form-step.active .cg').forEach(cg => {
-    if (!cg.id) return;
-    const vals = [...cg.querySelectorAll('.co.sel')].map(e => e.textContent?.trim() ?? '');
-    saved[`__checks_${cg.id}`] = vals;
-  });
-  // Save consent toggles
-  document.querySelectorAll<HTMLElement>('.form-step.active .consent-row').forEach(row => {
-    if (row.id) saved[`__consent_${row.id}`] = row.classList.contains('sel');
-  });
-  store.set('formData', saved);
-  // Flash save indicator
-  const indicator = document.getElementById('save-indicator');
-  if (indicator) {
-    indicator.classList.add('saved');
-    setTimeout(() => indicator.classList.remove('saved'), 1500);
-  }
+interface PersonalSlice {
+  firstName?: string;
+  surname?: string;
+  companyName?: string;
+  email?: string;
+  phone?: string;
 }
 
-function restoreStepData(): void {
-  const saved = (store.get('formData') ?? {}) as Record<string, unknown>;
-  // Restore text inputs and selects
-  document.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
-    '.form-step.active input, .form-step.active select, .form-step.active textarea'
-  ).forEach(el => {
-    const val = saved[`__input_${el.id}`];
-    if (el.id && typeof val === 'string') el.value = val;
-  });
-  // Restore radios
-  document.querySelectorAll<HTMLElement>('.form-step.active .rg').forEach(rg => {
-    if (!rg.id) return;
-    const val = saved[`__radio_${rg.id}`] as string;
-    if (!val) return;
-    rg.querySelectorAll('.ro').forEach(ro => {
-      const match = ro.textContent?.trim() === val;
-      ro.classList.toggle('sel', match);
-      ro.setAttribute('aria-checked', String(match));
-    });
-  });
-  // Restore checkboxes
-  document.querySelectorAll<HTMLElement>('.form-step.active .cg').forEach(cg => {
-    if (!cg.id) return;
-    const vals = (saved[`__checks_${cg.id}`] ?? []) as string[];
-    cg.querySelectorAll('.co').forEach(co => {
-      const match = vals.includes(co.textContent?.trim() ?? '');
-      co.classList.toggle('sel', match);
-      co.setAttribute('aria-checked', String(match));
-    });
-  });
-  // Restore consent toggles
-  document.querySelectorAll<HTMLElement>('.form-step.active .consent-row').forEach(row => {
-    if (!row.id) return;
-    const val = saved[`__consent_${row.id}`] as boolean;
-    if (val) { row.classList.add('sel'); row.setAttribute('aria-checked', 'true'); }
-  });
-  // Update textarea counters
-  document.querySelectorAll<HTMLTextAreaElement>('.form-step.active .fta').forEach(ta => {
-    const countEl = ta.parentElement?.querySelector('.fta-count span');
-    if (countEl) countEl.textContent = String(ta.value.length);
-  });
+function getFD(): Record<string, unknown> {
+  return (store.get('formData') ?? {}) as Record<string, unknown>;
 }
+
+function getPersonal(): PersonalSlice {
+  return (getFD().personal as PersonalSlice) ?? {};
+}
+
+function getStep(): number { return store.get('currentStep'); }
 
 /* ══════════════════════════════════════════════
    Render helpers
    ══════════════════════════════════════════════ */
-
-function getStep(): number { return store.get('currentStep'); }
 
 function renderProgress(): string {
   const step = getStep();
@@ -120,29 +67,27 @@ function renderProgress(): string {
 function renderStepContent(): string {
   const profile = store.get('selectedProfile')!;
   switch (getStep()) {
-    case 1: return renderStepBasic();
-    case 2: return renderStepReadiness(profile);
-    case 3: return renderStepFunding(profile);
-    case 4: return renderStepProject(profile);
-    case 5: return renderStepConfirm();
+    case 1: return renderStepIdentity(profile);
+    case 2: return renderStepPosition(profile);
+    case 3: return renderStepConstraints(profile);
+    case 4: return renderStepContact(profile);
+    case 5: return renderStepFeedbackConsent(profile);
     default: return '';
   }
 }
 
 /* ══════════════════════════════════════════════
-   In-page step navigation (no hash change!)
+   In-page step navigation (no hash change)
    ══════════════════════════════════════════════ */
 
 function goToStep(newStep: number): void {
   const prevStep = getStep();
-  saveCurrentStepData();
-  // Track step completion when advancing
   if (newStep > prevStep) {
     const stepLabel = FORM_STEPS[prevStep - 1]?.title || `Step ${prevStep}`;
     tracker.trackEvent('form_funnel', 'form_step_complete', stepLabel, prevStep);
   }
   store.set('currentStep', newStep);
-  // Re-render just the form content area — NOT the whole page
+
   const body = document.querySelector('.form-body');
   const prog = document.querySelector('.prog-steps');
   const foot = document.querySelector('.form-btns');
@@ -164,231 +109,70 @@ function goToStep(newStep: number): void {
   foot.innerHTML = `
     ${step > 1 ? '<button class="btn-secondary" id="btn-prev" data-track="Form — Previous">← Previous</button>' : ''}
     ${!isLast ? '<button class="btn-primary" id="btn-next" data-track="Form — Continue">Continue →</button>' : ''}
-    ${isLast ? '<button class="btn-primary" id="btn-submit" data-track="Form — Submit">Submit Application →</button>' : ''}`;
+    ${isLast ? '<button class="btn-primary" id="btn-submit" data-track="Form — Submit">Submit →</button>' : ''}`;
 
   if (stepLbl) stepLbl.textContent = `STEP ${step + 1} OF ${TOTAL + 1}`;
-  if (backBtn) {
-    backBtn.textContent = step === 1 ? '← Change Profile' : '← Back';
-  }
+  if (backBtn) backBtn.textContent = step === 1 ? '← Change Profile' : '← Back';
 
   mountCurrentStep();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 /* ══════════════════════════════════════════════
-   Validation
+   Validation — driven entirely by spec §6.4 nextStepReady()
    ══════════════════════════════════════════════ */
-
-function getRadioVal(gid: string): string {
-  const sel = document.querySelector(`#${gid} .ro.sel`);
-  return sel?.textContent?.trim() ?? '';
-}
-
-function getCheckedVals(gid: string): string[] {
-  return [...document.querySelectorAll(`#${gid} .co.sel`)].map(e => e.textContent?.trim() ?? '');
-}
 
 function validate(): boolean {
   const step = getStep();
-  if (step === 1) {
-    let ok = true;
-    ['f-fn', 'f-sn', 'f-em', 'f-ph'].forEach(id => {
-      setError(id, false);
-      if (!required(inputVal(id))) { setError(id, true); ok = false; }
-    });
-    if (ok && !isEmail(inputVal('f-em'))) { setError('f-em', true); toast('Please enter a valid email address'); return false; }
-    if (ok && !isPhone(inputVal('f-ph'))) { setError('f-ph', true); toast('Please enter a valid SA phone number (e.g. 082 123 4567)'); return false; }
-    if (!ok) toast('Please complete all required fields');
-    return ok;
+  const profile = store.get('selectedProfile')!;
+  const fd = getFD();
+  const ctx = {
+    personal: getPersonal(),
+    consent: (fd.consent as { tc?: boolean; popia?: boolean }) ?? {},
+    uploadInFlight: Boolean(fd.__uploadInFlight),
+  };
+  const missing = getMissingItems(step, profile, fd, ctx);
+  if (missing.length === 0) return true;
+
+  if (step === 4 && ctx.uploadInFlight) {
+    toast('Please wait for the upload to finish.');
+  } else if (missing.length === 1) {
+    toast(`Please complete: ${missing[0]}`);
+  } else if (missing.length <= 3) {
+    toast(`Please complete: ${missing.join(', ')}`);
+  } else {
+    toast(`Please complete: ${missing.slice(0, 3).join(', ')} and ${missing.length - 3} more`);
   }
-  if (step === 2) {
-    const profile = store.get('selectedProfile');
-    if (profile === 'investor') {
-      setError('inv-amount', false); setError('inv-horizon', false);
-      let ok = true;
-      if (!inputVal('inv-amount')) { setError('inv-amount', true); ok = false; }
-      if (!inputVal('inv-horizon')) { setError('inv-horizon', true); ok = false; }
-      if (!getCheckedVals('inv-focus').length) { toast('Please select at least one sector of interest'); return false; }
-      if (!getCheckedVals('inv-return').length) { toast('Please select at least one return structure'); return false; }
-      if (!getRadioVal('inv-prev')) { toast('Please select your prior investment experience'); return false; }
-      if (!ok) { toast('Please complete all required fields'); return false; }
-      return true;
-    }
-    if (profile === 'landowner') {
-      setError('b-size', false); setError('b-zone', false); setError('b-own', false); setError('b-timeline', false);
-      let ok = true;
-      if (!inputVal('b-size'))     { setError('b-size', true); ok = false; }
-      if (!inputVal('b-zone'))     { setError('b-zone', true); ok = false; }
-      if (!inputVal('b-own'))      { setError('b-own', true); ok = false; }
-      if (!inputVal('b-timeline')) { setError('b-timeline', true); ok = false; }
-      if (!getRadioVal('b-serv'))     { toast('Please indicate if land is serviced'); return false; }
-      if (!getRadioVal('b-appetite')) { toast('Please select your development appetite'); return false; }
-      if (!getRadioVal('b-bond'))     { toast('Please indicate if there is an existing bond'); return false; }
-      if (!ok) { toast('Please complete all required fields'); return false; }
-      return true;
-    }
-    if (profile === 'professional') {
-      setError('d-prof', false); setError('d-reg', false); setError('d-exp', false); setError('d-scale', false);
-      let ok = true;
-      if (!inputVal('d-prof'))  { setError('d-prof', true); ok = false; }
-      if (!inputVal('d-reg'))   { setError('d-reg', true); ok = false; }
-      if (!inputVal('d-exp'))   { setError('d-exp', true); ok = false; }
-      if (!inputVal('d-scale')) { setError('d-scale', true); ok = false; }
-      if (!getCheckedVals('d-province').length) { toast('Please select at least one active province'); return false; }
-      if (!ok) { toast('Please complete all required fields'); return false; }
-      return true;
-    }
-    if (profile === 'student') {
-      setError('c-beds', false); setError('c-occ', false); setError('c-asset', false); setError('c-ownership', false); setError('c-city', false);
-      let ok = true;
-      if (!inputVal('c-beds'))      { setError('c-beds', true); ok = false; }
-      if (!inputVal('c-occ'))       { setError('c-occ', true); ok = false; }
-      if (!inputVal('c-asset'))     { setError('c-asset', true); ok = false; }
-      if (!inputVal('c-ownership')) { setError('c-ownership', true); ok = false; }
-      if (!inputVal('c-city'))      { setError('c-city', true); ok = false; }
-      if (!getCheckedVals('c-province').length) { toast('Please select at least one province'); return false; }
-      if (!getRadioVal('c-accred')) { toast('Please select your NSFAS accreditation status'); return false; }
-      if (!getRadioVal('c-uni'))    { toast('Please indicate your university partnership status'); return false; }
-      if (!ok) { toast('Please complete all required fields'); return false; }
-      return true;
-    }
-    if (profile === 'aspiring') {
-      // Only the optional free-text field on step 2 — no required selects, so always valid
-      return true;
-    }
-    if (!getRadioVal('r-land')) { toast('Please select your land status'); return false; }
-    setError('s-stage', false); setError('s-value', false);
-    let ok = true;
-    if (!inputVal('s-stage')) { setError('s-stage', true); ok = false; }
-    if (!inputVal('s-value')) { setError('s-value', true); ok = false; }
-    if (!ok) toast('Please complete all required fields');
-    return ok;
-  }
-  if (step === 3) {
-    const profile = store.get('selectedProfile');
-    if (profile === 'professional') {
-      if (!getRadioVal('r-assoc'))    { toast('Please indicate your willingness to join the associate database'); return false; }
-      if (!getRadioVal('r-capacity')) { toast('Please select your current capacity'); return false; }
-      if (!getCheckedVals('c-worktype').length) { toast('Please select at least one preferred work type'); return false; }
-      return true;
-    }
-    if (profile === 'student') {
-      if (!getCheckedVals('c-seeking').length) { toast('Please select at least one support need'); return false; }
-      if (!getRadioVal('r-growth'))   { toast('Please select your growth intention'); return false; }
-      if (!getRadioVal('r-prevfund')) { toast('Please indicate prior funding status'); return false; }
-      return true;
-    }
-    if (!getCheckedVals('c-seeking').length) { toast('Please select at least one option'); return false; }
-    if (profile === 'investor') {
-      setError('inv-timeline', false);
-      if (!inputVal('inv-timeline')) { setError('inv-timeline', true); toast('Please select your decision-making timeline'); return false; }
-      return true;
-    }
-    if (!getRadioVal('r-prevfund')) { toast('Please answer the land valuation question'); return false; }
-    return true;
-  }
-  if (step === 4) {
-    const profile = store.get('selectedProfile');
-    if (profile === 'investor' || profile === 'professional' || profile === 'aspiring') return true; // optional step
-    setError('t-project', false);
-    if (!minLength(inputVal('t-project'), 50)) { setError('t-project', true); toast('Please describe your project (min 50 characters)'); return false; }
-    return true;
-  }
-  if (step === 5) {
-    if (!document.getElementById('consent-tc')?.classList.contains('sel')) { toast('Please accept the Terms & Conditions'); return false; }
-    if (!document.getElementById('consent-popia')?.classList.contains('sel')) { toast('Please provide POPIA consent'); return false; }
-    return true;
-  }
-  return true;
+  return false;
 }
 
 /* ══════════════════════════════════════════════
-   Collect all data for submission
+   Collect submission body — spec §7.2 keys ONLY
    ══════════════════════════════════════════════ */
 
-function collectAllFormData(): Record<string, unknown> {
-  // Merge all saved step data with current step data
-  saveCurrentStepData();
-  const saved = (store.get('formData') ?? {}) as Record<string, unknown>;
+function collectAllFormData(profile: ProfileCategory): Record<string, unknown> {
+  const fd = getFD();
+  const config = PROFILE_CONFIG[profile];
+  // The spec §7.2 IDs for this profile = union of question IDs across steps 2,3,5
+  // (Step 1 + Step 4 carry no formData IDs except Professional `cv` which is
+  // routed to attachments[], not formData).
+  const ids = new Set<string>();
+  for (const stepKey of ['step2', 'step3', 'step5'] as const) {
+    for (const q of config[stepKey]) ids.add(q.id);
+  }
+  // Step 1 + Step 4 *can* carry formData IDs for some profiles (Professional
+  // has `primaryRole` on Step 1). Include those too — but skip `cv`.
+  for (const stepKey of ['step1', 'step4'] as const) {
+    for (const q of config[stepKey]) {
+      if (q.id !== 'cv') ids.add(q.id);
+    }
+  }
 
-  const get = (key: string) => (saved[`__input_${key}`] as string) ?? '';
-  const getRad = (key: string) => (saved[`__radio_${key}`] as string) ?? '';
-  const getChk = (key: string) => ((saved[`__checks_${key}`] ?? []) as string[]);
-  const profile = store.get('selectedProfile')!;
-
-  const data: Record<string, unknown> = {
-    landStatus: getRad('r-land'),
-    projectStage: get('s-stage'),
-    estimatedValue: get('s-value'),
-    seeking: getChk('c-seeking'),
-    previousFunding: getRad('r-prevfund'),
-    projectDescription: get('t-project'),
-    tcAccepted: true, popiaConsent: true,
-  };
-
-  if (profile === 'developer') { data.yearsExperience = get('a-exp'); data.developmentTypes = getChk('a-dtype'); }
-  else if (profile === 'landowner') {
-    data.landSize = get('b-size');
-    data.zoningStatus = get('b-zone');
-    data.isServiced = getRad('b-serv');
-    data.ownershipStructure = get('b-own');
-    data.developmentAppetite = getRad('b-appetite');
-    data.timeline = get('b-timeline');
-    data.existingBond = getRad('b-bond');
-    data.partnershipOutcome = getChk('c-seeking');
-    data.recentValuation = getRad('r-prevfund');
-    // Clear generic fields not applicable to landowners
-    delete data.landStatus; delete data.projectStage; delete data.estimatedValue;
-    delete data.seeking; delete data.previousFunding;
+  const out: Record<string, unknown> = {};
+  for (const id of ids) {
+    if (id in fd) out[id] = fd[id];
   }
-  else if (profile === 'investor') {
-    data.investmentFocus = getChk('inv-focus');
-    data.investmentAmount = get('inv-amount');
-    data.investmentHorizon = get('inv-horizon');
-    data.returnStructure = getChk('inv-return');
-    data.priorInvestmentExperience = getRad('inv-prev');
-    data.investmentIntentions = getChk('c-seeking');
-    data.decisionTimeline = get('inv-timeline');
-    data.additionalNotes = get('t-project');
-    // Clear generic fields not applicable to investors
-    delete data.landStatus; delete data.projectStage; delete data.estimatedValue;
-    delete data.seeking; delete data.previousFunding; delete data.projectDescription;
-  }
-  else if (profile === 'student') {
-    data.totalBedCount          = get('c-beds');
-    data.averageOccupancy       = get('c-occ');
-    data.operatingProvinces     = getChk('c-province');
-    data.primaryCity            = get('c-city');
-    data.assetType              = get('c-asset');
-    data.assetOwnership         = get('c-ownership');
-    data.nsfasAccreditation     = getRad('c-accred');
-    data.universityPartnership  = getRad('c-uni');
-    data.supportNeeds           = getChk('c-seeking');
-    data.growthIntention        = getRad('r-growth');
-    data.previousFunding        = getRad('r-prevfund');
-    data.portfolioDescription   = get('t-project');
-    // Clear generic fields not applicable to student operators
-    delete data.landStatus; delete data.projectStage; delete data.estimatedValue;
-    delete data.seeking; delete data.projectDescription;
-  }
-  else if (profile === 'professional') {
-    data.profession         = get('d-prof');
-    data.registrationBody   = get('d-reg');
-    data.registrationNumber = get('d-regno');
-    data.yearsExperience    = get('d-exp');
-    data.typicalProjectValue = get('d-scale');
-    data.activeProvinces    = getChk('d-province');
-    data.associateDatabase  = getRad('r-assoc');
-    data.currentCapacity    = getRad('r-capacity');
-    data.preferredWorkTypes = getChk('c-worktype');
-    data.motivation         = get('t-motivation');
-    data.additionalNotes    = get('t-project');
-    // Clear generic fields not applicable to professionals
-    delete data.landStatus; delete data.projectStage; delete data.estimatedValue;
-    delete data.seeking; delete data.previousFunding; delete data.projectDescription;
-  }
-  else if (profile === 'aspiring') { data.developmentInterests = getChk('asp-interest'); data.relevantExperience = get('asp-exp'); }
-  return data;
+  return out;
 }
 
 /* ══════════════════════════════════════════════
@@ -397,42 +181,14 @@ function collectAllFormData(): Record<string, unknown> {
 
 function mountCurrentStep(): void {
   const step = getStep();
+  const profile = store.get('selectedProfile')!;
 
-  // Step-specific mounts
-  if (step === 2) mountStepReadiness();
-  if (step === 3) mountStepFunding();
-  if (step === 5) mountStepConfirm();
+  if (step === 1) mountStepIdentity(profile);
+  if (step === 2) mountStepPosition(profile);
+  if (step === 3) mountStepConstraints(profile);
+  if (step === 4) mountStepContact(profile);
+  if (step === 5) mountStepFeedbackConsent(profile);
 
-  // Restore saved data
-  restoreStepData();
-
-  // Wire radio clicks
-  document.querySelectorAll<HTMLElement>('.form-step.active .ro').forEach(el => {
-    addListener(el, 'click', () => {
-      const group = el.parentElement!;
-      group.querySelectorAll('.ro').forEach(r => { r.classList.remove('sel'); r.setAttribute('aria-checked', 'false'); });
-      el.classList.add('sel');
-      el.setAttribute('aria-checked', 'true');
-    });
-  });
-
-  // Wire checkbox clicks
-  document.querySelectorAll<HTMLElement>('.form-step.active .co').forEach(el => {
-    addListener(el, 'click', () => {
-      el.classList.toggle('sel');
-      el.setAttribute('aria-checked', el.classList.contains('sel') ? 'true' : 'false');
-    });
-  });
-
-  // Textarea counters
-  document.querySelectorAll<HTMLTextAreaElement>('.form-step.active .fta').forEach(ta => {
-    const countEl = ta.parentElement?.querySelector('.fta-count span');
-    if (countEl) {
-      addListener(ta, 'input', () => { countEl.textContent = String(ta.value.length); });
-    }
-  });
-
-  // Navigation buttons
   addListener(document.getElementById('btn-prev'), 'click', () => goToStep(step - 1));
   addListener(document.getElementById('btn-next'), 'click', () => {
     if (validate()) goToStep(step + 1);
@@ -446,39 +202,59 @@ async function handleSubmit(): Promise<void> {
   if (!validate()) return;
   submitting = true;
   const btn = document.getElementById('btn-submit') as HTMLButtonElement;
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Submitting...';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Submitting...';
+  }
 
-  const saved = (store.get('formData') ?? {}) as Record<string, unknown>;
-  const get = (key: string) => ((saved[`__input_${key}`] as string) ?? '').trim();
-  const formData = collectAllFormData();
-  formData.engagementSource = sessionStorage.getItem('bm_source') || 'direct';
+  try {
+    const profile = store.get('selectedProfile')!;
+    const fd = getFD();
+    const personal = getPersonal();
+    const formData = collectAllFormData(profile);
+    const attachments = (fd.attachments as AttachmentRef[] | undefined) ?? [];
 
-  const result = await api.submit({
-    userType: store.get('selectedProfile')!,
-    personal: {
-      firstName: get('f-fn'),
-      surname: get('f-sn'),
-      email: get('f-em').toLowerCase(),
-      phone: normalizePhone(get('f-ph')),
-      companyName: get('f-co') || undefined,
-    },
-    formData,
-  });
+    const result = await api.submit({
+      userType: profile,
+      personal: {
+        firstName: (personal.firstName ?? '').trim(),
+        surname: (personal.surname ?? '').trim(),
+        email: (personal.email ?? '').trim().toLowerCase(),
+        phone: normalizePhone((personal.phone ?? '').trim()),
+        companyName: personal.companyName?.trim() || undefined,
+      },
+      formData,
+      attachments: attachments.length ? attachments : undefined,
+      engagementSource: sessionStorage.getItem('bm_source') || 'direct',
+      // Server-side validation also enforces both flags === true (POPIA).
+      // Use a SAFE-FAIL default — if `fd.consent` is somehow missing the
+      // server rejects rather than silently forging consent. The Submit
+      // button is gated by validate() / getMissingItems() so this fallback
+      // should never fire in practice.
+      consent: (fd.consent as Record<string, unknown>) ?? { tc: false, popia: false },
+    });
 
-  if (result.success && result.data) {
-    tracker.trackEvent('form_funnel', 'form_submitted', store.get('selectedProfile') || '', TOTAL);
-    store.set('formData', { refNumber: result.data.refNumber });
-    store.set('currentStep', 1);
-    navigate('/success');
-  } else {
-    const msg = result.message || 'Submission failed';
-    const isNetwork = msg.toLowerCase().includes('network');
-    toast(isNetwork
-      ? 'No internet connection. Your data is saved — please try again when online.'
-      : msg);
-    btn.disabled = false;
-    btn.textContent = 'Retry Submission →';
+    if (result.success && result.data) {
+      tracker.trackEvent('form_funnel', 'form_submitted', profile, TOTAL);
+      store.set('formData', { refNumber: result.data.refNumber });
+      store.set('currentStep', 1);
+      navigate('/success');
+    } else {
+      const msg = result.message || 'Submission failed';
+      const isNetwork = msg.toLowerCase().includes('network');
+      toast(isNetwork
+        ? 'No internet connection. Your data is saved — please try again when online.'
+        : msg);
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Retry Submission →';
+      }
+    }
+  } finally {
+    // Always release the in-flight lock. The success path navigates away (a
+    // fresh formPage.mount() also resets this defensively), but the flag
+    // must clear so back-navigation + resubmit + any unhandled exception
+    // can't strand the form with a dead Submit button.
     submitting = false;
   }
 }
@@ -521,29 +297,28 @@ export const formPage: Page = {
         <div class="form-btns">
           ${step > 1 ? '<button class="btn-secondary" id="btn-prev" data-track="Form — Previous">← Previous</button>' : ''}
           ${!isLast ? '<button class="btn-primary" id="btn-next" data-track="Form — Continue">Continue →</button>' : ''}
-          ${isLast ? '<button class="btn-primary" id="btn-submit" data-track="Form — Submit">Submit Application →</button>' : ''}
+          ${isLast ? '<button class="btn-primary" id="btn-submit" data-track="Form — Submit">Submit →</button>' : ''}
         </div>
       </div>
     </section>`;
   },
   mount() {
     cleanupFns = [];
-    // Track form start
+    // Reset module-level submit lock so back-navigation from /success can never
+    // strand the Submit button silently disabled.
+    submitting = false;
     tracker.trackEvent('form_funnel', 'form_start', store.get('selectedProfile') || '', 1);
-    // Back button (goes to gateway or previous step)
     addListener(document.getElementById('form-back'), 'click', () => {
       if (getStep() === 1) navigate('/gateway');
       else goToStep(getStep() - 1);
     });
     mountCurrentStep();
-
-    // Auto-save every 30 seconds
-    const autoSaveInterval = setInterval(() => saveCurrentStepData(), 30000);
-    cleanupFns.push(() => clearInterval(autoSaveInterval));
   },
   unmount() {
-    saveCurrentStepData();
     cleanupFns.forEach(fn => fn());
     cleanupFns = [];
   },
 };
+
+// Re-export for tests
+export { collectAllFormData };

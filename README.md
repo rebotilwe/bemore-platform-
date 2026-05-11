@@ -16,7 +16,7 @@ A **live engagement and data capture platform** for the BeMore SME Access Initia
 | Backend | Node.js, Express, ESM modules |
 | Database | MongoDB (Mongoose ODM) |
 | Auth | JWT (bcryptjs) |
-| Email | Nodemailer (SMTP via mail.bts-app.co.za) |
+| Email | Resend (sole provider — SMTP removed 2026-05-11) |
 | Monitoring | Vercel Analytics + Speed Insights, Winston structured logging |
 | Testing | Jest + mongodb-memory-server (backend, 71 tests), Vitest (frontend, 43 tests) |
 | Hosting | Vercel (frontend) + Railway (backend) |
@@ -108,7 +108,7 @@ BeMore/
 - **Site Settings** — key-value store for admin-configurable values (Mentimeter ID, summit config, etc.) with write whitelist
 - **Summit config toggle** — `summit_config` setting controls all summit-specific content (banners, dates, venue) across public pages. Togglable via admin settings
 - **POPIA compliance** — data export + deletion endpoints, 24-month TTL auto-delete, consent capture
-- **Enhanced health check** verifying MongoDB connectivity + cached SMTP check (returns 503 if DB down)
+- **Enhanced health check** verifying MongoDB connectivity + Resend config presence (returns 503 if DB down). Email field reports `'ok'` or `'not configured'`; no provider network probe is performed (SMTP probe removed 2026-05-11)
 - **Security** — JWT auth, input sanitisation, 5-tier rate limiting, CORS (explicit origins), Helmet, trust proxy, compression, SA phone regex validation
 - **Reliability** — MongoDB connection retry (3 attempts, exponential backoff), unhandledRejection/uncaughtException handlers, graceful shutdown with connection drain
 - **Monitoring** — Vercel Analytics + Speed Insights (frontend), Winston structured JSON logging (backend), email delivery tracking
@@ -133,7 +133,7 @@ Works in **demo mode** (localStorage) without a backend. Auto-detects backend vi
 
 ```bash
 cd backend
-cp .env.example .env  # Edit with your MongoDB URI + SMTP settings
+cp .env.example .env  # Edit with your MongoDB URI + RESEND_API_KEY
 npm install
 npm run dev           # http://localhost:5000 (nodemon)
 ```
@@ -168,12 +168,9 @@ npx vitest run
 | `JWT_EXPIRES_IN` | No | `8h` | Token expiry |
 | `CORS_ORIGIN` | No | Production origins | Comma-separated origins (omit for defaults) |
 | `PLATFORM_URL` | No | `https://bemore-tawny.vercel.app` | Platform URL for email links |
-| `SMTP_HOST` | No | — | SMTP host (emails disabled if empty) |
-| `SMTP_PORT` | No | 587 | SMTP port (465 for SSL) |
-| `SMTP_USER` | No | — | SMTP username |
-| `SMTP_PASS` | No | — | SMTP password |
-| `SMTP_FROM` | No | `noreply@bemore.co.za` | From email address |
-| `SMTP_FROM_NAME` | No | `BeMore Group` | From display name |
+| `RESEND_API_KEY` | **Yes** (prod/staging) | — | Resend API key (sole email provider as of 2026-05-11). Sends are no-ops when missing |
+| `EMAIL_FROM` | No | `onboarding@resend.dev` | From email address (use a verified Resend domain in production) |
+| `EMAIL_FROM_NAME` | No | `BeMore` | From display name |
 | `ADMIN_SEED_EMAIL` | No | `admin@bemore.co.za` | Default admin email |
 | `ADMIN_SEED_PASSWORD` | **Yes** | — | Admin password (set in env) |
 
@@ -182,7 +179,7 @@ npx vitest run
 ### Public (No auth, rate-limited)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/health` | Health check (MongoDB + cached SMTP) |
+| GET | `/api/health` | Health check (MongoDB + Resend config) |
 | POST | `/api/applications` | Submit application (duplicate check) |
 | POST | `/api/applications/lookup` | Status lookup (ref number + email) |
 | POST | `/api/applications/data-export` | POPIA: export applicant data as JSON |

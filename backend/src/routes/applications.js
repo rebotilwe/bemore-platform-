@@ -5,7 +5,14 @@ import validate from '../middleware/validate.js';
 import auth from '../middleware/auth.js';
 import { publicApplicationLimiter, adminLimiter } from '../config/rateLimit.js';
 import { PROFILE_CATEGORIES, APPLICATION_STATUSES, SORTABLE_FIELDS, FUNDER_NAMES } from '../constants/enums.js';
-import { submit, list, getOne, update, stats, exportCsv, bulkUpdateStatus, sendReminders } from '../controllers/applicationController.js';
+import {
+  submit, list, getOne, update, stats, exportCsv, bulkUpdateStatus, sendReminders,
+  uploadCv, downloadAttachment, deleteAttachment, downloadSignedAttachment,
+} from '../controllers/applicationController.js';
+import { singleCvUploadMiddleware } from '../services/uploadService.js';
+import { csrfProtection } from '../middleware/auth.js';
+import { sendDataExportReceipt, sendDataDeleteReceipt } from '../utils/mailer.js';
+import logger from '../utils/logger.js';
 
 // Sanitize HTML to prevent XSS in name fields
 const sanitizeName = (val) => val ? validator.escape(String(val).trim().slice(0, 100)) : val;
@@ -34,22 +41,65 @@ router.post('/', publicApplicationLimiter,
       // Reject deeply nested or oversized formData
       const str = JSON.stringify(val);
       if (str.length > 10000) throw new Error('formData too large');
-      // Whitelist known top-level keys
+      // Whitelist known top-level keys (legacy + new spec §7.2)
       const allowed = new Set([
+        // Legacy keys (kept for backwards compat with old frontend builds)
         'landStatus', 'projectStage', 'estimatedValue', 'seeking', 'previousFunding',
         'projectDescription', 'summitAttendance', 'tcAccepted', 'popiaConsent',
-        'yearsExperience', 'developmentTypes', 'landSize', 'zoningStatus', 'isServiced',
+        'yearsExperience', 'landSize', 'zoningStatus', 'isServiced',
         'ownershipStructure', 'investmentFocus', 'investmentTicket', 'bedCount', 'occupancyRate',
         'universityPartnership', 'assetType', 'profession', 'registrationStatus', 'projectScale',
         'developmentInterests', 'relevantExperience', 'engagementSource',
+        // Universal (spec §7.2)
+        'activityLevel', 'feedback', 'notActiveReason',
+        // Developer
+        'developmentStage', 'developmentTypes', 'projectValue', 'fundingPosition',
+        'biggestConstraint', 'biggestConstraintOther', 'whatMatters',
+        // Land Owner
+        'landLocation', 'landOutcome', 'zoning', 'startedDevWork', 'whatPreventsProgress',
+        // Investor
+        'investmentOpportunities', 'investmentRange', 'investmentApproach', 'decisionDrivers',
+        'capitalDeployment',
+        // Student Operator
+        'portfolioSize', 'portfolioLocations', 'opChallenge', 'occupancyLevel', 'scaleLimit',
+        // Professional
+        'primaryRole', 'experienceLevel', 'provinces', 'workStructure', 'companyPractice',
+        'projectTypes', 'avgProjectSize', 'workStyle', 'proWhatMatters',
+        'notActiveReasonOther',
+        // (legacy `activityLookingNow` + `whyNotLooking` removed 2026-05-11 —
+        // collapsed onto universal `activityLevel` + `notActiveReason` per spec §14)
+        // Aspiring
+        'involvedBefore', 'hasLandAccess', 'aspiringDevType', 'holdingBack', 'realisticStart',
       ]);
       for (const key of Object.keys(val)) {
         if (!allowed.has(key)) delete val[key]; // Strip unknown fields
       }
       return true;
     }),
+  // Spec §8.2 — optional attachments[] (CV references from /upload).
+  body('attachments').optional().isArray({ max: 5 }).withMessage('attachments must be an array (max 5)'),
+  body('attachments.*.field').optional().isString().withMessage('attachments[].field required'),
+  body('attachments.*.storedAs').optional().isString()
+    .matches(/^[a-zA-Z0-9._-]+$/).withMessage('attachments[].storedAs must be a safe basename'),
+  // POPIA — both consents are mandatory at submission. The frontend gates
+  // the Submit button on these but server-side enforcement is the
+  // load-bearing check for compliance.
+  body('consent').isObject().withMessage('Consent required'),
+  body('consent.tc').isBoolean().withMessage('T&Cs consent must be boolean')
+    .custom((v) => v === true).withMessage('Terms & Conditions must be accepted'),
+  body('consent.popia').isBoolean().withMessage('POPIA consent must be boolean')
+    .custom((v) => v === true).withMessage('POPIA consent must be granted'),
   validate,
   submit,
+);
+
+// ── Public: CV upload (no auth, CSRF required, rate-limited) ──
+// Spec §8.1 — POST /api/applications/upload (multipart/form-data, field "file")
+router.post('/upload',
+  publicApplicationLimiter,
+  csrfProtection,
+  singleCvUploadMiddleware,
+  uploadCv,
 );
 
 // ── Public: status lookup (no auth, rate-limited) ──
@@ -116,7 +166,32 @@ router.post('/data-export',
         req,
       });
 
-      res.json({ success: true, data: app.toObject() });
+      // Spec §8.5 — enrich attachments[] with short-lived signed download URLs.
+      const { buildSignedDownloadUrl } = await import('../utils/signedLinks.js');
+      const data = app.toObject();
+      if (Array.isArray(data.attachments)) {
+        data.attachments = data.attachments.map((a) => ({
+          field: a.field,
+          filename: a.filename,
+          storedAs: a.storedAs,
+          size: a.size,
+          mimeType: a.mimeType,
+          uploadedAt: a.uploadedAt,
+          downloadUrl: buildSignedDownloadUrl(app.refNumber, a.storedAs),
+        }));
+      }
+
+      // POPIA audit-trail receipt — fire-and-forget (must not block the
+      // response if Resend is down or slow). The mailer logs success/failure
+      // to EmailLog + winston; we additionally log any unhandled exception
+      // here so silent network errors don't disappear from the audit trail.
+      sendDataExportReceipt(app.personal.email, app.refNumber, app.personal.firstName)
+        .catch((err) => logger.error('POPIA data-export receipt failed', {
+          refNumber: app.refNumber,
+          error: err?.message || String(err),
+        }));
+
+      res.json({ success: true, data });
     } catch (err) {
       next(err);
     }
@@ -142,12 +217,42 @@ router.post('/data-delete',
         return res.status(404).json({ success: false, message: 'No application found.' });
       }
 
+      // Capture identity BEFORE the record is gone from memory — the receipt
+      // email needs the user's first name and the destination address.
+      const receiptTo = app.personal.email;
+      const receiptName = app.personal.firstName;
+      const receiptRef = app.refNumber;
+
+      // Spec §8.6 — POPIA right-to-erasure trumps file persistence.
+      // Best-effort: remove files. If disk delete fails, log + proceed.
+      if (Array.isArray(app.attachments) && app.attachments.length) {
+        const { deleteCvFile } = await import('../services/uploadService.js');
+        const { default: logger } = await import('../utils/logger.js');
+        for (const a of app.attachments) {
+          try {
+            const ok = await deleteCvFile(a.storedAs);
+            if (!ok) logger.warn('data-delete: attachment file already missing', { refNumber: app.refNumber, storedAs: a.storedAs });
+          } catch (err) {
+            logger.error('data-delete: attachment file removal failed', { refNumber: app.refNumber, storedAs: a.storedAs, error: err.message });
+          }
+        }
+      }
+
       const { track } = await import('../services/analyticsService.js');
       track('popia.data_deleted', 'system', {
         actor: { type: 'applicant', email: email.trim().toLowerCase() },
         target: { model: 'Application', refNumber: app.refNumber },
         req,
       });
+
+      // POPIA audit-trail receipt — fire-and-forget; explicit logging so a
+      // silent send failure still leaves a server-log breadcrumb (the mailer
+      // also writes to EmailLog).
+      sendDataDeleteReceipt(receiptTo, receiptRef, receiptName)
+        .catch((err) => logger.error('POPIA data-delete receipt failed', {
+          refNumber: receiptRef,
+          error: err?.message || String(err),
+        }));
 
       res.json({ success: true, message: 'Your data has been permanently deleted.' });
     } catch (err) {
@@ -187,6 +292,37 @@ router.get('/',
   query('order').optional().isIn(['asc', 'desc']).withMessage('Order must be asc or desc'),
   validate,
   list,
+);
+
+// ── Public: signed attachment download — spec §8.5 ──
+// IMPORTANT: NO auth, NO csrfProtection. Verifies HMAC signature + expiry.
+// Defined before /:id so the literal /attachment/ segment wins routing.
+router.get('/:refNumber/attachment/:storedAs/signed',
+  publicApplicationLimiter,
+  param('refNumber').matches(/^BM-[A-Z0-9]{4,12}$/).withMessage('Invalid reference number format'),
+  param('storedAs').matches(/^[a-zA-Z0-9._-]+$/).withMessage('Invalid storedAs'),
+  validate,
+  downloadSignedAttachment,
+);
+
+// ── Admin: download attachment — spec §8.3 ──
+router.get('/:refNumber/attachment/:storedAs',
+  adminLimiter,
+  auth,
+  param('refNumber').matches(/^BM-[A-Z0-9]{4,12}$/).withMessage('Invalid reference number format'),
+  param('storedAs').matches(/^[a-zA-Z0-9._-]+$/).withMessage('Invalid storedAs'),
+  validate,
+  downloadAttachment,
+);
+
+// ── Admin: delete attachment — spec §8.4 ──
+router.delete('/:refNumber/attachment/:storedAs',
+  adminLimiter,
+  auth,
+  param('refNumber').matches(/^BM-[A-Z0-9]{4,12}$/).withMessage('Invalid reference number format'),
+  param('storedAs').matches(/^[a-zA-Z0-9._-]+$/).withMessage('Invalid storedAs'),
+  validate,
+  deleteAttachment,
 );
 
 router.get('/:id',

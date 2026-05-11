@@ -1,40 +1,9 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
-import nodemailer from 'nodemailer';
 import { healthLimiter } from '../config/rateLimit.js';
 import { config } from '../config/index.js';
 
 const router = Router();
-
-// Cache SMTP check result for 60 seconds
-let smtpCache = { status: null, checkedAt: 0 };
-const SMTP_CACHE_TTL = 60_000;
-
-async function checkSmtp() {
-  if (Date.now() - smtpCache.checkedAt < SMTP_CACHE_TTL) return smtpCache.status;
-
-  if (!config.mail.host) {
-    smtpCache = { status: 'not configured', checkedAt: Date.now() };
-    return smtpCache.status;
-  }
-
-  try {
-    const t = nodemailer.createTransport({
-      host: config.mail.host,
-      port: config.mail.port,
-      secure: config.mail.port === 465,
-      auth: { user: config.mail.user, pass: config.mail.pass },
-      tls: { rejectUnauthorized: false },
-    });
-    await Promise.race([t.verify(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))]);
-    t.close();
-    smtpCache = { status: 'ok', checkedAt: Date.now() };
-  } catch {
-    smtpCache = { status: 'degraded', checkedAt: Date.now() };
-  }
-
-  return smtpCache.status;
-}
 
 router.get('/', healthLimiter, async (_req, res) => {
   const checks = {};
@@ -55,8 +24,10 @@ router.get('/', healthLimiter, async (_req, res) => {
     healthy = false;
   }
 
-  // SMTP check (cached, non-blocking — degraded not unhealthy)
-  checks.email = await checkSmtp();
+  // Email — configuration-only check. We don't burn a Resend API call on every
+  // health probe; the actual provider health is observable via EmailLog +
+  // structured logs when real sends happen. `degraded` is non-fatal.
+  checks.email = config.mail.resendApiKey ? 'ok' : 'not configured';
 
   // Memory usage
   const mem = process.memoryUsage();

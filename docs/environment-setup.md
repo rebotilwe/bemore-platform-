@@ -120,24 +120,22 @@ All variables are set in `backend/.env`. The frontend has no env vars -- it disc
 |----------|---------|-------------|
 | `CORS_ORIGIN` | *(auto)* | Comma-separated list of allowed origins. If blank or `*`, the app uses built-in defaults based on `NODE_ENV`: dev includes localhost + prod + staging origins; staging includes staging + bemorecapital.co.za; production includes bemore-tawny.vercel.app + bemorecapital.co.za. |
 
-### Email -- Resend (preferred)
+### Email -- Resend (sole provider; SMTP removed 2026-05-11)
+
+All transactional email is dispatched through Resend. The legacy SMTP fallback path
+(nodemailer + `mail.bts-app.co.za`) was removed on 2026-05-11. If `RESEND_API_KEY`
+is missing, sends are short-circuited with a logged error and the API call still
+succeeds (fire-and-forget pattern).
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `RESEND_API_KEY` | *(empty)* | API key from [resend.com](https://resend.com). If set, the app sends emails via Resend instead of SMTP. |
+| `RESEND_API_KEY` | *(empty)* | **REQUIRED in production/staging.** API key from [resend.com](https://resend.com). |
+| `EMAIL_FROM` | `onboarding@resend.dev` | Sender address. The default works for any Resend account but only delivers to the API key owner; use a verified domain (e.g. `info@bts-app.co.za`) for real traffic. |
+| `EMAIL_FROM_NAME` | `BeMore` | Sender display name. |
 
-### Email -- SMTP (fallback)
-
-These are used only when `RESEND_API_KEY` is not set.
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SMTP_HOST` | *(empty)* | SMTP server hostname (e.g. `mail.bts-app.co.za`). |
-| `SMTP_PORT` | `587` | SMTP port. Use `465` for implicit TLS, `587` for STARTTLS. |
-| `SMTP_USER` | *(empty)* | SMTP username / email address. |
-| `SMTP_PASS` | *(empty)* | SMTP password. |
-| `SMTP_FROM` | `noreply@bemore.co.za` | "From" email address on outgoing emails. |
-| `SMTP_FROM_NAME` | `BeMore Group` | "From" display name on outgoing emails. |
+**Backwards compatibility:** legacy `SMTP_FROM` and `SMTP_FROM_NAME` env vars are
+still read as fallback if `EMAIL_FROM`/`EMAIL_FROM_NAME` are unset, so existing
+Railway deployments keep working until the env vars are renamed.
 
 ### Platform URL
 
@@ -216,8 +214,8 @@ The frontend tries `GET /api/health` on load. If the backend is unreachable, it 
 
 ### Emails not sending
 
-- **Resend**: Set `RESEND_API_KEY`. Check the Resend dashboard for delivery status.
-- **SMTP**: Verify `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, and `SMTP_PASS`. Port 465 uses implicit TLS; port 587 uses STARTTLS. Check backend logs for transporter errors.
+- **Resend**: Set `RESEND_API_KEY` (sole provider as of 2026-05-11). Check the Resend dashboard for delivery status. Failed sends log error strings prefixed `Resend …` to `EmailLog`.
+- If `RESEND_API_KEY` is missing the API call still succeeds; sends are short-circuited and logged.
 - All email sends are logged to the `emaillogs` MongoDB collection with status `sent` or `failed`.
 
 ### Tests fail with "MongoMemoryServer" errors

@@ -3,6 +3,7 @@ import type {
   Application, SubmitPayload, UpdatePayload, FilterParams, ReportName,
   AnalyticsDashboard, FunnelData, TrendData, TagAnalytics, DemographicsData, DealRoomAnalytics,
   TrafficOverview, TrafficTrends, ReferrerData, DeviceData, HourlyData, FormFunnelData, ClickData,
+  UploadResponse,
 } from './types/index.ts';
 import { store, localStore } from './store.ts';
 import { autoTag } from './utils/auto-tag.ts';
@@ -195,7 +196,18 @@ export const api = {
     if (store.get('useApi')) {
       return request('POST', '/applications', payload);
     }
+    // Demo / offline mode — accept attachments[] as a no-op stub so the local
+    // record still saves without any disk write. The real `storedAs` only
+    // matters for the backend.
     const refNumber = generateRefNumber();
+    const stubAttachments = (payload.attachments ?? []).map(a => ({
+      field: a.field,
+      filename: a.filename ?? `demo-${a.field}`,
+      storedAs: a.storedAs,
+      size: 0,
+      mimeType: 'application/octet-stream',
+      uploadedAt: new Date().toISOString(),
+    }));
     const app: Application = {
       _id: `local_${Date.now()}`,
       refNumber,
@@ -205,10 +217,77 @@ export const api = {
       tags: autoTag(payload.userType, payload.formData),
       status: 'new',
       dealRoom: { summitAccess: false, dealRoomEntry: false, funders: [] },
+      attachments: stubAttachments.length ? stubAttachments : undefined,
+      engagementSource: payload.engagementSource,
       submittedAt: new Date().toISOString(),
     };
     localStore.add(app);
     return { success: true, data: { refNumber } };
+  },
+
+  /** Upload a file (e.g. CV) to POST /api/applications/upload (multipart).
+   *  Returns the four-field success body per spec §8.1. The error code (e.g.
+   *  'FILE_TOO_LARGE', 'INVALID_MIME_TYPE') is bubbled up via `message`.
+   *  In demo / offline mode, returns a stub `storedAs` so the form still
+   *  proceeds — the local app.submit() also accepts the stub.
+   */
+  async uploadAttachment(
+    file: File,
+  ): Promise<ApiResponse<{ filename: string; storedAs: string; size: number; mimeType: string }>> {
+    if (!store.get('useApi')) {
+      // Demo-mode no-op — pretend the upload succeeded.
+      return {
+        success: true,
+        data: {
+          filename: file.name,
+          storedAs: `demo-${Date.now()}-${file.name}`,
+          size: file.size,
+          mimeType: file.type || 'application/octet-stream',
+        },
+      };
+    }
+
+    const fd = new FormData();
+    fd.append('file', file);
+
+    const headers: Record<string, string> = {};
+    const csrfToken = getCsrfToken();
+    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+    const authToken = getAuthToken();
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+    try {
+      const res = await fetchWithTimeout(`${API_URL}/applications/upload`, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: fd,
+      });
+
+      let body: Partial<UploadResponse> & { message?: string; code?: string } = {};
+      try { body = await res.json(); } catch { /* ignore parse error */ }
+
+      if (!res.ok || !body.success) {
+        return {
+          success: false,
+          message: body.message || body.code || `Upload failed (${res.status})`,
+        };
+      }
+      return {
+        success: true,
+        data: {
+          filename: body.filename ?? file.name,
+          storedAs: body.storedAs ?? '',
+          size: body.size ?? file.size,
+          mimeType: body.mimeType ?? (file.type || 'application/octet-stream'),
+        },
+      };
+    } catch (err) {
+      const msg = (err as Error).name === 'AbortError'
+        ? 'Upload timed out'
+        : 'Network error — please check your connection';
+      return { success: false, message: msg };
+    }
   },
 
   async exportMyData(refNumber: string, email: string): Promise<ApiResponse<unknown>> {
@@ -346,6 +425,8 @@ export const api = {
     const apps = localStore.get();
     const filters: Record<string, (a: Application) => boolean> = {
       'high-value-developers': a => a.tags?.some(t => ['HIGH_VALUE', 'LARGE_CAPITAL'].includes(t)) ?? false,
+      'pipeline-ready-developers': a => a.tags?.includes('PIPELINE_READY') ?? false,
+      // Deprecated alias kept for old bookmarks (removed in next major).
       'pipeline-ready-land': a => a.tags?.includes('PIPELINE_READY') ?? false,
       'institutional-grade-housing': a => a.tags?.includes('INSTITUTIONAL_GRADE') ?? false,
       'deal-room-shortlist': a => ['shortlisted', 'invited'].includes(a.status),

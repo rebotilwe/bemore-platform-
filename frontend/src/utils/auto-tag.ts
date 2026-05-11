@@ -1,64 +1,92 @@
+/* ---------------------------------------------------------------
+   Auto-tag mirror — matches backend/src/utils/autoTag.js rule-for-rule.
+   Source of truth: docs/superpowers/specs/2026-05-11-onboarding-flow-update-design.md §9.
+   Emits ONLY §9.1–9.4 tags; legacy §9.5 tags are never produced.
+   Pure function: (userType, formData) → string[].
+   Cross-engine parity covered by frontend/src/__tests__/auto-tag-parity.test.ts.
+   ---------------------------------------------------------------*/
+
 import type { ProfileCategory } from '../types/index.ts';
 
-export function autoTag(type: ProfileCategory, f: Record<string, unknown>): string[] {
-  const t: string[] = [];
+// ── Spec §7.2 / §14 — canonical activityLevel enum ──
+const ACTIVITY_ACTIVELY = 'Actively looking';
+const ACTIVITY_OPEN = 'Open to the right opportunity';
+const ACTIVITY_LOW = 'Not actively looking';
 
-  // Universal
-  if (f.estimatedValue === 'R100m+') t.push('HIGH_VALUE', 'LARGE_CAPITAL');
-  if (f.estimatedValue === 'R20m – R100m') t.push('HIGH_VALUE');
-  if (f.estimatedValue === 'R5m – R20m') t.push('MID_VALUE');
-  if (f.landStatus === 'Land Secured') t.push('LAND_SECURED');
-  if (f.projectStage === 'Funding Stage') t.push('FUNDING_STAGE');
-  if (f.projectStage === 'Construction Stage') t.push('SHOVEL_READY');
-  if (typeof f.previousFunding === 'string') {
-    if (f.previousFunding.includes('Institutional')) t.push('FUNDED_BEFORE', 'INSTITUTIONAL_TRACK');
-    if (f.previousFunding.includes('Private')) t.push('FUNDED_BEFORE');
-  }
-  if (Array.isArray(f.seeking)) {
-    if (f.seeking.includes('Equity Partner')) t.push('SEEKS_EQUITY');
-    if (f.seeking.includes('Debt Funding')) t.push('SEEKS_DEBT');
-  }
-  if (f.landStatus === 'Land Secured' && ['Funding Stage', 'Construction Stage'].includes(f.projectStage as string)) t.push('PIPELINE_READY');
-  if (f.landStatus === 'Land Secured' && (f.estimatedValue as string)?.includes('R100m')) t.push('INSTITUTIONAL_GRADE');
+type FD = Record<string, unknown>;
 
-  // Type-specific
+function asArray(v: unknown): unknown[] {
+  if (v == null) return [];
+  return Array.isArray(v) ? v : [v];
+}
+
+function includesValue(field: unknown, value: string): boolean {
+  return asArray(field).includes(value);
+}
+
+export function autoTag(type: ProfileCategory | string, f: FD | undefined | null): string[] {
+  if (!f || typeof f !== 'object') return [];
+  const t = new Set<string>();
+
+  // ── §9.1 Universal tags ──
+  if (f.activityLevel === ACTIVITY_ACTIVELY) t.add('ACTIVELY_LOOKING');
+  else if (f.activityLevel === ACTIVITY_OPEN) t.add('OPEN_TO_OPPORTUNITY');
+  else if (f.activityLevel === ACTIVITY_LOW) t.add('LOW_INTENT');
+
+  // ── §9.2 Per-profile tags ──
   if (type === 'developer') {
-    if (f.yearsExperience === '10+ years') t.push('EXPERIENCED');
-    if (Array.isArray(f.developmentTypes) && f.developmentTypes.includes('Student Housing')) t.push('STUDENT_FOCUS');
-  }
-  if (type === 'landowner') {
-    if ((f.landSize as string)?.includes('5,000') || (f.landSize as string)?.includes('10,000')) t.push('LARGE_LAND');
-    if ((f.isServiced as string)?.includes('Yes')) t.push('SERVICED');
-    if (f.zoningStatus && !['Unzoned', 'Awaiting Rezoning'].includes(f.zoningStatus as string)) t.push('ZONED');
-    if ((f.developmentAppetite as string)?.includes('Joint Venture') || (f.developmentAppetite as string)?.includes('all options')) t.push('SEEKS_EQUITY');
-    if (f.existingBond === 'No') t.push('PIPELINE_READY');
-  }
-  if (type === 'investor') {
-    t.push('INVESTOR');
-    if ((f.investmentAmount as string)?.includes('R100m')) t.push('LARGE_INVESTOR');
-    if ((f.investmentAmount as string)?.includes('R20m') || (f.investmentAmount as string)?.includes('R100m')) t.push('HIGH_VALUE');
-    if (f.priorInvestmentExperience === 'Yes') t.push('EXPERIENCED');
-    if (Array.isArray(f.investmentFocus) && f.investmentFocus.includes('Student Accommodation')) t.push('STUDENT_FOCUS');
-    const timeline = f.decisionTimeline as string;
-    if (timeline?.includes('Immediate') || timeline?.includes('3 months')) t.push('PIPELINE_READY');
-  }
-  if (type === 'student') {
-    if ((f.totalBedCount as string)?.includes('500+')) t.push('LARGE_OPERATOR');
-    if ((f.averageOccupancy as string)?.includes('95%+')) t.push('HIGH_OCCUPANCY');
-    if (f.universityPartnership === 'Yes') t.push('UNI_ACCREDITED');
-    if (f.nsfasAccreditation === 'Fully accredited') t.push('NSFAS_ACCREDITED');
-    if (Array.isArray(f.supportNeeds) && f.supportNeeds.includes('Capital raise / funding for expansion')) t.push('FUNDING_STAGE');
-    if ((f.totalBedCount as string)?.includes('500+') && (f.averageOccupancy as string)?.includes('95%+')) t.push('INSTITUTIONAL_GRADE');
-    if ((f.growthIntention as string)?.includes('Grow significantly')) t.push('PIPELINE_READY');
-  }
-  if (type === 'professional') {
-    if ((f.typicalProjectValue as string)?.includes('R100m') || (f.typicalProjectValue as string)?.includes('R20m')) t.push('LARGE_SCALE');
-    if ((f.registrationBody as string)?.includes('SACAP')) t.push('REGISTERED');
-    if ((f.registrationBody as string)?.includes('ECSA')) t.push('REGISTERED');
-    if ((f.registrationBody as string)?.includes('ASAQS')) t.push('REGISTERED');
-    if (f.currentCapacity === 'Immediately available') t.push('PIPELINE_READY');
-    if ((f.associateDatabase as string)?.includes('actively looking')) t.push('SEEKS_EQUITY');
+    if (['Construction-ready', 'Under construction'].includes(f.developmentStage as string)) t.add('SHOVEL_READY');
+    if (['No funding secured', 'In discussions'].includes(f.fundingPosition as string)) t.add('FUNDING_GAP');
+    if (['R20M–R100M', 'R100M+'].includes(f.projectValue as string)) t.add('HIGH_VALUE');
+    if (includesValue(f.developmentTypes, 'Student Accommodation')) t.add('STUDENT_FOCUS');
+  } else if (type === 'landowner') {
+    if (f.landOutcome === 'Sell') t.add('LAND_SELLER');
+    if (f.landOutcome === 'Develop') t.add('LAND_DEVELOPER');
+    if (f.landOutcome === 'Partner') t.add('LAND_JV');
+    if (f.landOutcome === 'Generate income') t.add('LAND_INCOME');
+    if (f.startedDevWork === 'Yes') t.add('WORK_STARTED');
+  } else if (type === 'investor') {
+    if (['R10M–R20M', 'R20M+'].includes(f.investmentRange as string)) t.add('LARGE_INVESTOR');
+    if (includesValue(f.investmentApproach, 'Equity')) t.add('EQUITY_INVESTOR');
+    if (includesValue(f.investmentApproach, 'Debt')) t.add('DEBT_FUNDER');
+    if (includesValue(f.investmentApproach, 'JV')) t.add('JV_PARTNER');
+    if (f.capitalDeployment === 'Active') t.add('ACTIVE_DEPLOYER');
+  } else if (type === 'student') {
+    if (f.portfolioSize === '500+ beds') t.add('LARGE_OPERATOR');
+    if (['51–200 beds', '201–500 beds'].includes(f.portfolioSize as string)) t.add('MID_OPERATOR');
+    if (['Above 90%', 'High'].includes(f.occupancyLevel as string)) t.add('HIGH_OCCUPANCY');
+    if (f.opChallenge === 'Growth') t.add('GROWTH_FOCUS');
+  } else if (type === 'professional') {
+    if (f.experienceLevel === 'Senior (10+ years)') t.add('SENIOR_PRO');
+    if (Array.isArray(f.provinces) && (f.provinces as unknown[]).length >= 3) t.add('MULTI_PROVINCE');
+    if (includesValue(f.projectTypes, 'Student Accommodation')) t.add('STUDENT_ACC_EXP');
+    if (f.avgProjectSize === 'Major (R50M+)') t.add('MAJOR_PROJECTS');
+    if (f.workStructure === 'Independent') t.add('INDEPENDENT');
+  } else if (type === 'aspiring') {
+    if (f.hasLandAccess === 'Yes') t.add('HAS_LAND');
+    if (f.realisticStart === 'Immediately') t.add('READY_NOW');
+    if (f.holdingBack === 'Funding') t.add('NEEDS_FUNDING');
+    if (f.holdingBack === 'Knowledge') t.add('NEEDS_KNOWLEDGE');
   }
 
-  return [...new Set(t)];
+  // ── §9.3 Composite "deal-room" signals ──
+  if (
+    type === 'developer'
+    && t.has('SHOVEL_READY') && t.has('HIGH_VALUE') && t.has('ACTIVELY_LOOKING')
+  ) t.add('PIPELINE_READY');
+
+  if (type === 'investor' && t.has('LARGE_INVESTOR') && t.has('ACTIVE_DEPLOYER')) {
+    t.add('HOT_INVESTOR');
+  }
+
+  if (type === 'student' && t.has('LARGE_OPERATOR') && t.has('HIGH_OCCUPANCY')) {
+    t.add('INSTITUTIONAL_OPERATOR');
+  }
+
+  // ── §9.4 INSTITUTIONAL_GRADE (kept distinct from PIPELINE_READY) ──
+  if (type === 'developer' && t.has('HIGH_VALUE') && t.has('STUDENT_FOCUS')) {
+    t.add('INSTITUTIONAL_GRADE');
+  }
+
+  return [...t];
 }

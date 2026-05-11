@@ -191,13 +191,13 @@ const GUIDE_SECTIONS = [
           <div class="guide-report-use">Use for: Identifying top-tier funding candidates for PBSA</div>
         </div>
         <div class="guide-report" style="border-color:#4cb87a">
-          <h4 style="color:#4cb87a">Land Readiness</h4>
-          <p>Landowners tagged <strong>PIPELINE_READY</strong> — they have secured land with an active project stage. Ready for development partnership.</p>
-          <div class="guide-report-use">Use for: Finding joint venture opportunities</div>
+          <h4 style="color:#4cb87a">Pipeline Ready</h4>
+          <p>Developers tagged <strong>PIPELINE_READY</strong> — combining <strong>SHOVEL_READY</strong> (construction-ready or under construction), <strong>HIGH_VALUE</strong> (R20M+ project value), and <strong>ACTIVELY_LOOKING</strong>. Ready for institutional capital.</p>
+          <div class="guide-report-use">Use for: Top-priority deal flow into PBSA</div>
         </div>
         <div class="guide-report" style="border-color:#7ab8e8">
-          <h4 style="color:#7ab8e8">Student Housing</h4>
-          <p>Operators meeting <strong>INSTITUTIONAL_GRADE</strong> criteria — high occupancy, large bed count, university accredited.</p>
+          <h4 style="color:#7ab8e8">Institutional Grade</h4>
+          <p>Developers tagged <strong>INSTITUTIONAL_GRADE</strong> — combining <strong>HIGH_VALUE</strong> with <strong>STUDENT_FOCUS</strong>. The clearest matches for the PBSA student-accommodation thesis.</p>
           <div class="guide-report-use">Use for: Matching with student accommodation funding</div>
         </div>
         <div class="guide-report" style="border-color:#e8a47a">
@@ -229,7 +229,7 @@ const GUIDE_SECTIONS = [
         </div>
         <div class="guide-feature">
           <h4>Tag Distribution</h4>
-          <p>Shows which intelligence tags are most common. If "HIGH_VALUE" is rare, your pipeline may need more high-tier applicants. If "LAND_SECURED" is common, you have deal-ready leads.</p>
+          <p>Shows which intelligence tags are most common. If "HIGH_VALUE" is rare, your pipeline may need more high-tier applicants. A healthy share of "ACTIVELY_LOOKING" + "SHOVEL_READY" signals deal-ready momentum.</p>
         </div>
         <div class="guide-feature">
           <h4>Demographics</h4>

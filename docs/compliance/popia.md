@@ -1,6 +1,6 @@
 # POPIA Compliance Documentation -- BeMore Platform
 
-**Last updated**: 24 Apr 2026
+**Last updated**: 11 May 2026
 **Document owner**: Bukani Tech Solutions (Pty) Ltd
 **Review cadence**: Annually, or upon material change to data processing
 
@@ -69,6 +69,7 @@ Data subjects can request a full export of their personal information by providi
 2. Enters their reference number and email.
 3. System verifies identity by matching both fields.
 4. Full application record is returned as JSON.
+5. **Confirmation email (`data_export_receipt`)** is dispatched fire-and-forget via Resend (`sendDataExportReceipt`) confirming the export was honoured. The receipt includes the timestamp and reference number but **not** the signed download URL (the 5-minute TTL would expire before the inbox is read). A failed email send does not block the API response.
 
 **Rate limiting**: Public endpoint is rate-limited to 100 requests per 15 minutes to prevent abuse.
 
@@ -81,9 +82,11 @@ Data subjects can request permanent deletion of their personal information.
 **Process**:
 1. Applicant provides reference number, email, and explicit confirmation string `"DELETE"`.
 2. System verifies identity by matching reference number and email.
-3. Application record is permanently removed from the database.
-4. Associated email logs are deleted.
-5. Action is recorded in the AdminAuditLog (with redacted PII) for compliance auditing.
+3. Applicant identity (`firstName`, `email`, `refNumber`) is captured in memory **before** the delete runs, so the receipt email can be addressed correctly.
+4. Application record is permanently removed from the database (`findOneAndDelete`).
+5. Associated email logs are deleted.
+6. Action is recorded in the AdminAuditLog (with redacted PII) for compliance auditing.
+7. **Confirmation email (`data_delete_receipt`)** is dispatched fire-and-forget via Resend (`sendDataDeleteReceipt`) confirming permanent erasure. The receipt includes timestamp and reference number; no CTA buttons (the record no longer exists). A failed email send does not block the API response.
 
 **Safeguards**:
 - Triple verification: reference number + email + explicit `"DELETE"` confirmation.
@@ -115,7 +118,7 @@ For objections to specific processing activities (e.g., email communications), a
 
 - All client-server communication uses HTTPS/TLS (enforced by Vercel and Railway).
 - Backend API endpoints are served behind TLS-terminating proxies.
-- SMTP email delivery uses TLS on port 465 (`mail.bts-app.co.za`).
+- Transactional email delivery is performed via the Resend HTTPS API (`api.resend.com`); SMTP was removed on 2026-05-11.
 
 ### 4.2 PII Redaction in Logs
 
@@ -263,7 +266,7 @@ BeMore relies on the following third-party processors. Each must maintain adequa
 | **Railway** | Backend hosting | Application data, API requests, logs | US (with regional options) | SOC 2 compliant, encrypted at rest |
 | **Vercel** | Frontend hosting, edge functions | Static assets, analytics metadata, request routing | Global CDN (edge) | SOC 2 compliant, encrypted in transit |
 | **MongoDB Atlas** | Database hosting | All application records, email logs, audit logs | Cloud (configurable region) | Encryption at rest (AES-256), TLS in transit, SOC 2 |
-| **SMTP Provider** (mail.bts-app.co.za) | Email delivery | Recipient email, email content (name, ref number, status) | South Africa | TLS on port 465 |
+| **Resend** | Email delivery (sole provider as of 2026-05-11) | Recipient email, email content (name, ref number, status, POPIA receipt confirmations) | US / EU regions | HTTPS API, SOC 2 |
 | **Vercel Analytics** | Web analytics | Page views, performance metrics (no PII) | Global | Privacy-focused, no cookie tracking |
 
 ### Operator agreements
@@ -329,7 +332,9 @@ All administrative actions are recorded in the `AdminAuditLog` collection with 7
 | `status_update` | Application status change (e.g., new to reviewing) |
 | `bulk_status_update` | Bulk status change across multiple applications |
 | `data_export` | CSV data export by admin |
-| `data_delete` | Application deletion (data subject request) |
+| `data_delete` | Application deletion (data subject request). On success, a `data_delete_receipt` email is also logged to `EmailLog`. |
+| `popia.data_export` | Applicant-initiated POPIA export via `POST /api/applications/data-export`. On success, a `data_export_receipt` email is also logged to `EmailLog`. |
+| `popia.data_deleted` | Applicant-initiated POPIA erasure via `POST /api/applications/data-delete`. On success, a `data_delete_receipt` email is also logged to `EmailLog`. |
 | `email_reminder_sent` | Individual email reminder sent |
 | `bulk_email_sent` | Bulk summit reminder emails sent |
 | `settings_update` | Platform settings modified |

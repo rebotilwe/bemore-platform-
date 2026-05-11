@@ -26,6 +26,8 @@ const adminAuditLogSchema = new mongoose.Schema({
       'report_generated',
       'poll_create', 'poll_update', 'poll_delete', 'poll_activate',
       'application_view', 'lead_classify',
+      // Attachment actions (spec §8.3, §8.4, §8.5)
+      'attachment.download', 'attachment.delete', 'attachment.signed-download',
     ],
     required: true,
     index: true,

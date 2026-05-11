@@ -141,15 +141,15 @@ function renderDemographics(data: DemographicsData): string {
     <div class="an-section-label">Application Demographics</div>
     <div class="an-section-triple">
       <div class="an-card">
-        <h3 class="an-card-title">Estimated Value</h3>
+        <h3 class="an-card-title">Project Value</h3>
         ${barChart(data.byValue.filter(v => v._id).map(v => ({ label: v._id || 'N/A', value: v.count, color: '#c9a84c' })))}
       </div>
       <div class="an-card">
-        <h3 class="an-card-title">Previous Funding</h3>
+        <h3 class="an-card-title">Funding Position</h3>
         ${barChart(data.byFundingHistory.filter(v => v._id).map(v => ({ label: v._id || 'N/A', value: v.count, color: '#4cb87a' })))}
       </div>
       <div class="an-card">
-        <h3 class="an-card-title">Land Status</h3>
+        <h3 class="an-card-title">Land Outcome</h3>
         ${barChart(data.byLandStatus.filter(v => v._id).map(v => ({ label: v._id || 'N/A', value: v.count, color: '#7ab8e8' })))}
       </div>
     </div>

@@ -1,6 +1,8 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 
+// Note: process.env.UPLOAD_DIR is seeded in jest.env-setup.js (runs before module imports).
+
 let mongoServer;
 
 beforeAll(async () => {

@@ -1,8 +1,51 @@
 /* ---------------------------------------------------------------
-   Step 5 — Confirmation & Consent
+   Step 5 — Feedback + Consent (spec §5)
+   - Feedback question group rendered via shared <question-group>:
+     activityLevel + (notActiveReason if showIf) + feedback. Conditional
+     re-render fires when activityLevel changes.
+   - Consent block (T&Cs + POPIA) preserved from step-confirm.ts.
    ---------------------------------------------------------------*/
 
-export function renderStepConfirm(): string {
+import type { ProfileCategory } from '../../../types/index.ts';
+import { store } from '../../../store.ts';
+import { renderQuestionGroup } from '../../../components/question-group.ts';
+import { PROFILE_CONFIG, visibleQuestions } from '../../../utils/step-readiness.ts';
+
+function patchFormData(profile: ProfileCategory, id: string, value: unknown, host: HTMLElement): void {
+  const fd = (store.get('formData') ?? {}) as Record<string, unknown>;
+  fd[id] = value;
+  store.set('formData', fd);
+  if (id === 'activityLevel' || id === 'capitalDeployment') {
+    clearStaleHiddenValues(profile);
+    rerender(profile, host);
+  }
+}
+
+function clearStaleHiddenValues(profile: ProfileCategory): void {
+  const fd = (store.get('formData') ?? {}) as Record<string, unknown>;
+  const all = PROFILE_CONFIG[profile].step5;
+  const visible = new Set(visibleQuestions(all, fd).map(q => q.id));
+  for (const q of all) {
+    if (!visible.has(q.id) && q.id in fd) delete fd[q.id];
+  }
+  store.set('formData', fd);
+}
+
+function rerender(profile: ProfileCategory, host: HTMLElement): void {
+  host.innerHTML = '';
+  const fd = (store.get('formData') ?? {}) as Record<string, unknown>;
+  host.appendChild(
+    renderQuestionGroup(
+      PROFILE_CONFIG[profile].step5,
+      fd,
+      (id, value) => patchFormData(profile, id, value, host),
+    ),
+  );
+}
+
+/* ── Consent markup (preserved from previous step-confirm.ts) ── */
+
+function consentMarkup(): string {
   return `
     <div class="fdiv">Terms & Conditions</div>
 
@@ -43,13 +86,40 @@ export function renderStepConfirm(): string {
     </div>`;
 }
 
-export function mountStepConfirm(): void {
+export function renderStepFeedbackConsent(_profile: ProfileCategory): string {
+  return `
+    <div class="fdiv">Final Thoughts</div>
+    <div id="step5-questions"></div>
+    ${consentMarkup()}
+  `;
+}
+
+export function mountStepFeedbackConsent(profile: ProfileCategory): void {
+  clearStaleHiddenValues(profile);
+  const host = document.getElementById('step5-questions');
+  if (host) rerender(profile, host);
+
+  // Wire consent toggles
   const wire = (id: string) => {
     const row = document.getElementById(id);
     if (!row) return;
+    // Restore prior consent state
+    const fd = (store.get('formData') ?? {}) as Record<string, unknown>;
+    const consent = (fd.consent as { tc?: boolean; popia?: boolean }) ?? {};
+    const initial = id === 'consent-tc' ? consent.tc : consent.popia;
+    if (initial) {
+      row.classList.add('sel');
+      row.setAttribute('aria-checked', 'true');
+    }
     const toggle = () => {
       const selected = row.classList.toggle('sel');
       row.setAttribute('aria-checked', String(selected));
+      const fd2 = (store.get('formData') ?? {}) as Record<string, unknown>;
+      const c = (fd2.consent as { tc?: boolean; popia?: boolean }) ?? {};
+      if (id === 'consent-tc') c.tc = selected;
+      else c.popia = selected;
+      fd2.consent = c;
+      store.set('formData', fd2);
     };
     row.addEventListener('click', toggle);
     row.addEventListener('keydown', (e: KeyboardEvent) => {

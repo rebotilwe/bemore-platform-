@@ -28,6 +28,7 @@ async function seedTestData() {
       userType: 'developer',
       personal: { firstName: 'Lookup', surname: 'Test', email: 'lookup@example.co.za', phone: '0821234567', companyName: 'Test Corp' },
       formData: { landStatus: 'Land Secured', projectStage: 'Funding Stage', estimatedValue: 'R20m – R100m', engagementSource: 'qr' },
+      consent: { tc: true, popia: true },
     });
 
   testRefNumber = appRes.body.data.refNumber;
@@ -125,6 +126,7 @@ describe('Engagement Source Tracking', () => {
         userType: 'investor',
         personal: { firstName: 'No', surname: 'Source', email: 'nosource@test.co.za', phone: '0821111111' },
         formData: {},
+        consent: { tc: true, popia: true },
       });
 
     const doc = await Application.findOne({ 'personal.email': 'nosource@test.co.za' });
@@ -300,13 +302,19 @@ describe('GET /api/applications/export/csv', () => {
     expect(res.headers['content-type']).toContain('text/csv');
 
     const header = res.text.split('\n')[0];
+    // Spec §6.8 — universal columns
     expect(header).toContain('Classification');
     expect(header).toContain('Source');
+    expect(header).toContain('Activity Level');
+    expect(header).toContain('Feedback');
     expect(header).toContain('Follow-Up Required');
     expect(header).toContain('Follow-Up Due');
     expect(header).toContain('Admin Notes');
-    expect(header).toContain('Est. Value');
-    expect(header).toContain('Project Stage');
+    expect(header).toContain('Created At');
+    // Per-profile columns appear because the seeded test app is a developer
+    expect(header).toContain('Development Stage');
+    expect(header).toContain('Project Value');
+    expect(header).toContain('Funding Position');
   });
 
   it('should require auth', async () => {

@@ -1,13 +1,58 @@
 import Application from '../models/Application.js';
 import { APPLICATION_STATUSES, FUNDER_NAMES, SORTABLE_FIELDS } from '../constants/enums.js';
+import { ALLOWED_ATTACHMENT_FIELDS, cvStat, mimeFromStoredName, sanitizeFilename } from './uploadService.js';
 
 const ALLOWED_UPDATE_FIELDS = ['status', 'dealRoom', 'adminNotes', 'classification', 'followUp', 'allocatedProjects'];
+
+/**
+ * Resolve user-supplied attachment refs to full metadata by stat'ing disk.
+ * Throws err.status=400 + err.code on validation failure.
+ * Spec §8.2.
+ */
+async function resolveAttachments(refs = []) {
+  if (!Array.isArray(refs) || refs.length === 0) return [];
+  const resolved = [];
+  for (const ref of refs) {
+    if (!ref || typeof ref !== 'object') {
+      const err = new Error('Invalid attachment entry');
+      err.status = 400;
+      err.code = 'ATTACHMENT_FIELD_INVALID';
+      throw err;
+    }
+    if (!ALLOWED_ATTACHMENT_FIELDS.has(ref.field)) {
+      const err = new Error(`Attachment field "${ref.field}" not allowed`);
+      err.status = 400;
+      err.code = 'ATTACHMENT_FIELD_INVALID';
+      throw err;
+    }
+    const stat = await cvStat(ref.storedAs);
+    if (!stat.exists) {
+      const err = new Error(`Attachment ${ref.storedAs} not found`);
+      err.status = 400;
+      err.code = 'ATTACHMENT_NOT_FOUND';
+      throw err;
+    }
+    resolved.push({
+      field: ref.field,
+      // If client supplies original filename, sanitise it; otherwise fall back to storedAs.
+      filename: sanitizeFilename(ref.filename) || ref.storedAs,
+      storedAs: ref.storedAs,
+      size: stat.size,
+      mimeType: mimeFromStoredName(ref.storedAs),
+      uploadedAt: new Date(),
+    });
+  }
+  return resolved;
+}
 
 export async function createApplication(data) {
   // Extract engagement source from formData to top-level field
   if (data.formData?.engagementSource) {
     data.engagementSource = data.formData.engagementSource;
   }
+
+  // Resolve attachments (validates + reads metadata from disk).
+  const attachments = await resolveAttachments(data.attachments);
 
   // Duplicate check: same email + userType = duplicate
   if (data.personal?.email) {
@@ -23,7 +68,7 @@ export async function createApplication(data) {
     }
   }
 
-  const app = new Application(data);
+  const app = new Application({ ...data, attachments });
   await app.save();
   return app;
 }

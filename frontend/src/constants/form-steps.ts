@@ -1,3 +1,15 @@
+/* ---------------------------------------------------------------
+   Form step titles + labels.
+   Aligned to spec §6.1 file rename + §5 step roles:
+     Step 1 — Identity
+     Step 2 — Position + Activity
+     Step 3 — Constraints + Alignment
+     Step 4 — Contact
+     Step 5 — Feedback + Consent
+   Per-profile overrides tailor the title/subtitle for steps 2 and 3
+   where the PDF's section headings differ.
+   ---------------------------------------------------------------*/
+
 export interface StepMeta {
   title: string;
   subtitle: string;
@@ -5,50 +17,68 @@ export interface StepMeta {
 }
 
 export const FORM_STEPS: StepMeta[] = [
-  { title: 'Basic Information',      subtitle: 'Let\'s start with your contact details.',                  label: 'Info' },
-  { title: 'Development Readiness',  subtitle: 'Tell us about your project status and readiness level.',   label: 'Readiness' },
-  { title: 'Funding & Partnership',  subtitle: 'What kind of support are you looking for?',                label: 'Funding' },
-  { title: 'Project Details',        subtitle: 'Describe your project and what sets you apart.',            label: 'Project' },
-  { title: 'Confirmation & Consent', subtitle: 'Review the terms and submit your application.',             label: 'Confirm' },
+  { title: 'Tell us about you',           subtitle: 'Your identity and the entity you represent.',                  label: 'Identity'    },
+  { title: 'Where you are today',         subtitle: 'Your current position and activity.',                          label: 'Position'    },
+  { title: 'Constraints & alignment',     subtitle: 'What you are working through and what matters most.',          label: 'Constraints' },
+  { title: 'Contact details',             subtitle: 'How we reach you.',                                            label: 'Contact'     },
+  { title: 'Final thoughts',              subtitle: 'Where you are now, anything else to share, and consent.',      label: 'Feedback'    },
 ];
 
-const INVESTOR_OVERRIDES: Partial<StepMeta>[] = [
+const DEVELOPER_OVERRIDES: Partial<StepMeta>[] = [
+  { title: 'Tell us about your development activity', subtitle: 'You and the entity behind your projects.' },
+  { title: 'Your development position',               subtitle: 'Stage, type, and scale of your work.', label: 'Position' },
+  { title: 'Funding position & alignment',            subtitle: 'Where you are with capital and what matters when evaluating partners.', label: 'Constraints' },
   {},
-  { title: 'Investment Profile',    subtitle: 'Tell us about your investment mandate and appetite.',  label: 'Profile' },
-  { title: 'Investment Intentions', subtitle: 'What opportunities are you looking for?',              label: 'Intentions' },
-  { title: 'Additional Notes',      subtitle: 'Anything else you\'d like us to know?',                label: 'Notes' },
   {},
 ];
 
 const LANDOWNER_OVERRIDES: Partial<StepMeta>[] = [
+  { title: 'Tell us about your land',  subtitle: 'Your identity and the land you hold.' },
+  { title: 'Your land',                subtitle: 'Where it is and what you want to do with it.', label: 'Land' },
+  { title: 'Land status & blockers',   subtitle: 'Zoning, work started, and what is preventing progress.', label: 'Constraints' },
   {},
-  { title: 'Land Profile',           subtitle: 'Tell us about your land and what you\'d like to do with it.', label: 'Land' },
-  { title: 'Partnership Preferences', subtitle: 'What outcome are you looking for?',                          label: 'Partnership' },
+  {},
+];
+
+const INVESTOR_OVERRIDES: Partial<StepMeta>[] = [
+  { title: 'Tell us about you as an investor', subtitle: 'Your identity and how you invest.' },
+  { title: 'Your investment focus',            subtitle: 'What you look for and how you invest.', label: 'Focus' },
+  { title: 'Decision drivers & deployment',    subtitle: 'What guides your decisions and how actively you are deploying capital.', label: 'Drivers' },
   {},
   {},
 ];
 
 const STUDENT_OVERRIDES: Partial<StepMeta>[] = [
+  { title: 'Tell us about your operation',  subtitle: 'Your identity and your accommodation business.' },
+  { title: 'Your portfolio',                subtitle: 'Size, locations, and operational reality.', label: 'Portfolio' },
+  { title: 'Performance & growth',          subtitle: 'Occupancy and what limits your ability to scale.', label: 'Growth' },
   {},
-  { title: 'Portfolio Profile',        subtitle: 'Tell us about your student accommodation portfolio.',     label: 'Portfolio' },
-  { title: 'Support Needs',            subtitle: 'What kind of support are you looking for?',               label: 'Needs' },
-  { title: 'Portfolio Description',    subtitle: 'Describe your properties and expansion plans.',           label: 'Details' },
   {},
 ];
 
 const PROFESSIONAL_OVERRIDES: Partial<StepMeta>[] = [
+  { title: 'Tell us about your professional profile', subtitle: 'Your identity and your role in the built environment.' },
+  { title: 'Your market position',                    subtitle: 'Experience, provinces, and how you operate.', label: 'Position' },
+  { title: 'Project exposure & alignment',            subtitle: 'Project types, size, and what matters when reviewing opportunities.', label: 'Exposure' },
   {},
-  { title: 'Professional Profile',      subtitle: 'Tell us about your discipline and experience.',      label: 'Profile' },
-  { title: 'Association Interest',      subtitle: 'How would you like to collaborate?',                 label: 'Interest' },
-  { title: 'Additional Information',    subtitle: 'Anything else you\'d like us to know?',              label: 'Notes' },
+  {},
+];
+
+const ASPIRING_OVERRIDES: Partial<StepMeta>[] = [
+  { title: 'Tell us about your starting point', subtitle: 'Your identity and your development ambition.' },
+  { title: 'Your background',                   subtitle: 'Exposure, access to land, and what you want to build.', label: 'Background' },
+  { title: 'What is holding you back',          subtitle: 'Constraints and when you realistically want to start.', label: 'Constraints' },
+  {},
   {},
 ];
 
 const PROFILE_OVERRIDES: Record<string, Partial<StepMeta>[]> = {
-  investor:     INVESTOR_OVERRIDES,
+  developer:    DEVELOPER_OVERRIDES,
   landowner:    LANDOWNER_OVERRIDES,
-  professional: PROFESSIONAL_OVERRIDES,
+  investor:     INVESTOR_OVERRIDES,
   student:      STUDENT_OVERRIDES,
+  professional: PROFESSIONAL_OVERRIDES,
+  aspiring:     ASPIRING_OVERRIDES,
 };
 
 export function getStepMeta(stepIndex: number, profile?: string): StepMeta {

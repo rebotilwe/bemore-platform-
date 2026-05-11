@@ -1,0 +1,12 @@
+node_modules
+__tests__
+coverage
+uploads
+.env
+.env.local
+*.log
+.git
+.gitignore
+.DS_Store
+Dockerfile
+.dockerignore

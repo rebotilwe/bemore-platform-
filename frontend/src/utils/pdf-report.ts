@@ -6,7 +6,17 @@
 import type { Application } from '../types/index.ts';
 import { CATEGORY_LABELS } from '../constants/categories.ts';
 import { STATUS_LABELS } from '../constants/status.ts';
+import { LEGACY_TAGS } from '../constants/tags.ts';
 import { formatDate, esc } from './format.ts';
+
+/** New keys first, legacy fallback second (FE-4 risk callout). */
+function getDisplayValue(fd: Record<string, unknown>): string {
+  return (fd.projectValue as string)
+    || (fd.investmentRange as string)
+    || (fd.avgProjectSize as string)
+    || (fd.estimatedValue as string)
+    || '';
+}
 
 interface ReportConfig {
   title: string;
@@ -28,11 +38,17 @@ export function exportPdfReport(apps: Application[], config: ReportConfig): void
   apps.forEach(a => {
     typeCounts[a.userType] = (typeCounts[a.userType] || 0) + 1;
     statusCounts[a.status] = (statusCounts[a.status] || 0) + 1;
-    (a.tags || []).forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; });
-    const val = (a.formData as Record<string, unknown>)?.estimatedValue as string || '';
-    if (val.includes('R100m')) totalValue += 100;
-    else if (val.includes('R20m')) totalValue += 50;
-    else if (val.includes('R5m')) totalValue += 10;
+    // Filter legacy tags out of the chart counts (spec §9.5).
+    (a.tags || []).forEach(t => {
+      if (LEGACY_TAGS.has(t)) return;
+      tagCounts[t] = (tagCounts[t] || 0) + 1;
+    });
+    const val = getDisplayValue((a.formData as Record<string, unknown>) ?? {});
+    // Match both new ("R100M+", "R20M–R100M") and legacy ("R100m", "R20m") shapes.
+    const v = val.toLowerCase();
+    if (v.includes('r100m') || v.includes('100m+')) totalValue += 100;
+    else if (v.includes('r20m')) totalValue += 50;
+    else if (v.includes('r5m')) totalValue += 10;
   });
 
   const typeRows = Object.entries(typeCounts)
@@ -56,8 +72,8 @@ export function exportPdfReport(apps: Application[], config: ReportConfig): void
     const name = `${app.personal?.firstName ?? ''} ${app.personal?.surname ?? ''}`.trim() || 'Unknown';
     const type = (CATEGORY_LABELS as Record<string, string>)[app.userType] || app.userType;
     const status = (STATUS_LABELS as Record<string, string>)[app.status] || app.status;
-    const value = (app.formData as Record<string, unknown>)?.estimatedValue as string || '-';
-    const tags = (app.tags || []).slice(0, 3).join(', ');
+    const value = getDisplayValue((app.formData as Record<string, unknown>) ?? {}) || '-';
+    const tags = (app.tags || []).filter(t => !LEGACY_TAGS.has(t)).slice(0, 3).join(', ');
     const date = app.submittedAt ? formatDate(app.submittedAt) : '-';
     const company = app.personal?.companyName || '-';
     const bg = i % 2 === 0 ? '#fff' : '#faf8f4';
@@ -80,7 +96,19 @@ export function exportPdfReport(apps: Application[], config: ReportConfig): void
     const type = (CATEGORY_LABELS as Record<string, string>)[app.userType] || app.userType;
     const status = (STATUS_LABELS as Record<string, string>)[app.status] || app.status;
     const fd = (app.formData as Record<string, unknown>) || {};
-    const tags = (app.tags || []).map(t => `<span style="display:inline-block;padding:2px 8px;margin:1px;background:#f5f0e5;border-radius:3px;font-size:10px">${esc(t)}</span>`).join(' ');
+    const tags = (app.tags || []).filter(t => !LEGACY_TAGS.has(t)).map(t => `<span style="display:inline-block;padding:2px 8px;margin:1px;background:#f5f0e5;border-radius:3px;font-size:10px">${esc(t)}</span>`).join(' ');
+    // New keys first, legacy fallback so old applications still display (FE-4).
+    const estValue = (fd.projectValue as string)
+      || (fd.investmentRange as string)
+      || (fd.avgProjectSize as string)
+      || (fd.estimatedValue as string)
+      || '-';
+    const landStatusText = (fd.landOutcome as string) || (fd.landStatus as string) || '-';
+    const projectStageText = (fd.developmentStage as string) || (fd.projectStage as string) || '-';
+    const seekingRaw = fd.investmentApproach ?? fd.developmentTypes ?? fd.seeking;
+    const seekingText = Array.isArray(seekingRaw)
+      ? (seekingRaw as string[]).join(', ')
+      : (seekingRaw as string) || '-';
 
     return `
     <div style="page-break-inside:avoid;border:1px solid #e0d9c8;border-radius:8px;padding:16px;margin-bottom:12px">
@@ -94,8 +122,8 @@ export function exportPdfReport(apps: Application[], config: ReportConfig): void
       <table style="width:100%;font-size:12px;border-collapse:collapse">
         <tr><td style="color:#888;width:120px;padding:2px 0">Profile</td><td>${esc(type)}</td><td style="color:#888;width:120px">Company</td><td>${esc(app.personal?.companyName || '-')}</td></tr>
         <tr><td style="color:#888;padding:2px 0">Email</td><td>${esc(app.personal?.email || '-')}</td><td style="color:#888">Phone</td><td>${esc(app.personal?.phone || '-')}</td></tr>
-        <tr><td style="color:#888;padding:2px 0">Est. Value</td><td>${esc(fd.estimatedValue as string || '-')}</td><td style="color:#888">Land Status</td><td>${esc(fd.landStatus as string || '-')}</td></tr>
-        <tr><td style="color:#888;padding:2px 0">Project Stage</td><td>${esc(fd.projectStage as string || '-')}</td><td style="color:#888">Seeking</td><td>${esc(Array.isArray(fd.seeking) ? (fd.seeking as string[]).join(', ') : (fd.seeking as string) || '-')}</td></tr>
+        <tr><td style="color:#888;padding:2px 0">Est. Value</td><td>${esc(estValue)}</td><td style="color:#888">Land / Outcome</td><td>${esc(landStatusText)}</td></tr>
+        <tr><td style="color:#888;padding:2px 0">Project Stage</td><td>${esc(projectStageText)}</td><td style="color:#888">Seeking</td><td>${esc(seekingText)}</td></tr>
       </table>
       ${tags ? `<div style="margin-top:6px">${tags}</div>` : ''}
     </div>`;

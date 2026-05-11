@@ -2,9 +2,13 @@ const nodeEnv = process.env.NODE_ENV || 'development';
 const isProd = nodeEnv === 'production';
 const isStaging = nodeEnv === 'staging';
 
-// Validate required env vars in production and staging
+// Validate required env vars in production and staging.
+// `RESEND_API_KEY` is required because Resend is the sole transactional email
+// provider (SMTP fallback was removed 2026-05-11). Without it the app boots,
+// returns 201 on submit, but every email — incl. POPIA receipts — silently
+// fails. Fail loud at boot instead.
 if (isProd || isStaging) {
-  const required = ['JWT_SECRET', 'MONGODB_URI'];
+  const required = ['JWT_SECRET', 'MONGODB_URI', 'RESEND_API_KEY'];
   const missing = required.filter(k => !process.env[k]);
   if (missing.length) {
     console.error(`FATAL: Missing required env vars in production: ${missing.join(', ')}`);
@@ -58,12 +62,12 @@ export const config = Object.freeze({
     allowedHeaders: ['Content-Type', 'Authorization'],
   },
   mail: {
-    host: process.env.SMTP_HOST || '',
-    port: Number(process.env.SMTP_PORT) || 587,
-    user: process.env.SMTP_USER || '',
-    pass: process.env.SMTP_PASS || '',
-    from: process.env.SMTP_FROM || 'noreply@bemore.co.za',
-    fromName: process.env.SMTP_FROM_NAME || 'BeMore Group',
+    // Resend is the sole email provider (SMTP was removed 2026-05-11).
+    // `EMAIL_FROM` / `EMAIL_FROM_NAME` are the canonical envs; legacy
+    // `SMTP_FROM` / `SMTP_FROM_NAME` still read as a fallback so existing
+    // deployments keep working until the env rename is applied in Railway.
+    from: process.env.EMAIL_FROM || process.env.SMTP_FROM || 'onboarding@resend.dev',
+    fromName: process.env.EMAIL_FROM_NAME || process.env.SMTP_FROM_NAME || 'BeMore',
     resendApiKey: process.env.RESEND_API_KEY || '',
   },
   admin: {

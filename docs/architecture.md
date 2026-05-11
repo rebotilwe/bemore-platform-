@@ -1,6 +1,6 @@
 # BeMore Platform Architecture
 
-**Last updated**: 29 Apr 2026
+**Last updated**: 11 May 2026
 
 ---
 
@@ -442,27 +442,30 @@ The frontend API client detects 401 responses on authenticated requests and auto
 
 ### Provider Architecture
 
+As of **2026-05-11**, Resend is the sole transactional email provider. The legacy
+SMTP path (nodemailer + `mail.bts-app.co.za:465`) and its `checkSmtp()` health
+probe were removed.
+
 ```
   sendEmail({ to, subject, html, text })
        |
-       +--- Try Resend API first (if RESEND_API_KEY configured)
-       |       |
-       |       +--- Success: return { provider: 'resend', id }
-       |       |
-       |       +--- Failure: fall through to SMTP
-       |
-       +--- Try SMTP fallback (if SMTP_HOST configured)
-       |       |
-       |       +--- Success: return { provider: 'smtp' }
-       |       |
-       |       +--- Failure: return { success: false }
-       |
-       +--- Neither configured: log error, return failure
+       +--- RESEND_API_KEY set?
+               |
+               +--- Yes: POST to Resend API
+               |       |
+               |       +--- 2xx: log EmailLog{status:'sent'}, return { provider:'resend', id }
+               |       +--- !2xx: log EmailLog{status:'failed', error:'Resend …'}
+               |
+               +--- No: log warn, log EmailLog{status:'failed'}, short-circuit success path
 ```
 
-**Resend** (primary): Cloud email API via `resend` npm package. Configured with `RESEND_API_KEY`.
+**Resend** (only path): Cloud email API via the `resend` npm package. Configured
+with `RESEND_API_KEY`. Sends are dispatched fire-and-forget from POPIA receipt
+handlers so a Resend outage never blocks an API response.
 
-**SMTP** (fallback): Nodemailer with `mail.bts-app.co.za:465` (TLS). Connection verified on startup (non-blocking). Timeouts: connect 15s, greeting 15s, socket 30s.
+**Health check (`/api/health`)**: Now config-only. The `email` field reports
+`'ok'` when `RESEND_API_KEY` is set or `'not configured'` otherwise — no
+network probe of the provider is performed.
 
 ### Email Templates
 
@@ -472,10 +475,14 @@ All emails use a shared `buildEmail()` function that generates branded HTML:
 - Body: Heading, greeting, content, reference number card, CTA buttons
 - Footer: Company details and platform link
 
-Three template types:
+Five template types:
 1. **Submission Confirmation** (`sendSubmissionConfirmation`) -- sent on new application
 2. **Status Notification** (`sendStatusNotification`) -- sent on status change (reviewing, shortlisted, invited, funded)
 3. **Summit Reminder** (`sendSummitReminder`) -- admin-triggered bulk or individual reminders
+4. **Data Export Receipt** (`sendDataExportReceipt`) -- fire-and-forget after `POST /api/applications/data-export`. Confirms the export was honoured (timestamp + refNumber). Does NOT include the signed download URL (5-min TTL).
+5. **Data Delete Receipt** (`sendDataDeleteReceipt`) -- fire-and-forget after `POST /api/applications/data-delete`. Confirms permanent erasure; identity captured BEFORE `findOneAndDelete` runs. No CTA buttons (record no longer exists).
+
+The shared `buildEmail()` template HTML-escapes `firstName` and `refNumber` via an internal `escapeHtml()` helper. Inputs are already sanitised at the route boundary (validator.escape on names; refNumber is server-generated `BM-XXXXXXXX`); the escape is defence-in-depth against future regressions.
 
 ### Email Logging
 
@@ -753,8 +760,8 @@ All three jobs run on Ubuntu with Node 20.
 | `JWT_SECRET` | 32+ char random | 32+ char random | `dev-secret-change-me` |
 | `CORS_ORIGIN` | (uses defaults) | (uses defaults) | (uses all) |
 | `PLATFORM_URL` | `bemore-tawny.vercel.app` | `bemorecapital.co.za` | `localhost:3000` |
-| `RESEND_API_KEY` | Set | Set | Optional |
-| `SMTP_*` | Fallback config | Fallback config | Optional |
+| `RESEND_API_KEY` | Required | Required | Optional (sends are no-ops if missing) |
+| `EMAIL_FROM` / `EMAIL_FROM_NAME` | Set (verified Resend domain) | Set | Optional (defaults to `onboarding@resend.dev` / `BeMore`) |
 
 ### Process Resilience
 

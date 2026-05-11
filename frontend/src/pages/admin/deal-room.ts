@@ -4,6 +4,7 @@ import { toast } from '../../components/toast.ts';
 import { CATEGORY_LABELS } from '../../constants/categories.ts';
 import { STATUS_LABELS, STATUS_CSS } from '../../constants/status.ts';
 import { FUNDERS } from '../../constants/funders.ts';
+import { LEGACY_TAGS, TAG_LABELS } from '../../constants/tags.ts';
 import { formatDate, esc } from '../../utils/format.ts';
 import { mountAdminLayout } from './layout.ts';
 import { renderAppDetail, openModal } from '../../components/app-detail-modal.ts';
@@ -63,8 +64,14 @@ function renderCard(app: Application): string {
   const summitChecked = app.dealRoom?.summitAccess ? ' checked' : '';
   const dealRoomChecked = app.dealRoom?.dealRoomEntry ? ' checked' : '';
   const activeFunders = app.dealRoom?.funders ?? [];
-  const tags = (app.tags ?? []).slice(0, 3).map(t => `<span class="tag-badge">${esc(t)}</span>`).join('');
-  const value = (app.formData as Record<string, unknown>)?.estimatedValue as string || '';
+  const fd = (app.formData as Record<string, unknown>) ?? {};
+  const tags = (app.tags ?? []).filter(t => !LEGACY_TAGS.has(t)).slice(0, 3).map(t => `<span class="tag-badge">${esc(TAG_LABELS[t] ?? t)}</span>`).join('');
+  // Display the most relevant "value" cue, with legacy fallback (FE-4).
+  const value = (fd.projectValue as string)
+    || (fd.investmentRange as string)
+    || (fd.avgProjectSize as string)
+    || (fd.estimatedValue as string)
+    || '';
   const date = app.submittedAt ? formatDate(app.submittedAt) : '';
 
   const funderChips = FUNDERS.map(f => {

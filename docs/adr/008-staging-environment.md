@@ -39,7 +39,7 @@ Deploy the staging environment as follows:
 
 The staging environment enforces the same security and validation rules as production but uses:
 - A separate JWT secret (staging tokens cannot authenticate against production).
-- A separate SMTP configuration (or disabled email sending to avoid sending to real applicants from staging).
+- A separate Resend API key (or unset to disable email sending and avoid messaging real applicants from staging). SMTP fallback was removed 2026-05-11.
 - A disposable database that can be reset without consequence.
 
 ## Consequences

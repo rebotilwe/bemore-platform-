@@ -73,14 +73,14 @@ describe('GET /api/reports/:name', () => {
     expect(res.body.data.count).toBeGreaterThan(0);
   });
 
-  it('should return pipeline-ready-land report', async () => {
+  it('should return pipeline-ready-developers report', async () => {
     const res = await request(app)
-      .get('/api/reports/pipeline-ready-land')
+      .get('/api/reports/pipeline-ready-developers')
       .set('Cookie', authCookie)
       .set('X-CSRF-Token', csrfToken);
 
     expect(res.status).toBe(200);
-    expect(res.body.data.report).toBe('pipeline-ready-land');
+    expect(res.body.data.report).toBe('pipeline-ready-developers');
   });
 
   it('should return institutional-grade-housing report', async () => {

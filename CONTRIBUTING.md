@@ -23,7 +23,7 @@ Thank you for your interest in contributing to BeMore, a live engagement and dat
 
 ```bash
 cd backend
-cp .env.example .env   # Fill in MONGODB_URI, JWT_SECRET, and SMTP credentials
+cp .env.example .env   # Fill in MONGODB_URI, JWT_SECRET, and RESEND_API_KEY (SMTP removed 2026-05-11)
 npm install
 npm run dev            # Starts on http://localhost:5000
 ```

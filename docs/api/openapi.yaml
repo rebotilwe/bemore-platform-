@@ -330,6 +330,91 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /applications/upload:
+    post:
+      tags: [Applications]
+      summary: Upload an attachment (public, multipart)
+      description: |
+        Spec §8.1 — multipart/form-data upload for the Built Environment
+        Professional CV (Q13). Accepts a single file in the `file` field. No
+        authentication required, but a valid `X-CSRF-Token` header is mandatory
+        (CSRF double-submit). Rate limited to 100 req/15min per IP.
+
+        - Max file size: **5 MB** (`MAX_FILE_BYTES` in `uploadService.js`).
+        - Accepted MIME types: `application/pdf`, `application/msword`,
+          `application/vnd.openxmlformats-officedocument.wordprocessingml.document`.
+        - Files are persisted to `${UPLOAD_DIR}/cv/<uuid>.<ext>` (Railway
+          mounts a persistent volume at `/app/uploads`).
+        - The returned `storedAs` value must be passed back in
+          `attachments[].storedAs` on `POST /applications` to link the file
+          to the submission.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/CSRFToken'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: PDF or Word document, max 5 MB.
+      responses:
+        '200':
+          description: Upload accepted and persisted to disk
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  filename:
+                    type: string
+                    description: Sanitised display filename (`[a-zA-Z0-9 ._-]`).
+                    example: cv-thabo-mokoena.pdf
+                  storedAs:
+                    type: string
+                    description: UUID-based filename on disk; pass to `POST /applications` via `attachments[].storedAs`.
+                    example: 7c8a3a2e-1234-4abc-9def-0123456789ab.pdf
+                  size:
+                    type: integer
+                    description: File size in bytes.
+                    example: 124356
+                  mimeType:
+                    type: string
+                    example: application/pdf
+        '400':
+          description: |
+            Upload rejected. `code` is one of:
+            - `NO_FILE` — no `file` field in the request.
+            - `FILE_TOO_LARGE` — file exceeds 5 MB.
+            - `INVALID_MIME_TYPE` — not a PDF or Word document.
+            - `UPLOAD_ERROR` — other multer-level failure.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  code:
+                    type: string
+                    enum: [NO_FILE, FILE_TOO_LARGE, INVALID_MIME_TYPE, UPLOAD_ERROR]
+                  message:
+                    type: string
+                    example: File exceeds 5 MB limit
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          description: Disk-write failure (`STORAGE_ERROR`).
+
   /applications/lookup:
     post:
       tags: [Applications]
@@ -533,6 +618,180 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /applications/{refNumber}/attachment/{storedAs}/signed:
+    get:
+      tags: [Applications]
+      summary: Download attachment via signed link (public, no auth)
+      description: |
+        Spec §8.5 — public download of an attachment using an HMAC-signed URL.
+        No authentication and no CSRF required; integrity is enforced by the
+        `expires` + `sig` query parameters.
+
+        Signature scheme (`backend/src/utils/signedLinks.js`):
+        - `sig = HMAC-SHA256(JWT_SECRET, "${refNumber}|${storedAs}|${expires}")` (hex)
+        - `expires = floor(Date.now()/1000) + 300` (default TTL 5 minutes,
+          `SIGNED_LINK_TTL_SECONDS`)
+
+        Signed links are typically embedded in the `attachments[].downloadUrl`
+        field returned by `POST /applications/data-export`.
+
+        Response is the raw file bytes with
+        `Content-Disposition: attachment; filename="<original-filename>"`.
+      security: []
+      parameters:
+        - name: refNumber
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^BM-[A-Z0-9]{4,12}$'
+          example: BM-09C5B0EF
+        - name: storedAs
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9._-]+$'
+          example: 7c8a3a2e-1234-4abc-9def-0123456789ab.pdf
+        - name: expires
+          in: query
+          required: true
+          description: Unix epoch (seconds) at which the link expires.
+          schema:
+            type: integer
+            example: 1747005600
+        - name: sig
+          in: query
+          required: true
+          description: Hex HMAC-SHA256 signature (see description).
+          schema:
+            type: string
+            pattern: '^[a-f0-9]{64}$'
+      responses:
+        '200':
+          description: File bytes streamed with attachment disposition.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: attachment; filename="cv-thabo-mokoena.pdf"
+            Content-Type:
+              schema:
+                type: string
+                example: application/pdf
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '403':
+          description: '`BAD_SIGNATURE` — HMAC mismatch or malformed `sig`/`expires`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: '`APPLICATION_NOT_FOUND` or `ATTACHMENT_NOT_FOUND`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '410':
+          description: |
+            Link no longer usable. `code` is one of:
+            - `LINK_EXPIRED` — `expires` is in the past.
+            - `FILE_MISSING_ON_DISK` — DB record exists but the file was removed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /applications/{refNumber}/attachment/{storedAs}:
+    get:
+      tags: [Applications]
+      summary: Download attachment (admin)
+      description: |
+        Spec §8.3 — authenticated admin download of an attachment. Same
+        response shape as the signed-link variant above. Every successful
+        download is recorded in `AdminAuditLog` (`attachment.download`).
+      parameters:
+        - name: refNumber
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^BM-[A-Z0-9]{4,12}$'
+        - name: storedAs
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9._-]+$'
+      responses:
+        '200':
+          description: File bytes streamed with attachment disposition.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: attachment; filename="cv-thabo-mokoena.pdf"
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: '`APPLICATION_NOT_FOUND` or `ATTACHMENT_NOT_FOUND`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '410':
+          description: '`FILE_MISSING_ON_DISK` — DB record exists but the file is gone.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags: [Applications]
+      summary: Delete attachment (admin)
+      description: |
+        Spec §8.4 — remove an attachment from disk and from the application's
+        `attachments[]` array. Disk deletion is best-effort; if the file is
+        already missing the DB entry is still removed (orphan is logged for
+        the sweeper). Requires CSRF token. Audit-logged as
+        `attachment.delete`.
+      parameters:
+        - name: refNumber
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^BM-[A-Z0-9]{4,12}$'
+        - name: storedAs
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[a-zA-Z0-9._-]+$'
+        - $ref: '#/components/parameters/CSRFToken'
+      responses:
+        '204':
+          description: Attachment deleted (no body).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: '`APPLICATION_NOT_FOUND` or `ATTACHMENT_NOT_FOUND`.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /applications/{id}:
     get:
       tags: [Applications]
@@ -643,6 +902,13 @@ paths:
       description: |
         Allows an applicant to download all their stored data using reference number
         and email. An analytics event (`popia.data_export`) is logged.
+
+        **Side effect (2026-05-11):** Fire-and-forget `data_export_receipt` email
+        (`sendDataExportReceipt`) is dispatched via Resend confirming the export was
+        honoured. The receipt email includes the timestamp + refNumber but NOT the
+        signed download URL (the 5-min TTL would expire before the inbox is read).
+        A failed Resend send does not block this API response.
+
         Rate limited to 100 req/15min per IP.
       security: []
       requestBody:
@@ -682,7 +948,16 @@ paths:
       description: |
         Permanently and irreversibly deletes all data for the matching application.
         Requires the `confirm` field to be exactly `"DELETE"`. An analytics event
-        (`popia.data_deleted`) is logged. Rate limited to 100 req/15min per IP.
+        (`popia.data_deleted`) is logged.
+
+        **Side effect (2026-05-11):** Fire-and-forget `data_delete_receipt` email
+        (`sendDataDeleteReceipt`) is dispatched via Resend confirming permanent
+        erasure. The receipt is sent to the applicant's address captured BEFORE
+        `findOneAndDelete` runs (so the recipient is known even though the record
+        no longer exists). No CTA buttons are included. A failed Resend send does
+        not block this API response.
+
+        Rate limited to 100 req/15min per IP.
       security: []
       requestBody:
         required: true
@@ -1188,14 +1463,39 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /reports/pipeline-ready-land:
+  /reports/pipeline-ready-developers:
     get:
       tags: [Reports]
-      summary: Pipeline-ready land report
-      description: Pre-built report of applications tagged PIPELINE_READY with land secured.
+      summary: Pipeline-ready developers report
+      description: |
+        Pre-built report of developer applications tagged `PIPELINE_READY`.
+        Renamed 2026-05-11 from `pipeline-ready-land` — the `PIPELINE_READY`
+        tag only emits for the developer profile per spec §9.3, so the old
+        name was a semantic mismatch.
       responses:
         '200':
           description: Report data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /reports/pipeline-ready-land:
+    get:
+      tags: [Reports]
+      deprecated: true
+      summary: Pipeline-ready developers report (deprecated alias)
+      description: |
+        **Deprecated** backwards-compatibility alias for
+        `/reports/pipeline-ready-developers`. Returns the identical payload.
+        Will be removed in the next major release — clients should migrate to
+        the new path. Re-added 2026-05-11 to avoid breaking existing dashboard
+        bookmarks while the rename rolls out.
+      responses:
+        '200':
+          description: Report data (same shape as `/reports/pipeline-ready-developers`).
           content:
             application/json:
               schema:
@@ -1584,12 +1884,48 @@ components:
   schemas:
     ApplicationInput:
       type: object
-      required: [userType, personal]
+      required: [userType, personal, consent]
       properties:
         userType:
           type: string
           enum: [developer, landowner, investor, student, professional, aspiring]
           example: developer
+        consent:
+          type: object
+          required: [tc, popia]
+          description: |
+            Mandatory POPIA consent block. Both flags MUST be `true` —
+            the route validator returns 400 (`VALIDATION_ERROR`) otherwise.
+          properties:
+            tc:
+              type: boolean
+              enum: [true]
+              description: Must be true (POPIA — Terms & Conditions accepted).
+            popia:
+              type: boolean
+              enum: [true]
+              description: Must be true (POPIA — data processing consent granted).
+        attachments:
+          type: array
+          maxItems: 5
+          description: |
+            Optional references to previously-uploaded files (spec §8.2). Each
+            entry must reference a `storedAs` returned by `POST /applications/upload`.
+            Currently only `field: "cv"` is recognised (Built Environment
+            Professional CV upload, Q13). Unknown fields are rejected with
+            `ATTACHMENT_FIELD_INVALID` (400); missing files on disk return
+            `ATTACHMENT_NOT_FOUND` (400).
+          items:
+            type: object
+            required: [field, storedAs]
+            properties:
+              field:
+                type: string
+                example: cv
+              storedAs:
+                type: string
+                pattern: '^[a-zA-Z0-9._-]+$'
+                example: 7c8a3a2e-1234-4abc-9def-0123456789ab.pdf
         personal:
           type: object
           required: [firstName, surname, email, phone]
@@ -1814,7 +2150,13 @@ components:
           type: string
         template:
           type: string
-          enum: [submission_confirmation, status_notification, summit_reminder]
+          enum: [submission_confirmation, status_notification, reminder, summit_reminder, data_export_receipt, data_delete_receipt]
+          description: |
+            Active templates emitted by `backend/src/utils/mailer.js`:
+            `submission_confirmation`, `status_notification`, `reminder`,
+            `data_export_receipt`, `data_delete_receipt`.
+            `summit_reminder` is retained as a legacy enum value for
+            historical EmailLog rows written before 2026-05-11.
         refNumber:
           type: string
         status:

@@ -48,6 +48,9 @@ service-account.json
 .claude/
 New folder/
 
+# Backend uploads (CV attachments — never commit)
+backend/uploads/
+
 # Images (except PWA icons)
 *.png
 *.jpg
