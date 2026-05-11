@@ -190,8 +190,23 @@ function nextStepReady(
 - **Filter chips** (replace current tag chips):
   - Always-visible: `Actively looking`, `Open`, `Low intent`, `Pipeline ready`, `Hot investor`, `Institutional operator`.
   - Profile-conditional: appear only when a profile filter is selected (e.g. selecting "Land Owner" reveals `Sellers`, `Developers`, `JV`, `Income`).
-- Legacy tags listed in §8.5 never render as chips and never appear on lead cards.
+- Legacy tags listed in §9.5 never render as chips and never appear on lead cards.
 - **CSV export** column set updates per §6.8.
+
+#### 6.7.1 Profile chip map
+
+When a profile filter is selected, the chips below replace the per-profile chip area. Universal + composite chips remain visible regardless.
+
+| Profile selected | Chips revealed (label → tag) |
+|---|---|
+| Developer | *Shovel ready* → `SHOVEL_READY`; *Funding gap* → `FUNDING_GAP`; *High value* → `HIGH_VALUE`; *Student focus* → `STUDENT_FOCUS` |
+| Land Owner | *Sellers* → `LAND_SELLER`; *Developers* → `LAND_DEVELOPER`; *JV* → `LAND_JV`; *Income* → `LAND_INCOME`; *Work started* → `WORK_STARTED` |
+| Investor | *Large* → `LARGE_INVESTOR`; *Equity* → `EQUITY_INVESTOR`; *Debt* → `DEBT_FUNDER`; *JV* → `JV_PARTNER`; *Active deployer* → `ACTIVE_DEPLOYER` |
+| Student Operator | *Large* → `LARGE_OPERATOR`; *Mid-size* → `MID_OPERATOR`; *High occupancy* → `HIGH_OCCUPANCY`; *Growth focus* → `GROWTH_FOCUS` |
+| Professional | *Senior* → `SENIOR_PRO`; *Multi-province* → `MULTI_PROVINCE`; *Student acc exp* → `STUDENT_ACC_EXP`; *Major projects* → `MAJOR_PROJECTS`; *Independent* → `INDEPENDENT` |
+| Aspiring | *Has land* → `HAS_LAND`; *Ready now* → `READY_NOW`; *Needs funding* → `NEEDS_FUNDING`; *Needs knowledge* → `NEEDS_KNOWLEDGE` |
+
+Chip behaviour: clicking a chip toggles it as a filter; multiple chips combine with **AND** semantics (lead must have all selected tags). Active chips render in gold; inactive in neutral.
 
 ### 6.8 CSV export columns
 
@@ -311,6 +326,7 @@ Old applications missing a column render the cell empty. Formula-injection prefi
 | Body field | `file` (single file) |
 | Accepted MIME types | `application/pdf`, `application/msword`, `application/vnd.openxmlformats-officedocument.wordprocessingml.document` |
 | Max file size | 5 MB (5 × 1024 × 1024 bytes) |
+| Multipart parser | `multer` (new dep) — disk storage to `${UPLOAD_DIR}/cv/` with UUID filename. Mime + size enforced via `multer.fileFilter` and `limits`. |
 
 **Success — 200:**
 ```json
@@ -600,9 +616,11 @@ After staging soak passes:
 
 ### 11.3 File storage tests
 
-- Sweeper: nightly cron sweeps files in `/app/uploads/cv/` not referenced by any `Application.attachments[].storedAs`. Test with seeded orphaned file → swept after run.
 - Upload validates max size + mime type + sanitises filename.
 - Concurrent uploads with same filename → different `storedAs` UUIDs, no collision.
+- Manual cleanup via `DELETE /api/applications/:refNumber/attachment/:storedAs` removes both DB entry and disk file.
+
+> **Deferred to next sprint** — automated orphaned-file sweeper cron. Manual cleanup via the DELETE endpoint covers v1 needs. Volume is 1 GB; orphans accumulate slowly (only on `POST /api/applications/upload` followed by application submission failure). Track as a follow-up ticket: schedule, retention window, and acceptance criteria to be defined when picked up. See §14.
 
 ### 11.4 Manual QA checklist (post-deploy)
 
@@ -646,7 +664,12 @@ After implementation + QA approval:
 
 ---
 
-## 14. Resolved Decisions
+## 14. Deferred / Follow-up
+
+- **Orphaned-file sweeper cron.** Not in this sprint. Manual cleanup via DELETE endpoint covers v1. Pick up when first orphan-volume problem appears, or proactively in next sprint. Define schedule + retention then.
+- **Dedicated `SIGNED_LINK_SECRET`** for §8.5 HMAC signing. Currently reuses `JWT_SECRET`. Rotation of `JWT_SECRET` would invalidate any in-flight signed links. Acceptable for v1 (5-min link lifetime, low rotation frequency) but worth splitting later.
+
+## 14a. Resolved Decisions
 
 - **Land Owner "Exploring" softening (Step 3 conditional)** — our call. Ship as designed; flag in QA notes for Workstream C visibility, no sign-off blocker.
 - **Universal `activityLevel` enum wording** — our call. Normalise the per-flow wording from the PDF into a single enum with three values:
