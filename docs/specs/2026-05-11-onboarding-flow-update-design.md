@@ -4,7 +4,7 @@
 **Owner:** Workstream C / Platform Engineering
 **Source brief:** `New/MEMORANDUM - Onboarding Flows for All 6 Stakeholder Types.pdf` (Workstream C Team, BeMore Group, 4 May 2026)
 **Status:** **Sprint complete 2026-05-11.** All BE-1..5, FE-1..5, QA-1..4, DOC-1..3 closed. DV-1 (production Railway volume) remains pending and is the only carry-over.
-**Related:** `docs/superpowers/specs/2026-05-11-sprint-hardening-design.md`
+**Related:** `docs/specs/2026-05-11-sprint-hardening-design.md`
 
 ---
 
@@ -600,7 +600,7 @@ Before promoting staging → main:
 
 After staging soak passes:
 1. Merge `staging` → `main` (squash).
-2. Verify `frontend/vercel.json` rewrite still points to `bemore-production.up.railway.app` (per CLAUDE.md post-merge warning).
+2. Verify `frontend/vercel.json` rewrite still points to `bemore-production.up.railway.app` (per the project guide post-merge warning).
 3. Vercel auto-deploys frontend.
 4. Railway auto-deploys backend.
 5. Post-deploy smoke: hit `/api/health`, submit one test application per profile, delete after.
@@ -671,7 +671,7 @@ After staging soak passes:
 ## 13. Documentation Deliverables (Docs agent owns)
 
 After implementation + QA approval:
-- `CLAUDE.md` — update *Profile-Aware Form*, *Auto-Tagging Engine*, *Application Data Model* sections.
+- the project guide — update *Profile-Aware Form*, *Auto-Tagging Engine*, *Application Data Model* sections.
 - `docs/api/openapi.yaml` — add the three new endpoints, update `Application` and `POST /applications` schemas.
 - `docs/SCHEMA.md` — add `attachments[]` field; document new `formData` keys per profile.
 - `docs/architecture.md` — note declarative question config + shared renderer pattern.

@@ -124,7 +124,7 @@ security: add rate limiting to vote endpoint
 
 ```bash
 cd backend
-npm test                # Runs all 71 Jest tests (sequential, uses mongodb-memory-server)
+npm test                # Runs all 311 Jest tests (sequential, uses mongodb-memory-server)
 npm run test:coverage   # With coverage report
 npx jest __tests__/auth.test.js          # Single file
 npx jest -t "should create application"  # Pattern match

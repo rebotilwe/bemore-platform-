@@ -294,5 +294,5 @@ If the release included data model changes that corrupted or altered data:
 
 1. Notify the team that a rollback occurred and why.
 2. Create a ticket for the root cause investigation.
-3. Write a brief post-mortem (see incident response procedures in the global CLAUDE.md).
+3. Write a brief post-mortem (see the incident response runbook, `docs/runbooks/incident-response.md`).
 4. Fix the issue on a branch, validate on staging, and re-release following the standard workflow.

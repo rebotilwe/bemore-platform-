@@ -2,15 +2,18 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Last updated**: 11 May 2026
+**Last updated**: 17 June 2026
 
 ## Sprint state
 
 **Active sprint:** _none — last sprint completed 2026-05-11._
 
+**Backlog (received, NOT yet implemented):**
+- **Muma + Pormat dual-brand onboarding (Spec V4, dated 1 May 2026).** A new onboarding model that splits leads across two brands — **Muma Consulting** (development consulting, JV structuring, funding-proposal packaging, built-environment professional database) and **Pormat Property Group** (real estate agency, sales, property management) — with 5 routing flows (Professional, Investor, Operator, Land Owner, General Enquiry) and per-submission `brand`/`lead_type` tagging. **This is a significant divergence from the current BeMore/PBSA model and is not reflected anywhere in the codebase.** Source spec: untracked `New/newSpec.md`; supporting memorandum PDF in `New/`. A draft `client-presentation.html` (untracked, repo root) also relates to this direction. Requires its own planning/sprint before any implementation.
+
 **Last completed sprint:** Onboarding Flow Update — All 6 Stakeholder Profiles (closed 2026-05-11)
-- **Spec:** `docs/superpowers/specs/2026-05-11-onboarding-flow-update-design.md`
-- **Task manifest:** `docs/superpowers/specs/2026-05-11-onboarding-flow-task-manifest.md`
+- **Spec:** `docs/specs/2026-05-11-onboarding-flow-update-design.md`
+- **Task manifest:** `docs/specs/2026-05-11-onboarding-flow-task-manifest.md`
 - **Outcome:** All 6 profile question sets realigned to the Workstream C memorandum (4 May 2026); universal Step-5 feedback layer shipped; optional CV upload live for Built Environment Professionals (Railway volume `/app/uploads`); auto-tagging + admin views updated. No DB migration performed.
 - **QA verdict:** APPROVED (after blocker #1 fix — Submit button silent-bail; QA-1..4 green).
 - **Outstanding follow-ups:** DV-1 (production Railway volume) still pending; everything else closed.
@@ -37,7 +40,7 @@ BeMore/
 │       ├── auth.ts           # JWT auth + session verify
 │       ├── pages/
 │       │   ├── public/       # hero, gateway, form (profile-aware 5-step), success, about (7 sub-routes), landing, status
-│       │   └── admin/        # login, dashboard, leads, analytics, reports, deal-room, audit-log, qr-generator, traffic, guide, settings
+│       │   └── admin/        # login, dashboard, leads, analytics, reports, deal-room, audit-log, qr-generator, traffic, guide, admins, settings
 │       ├── components/       # nav, toast, confirm-dialog, loading-button, empty-state, error-boundary, app-detail-modal
 │       ├── constants/        # categories, funders (PBSA), status, tags, form-steps (getStepMeta), summit-config
 │       ├── types/            # application, api, routes
@@ -55,7 +58,7 @@ BeMore/
 │   │   ├── routes/           # applications (POPIA endpoints), auth, health, analytics, reports, settings, tracking
 │   │   ├── middleware/       # auth (JWT + Bearer), csrfProtection, errorHandler, requestLogger, validate
 │   │   └── utils/            # autoTag (all 6 profiles), mailer (Resend only — SMTP removed 2026-05-11), logger (winston), redactPII (POPIA)
-│   └── __tests__/            # Jest + mongodb-memory-server (308 tests)
+│   └── __tests__/            # Jest + mongodb-memory-server (311 tests)
 ├── docs/
 │   ├── api/openapi.yaml      # OpenAPI 3.1 spec (50+ endpoints)
 │   ├── architecture.md       # System architecture with ASCII diagrams
@@ -84,7 +87,7 @@ npm install && npm run dev          # nodemon auto-restart
 cd frontend && npm run typecheck    # tsc --noEmit
 
 # Tests
-cd backend && npm test              # 308 Jest tests (sequential, --runInBand, cross-env)
+cd backend && npm test              # 311 Jest tests (sequential, --runInBand, cross-env)
 cd backend && npm run test:coverage # with coverage report
 cd frontend && npx vitest run       # 386 Vitest tests
 cd frontend && npm run test:coverage
@@ -103,7 +106,7 @@ cd frontend && npx vitest run -t "pattern"
 ### Routing (Frontend)
 Hash-based SPA router (`/#/path`). Routes defined in `src/router.ts`:
 - **Public**: `/`, `/gateway`, `/register`, `/about`, `/about/overview`, `/about/group`, `/about/vision`, `/about/empowerment`, `/about/impact`, `/about/performance`, `/about/opportunity`, `/success`, `/landing`, `/status`
-- **Admin** (auth guarded): `/admin/login`, `/admin/dashboard`, `/admin/leads`, `/admin/analytics`, `/admin/traffic`, `/admin/reports`, `/admin/deal-room`, `/admin/audit-log`, `/admin/qr`, `/admin/guide`, `/admin/settings`
+- **Admin** (auth guarded): `/admin/login`, `/admin/dashboard`, `/admin/leads`, `/admin/analytics`, `/admin/traffic`, `/admin/reports`, `/admin/deal-room`, `/admin/audit-log`, `/admin/qr`, `/admin/guide`, `/admin/admins`, `/admin/settings`
 
 ### API (Backend)
 - **Public**: `POST /api/applications`, `POST /api/applications/lookup` (returns `allocatedProjects`), `POST /api/applications/data-export`, `POST /api/applications/data-delete`, `GET /api/health`, `GET /api/settings/public/:key`

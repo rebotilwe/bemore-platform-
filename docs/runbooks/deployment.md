@@ -354,5 +354,5 @@ Use this process for critical production issues (P1/P2) that cannot wait for the
 ### Hotfix Communication
 
 - Notify the team in the designated channel before merging a hotfix.
-- After resolution, create a post-mortem for P1 incidents within 48 hours (see incident response protocol in CLAUDE.md).
+- After resolution, create a post-mortem for P1 incidents within 48 hours (see the incident response runbook, `docs/runbooks/incident-response.md`).
 - Track the hotfix ticket to ensure the root cause is addressed in a follow-up.

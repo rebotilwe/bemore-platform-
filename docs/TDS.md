@@ -64,8 +64,8 @@ The system handles the complete applicant lifecycle: registration, merit-based r
 └─────────────────────────────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────┐
-│              SMTP (mail.bts-app.co.za:465)               │
-│  - 6 email templates (co-branded BeMore x PBSA)          │
+│              Resend API (api.resend.com)                 │
+│  - 8 email templates (co-branded BeMore x PBSA)          │
 │  - Delivery tracked in EmailLog collection               │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -81,7 +81,7 @@ The system handles the complete applicant lifecycle: registration, merit-based r
 | Database | MongoDB | 7.x (Atlas) | Flexible schema for mixed formData, built-in TTL |
 | ODM | Mongoose | 8.x | Schema validation, middleware hooks, aggregation |
 | Auth | JWT (jsonwebtoken) | 9.x | Stateless, scalable |
-| Email | Nodemailer | 6.x | SMTP transport, reliable delivery |
+| Email | Resend | 4.x | Managed email API, reliable delivery |
 | Monitoring | Vercel Analytics + Speed Insights | 2.x | Real User Monitoring, Core Web Vitals |
 | Logging | Winston | 3.x | Structured JSON, log levels |
 
@@ -241,7 +241,7 @@ Routes → Middleware → Controllers → Services → Models → MongoDB
 ### 5.2 Caching
 - Service worker (v2): stale-while-revalidate for static assets
 - Vite hashed filenames: immutable 1-year cache headers
-- SMTP health check: 60-second cache to avoid per-request transport creation
+- Email health check: reports whether the Resend API key is configured
 
 ### 5.3 Error Handling
 - Global error boundary (frontend): catches unhandled errors, shows retry UI
@@ -298,7 +298,7 @@ GitHub (main branch)
   └── Railway (backend auto-deploy)
         ├── Express server
         ├── MongoDB Atlas connection
-        └── SMTP: mail.bts-app.co.za
+        └── Resend API: api.resend.com
 ```
 
 ---

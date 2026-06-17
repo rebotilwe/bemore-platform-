@@ -18,7 +18,7 @@ A **live engagement and data capture platform** for the BeMore SME Access Initia
 | Auth | JWT (bcryptjs) |
 | Email | Resend (sole provider — SMTP removed 2026-05-11) |
 | Monitoring | Vercel Analytics + Speed Insights, Winston structured logging |
-| Testing | Jest + mongodb-memory-server (backend, 71 tests), Vitest (frontend, 43 tests) |
+| Testing | Jest + mongodb-memory-server (backend, 311 tests), Vitest (frontend, 386 tests) |
 | Hosting | Vercel (frontend) + Railway (backend) |
 
 ## Architecture
@@ -60,7 +60,7 @@ BeMore/
       middleware/                   Auth (JWT), error handler, request logger, validate
       routes/                      Express routers (applications, auth, health, analytics, reports, polls, settings)
       utils/                       Auto-tag engine, email templates (6) + delivery tracking, logger (Winston)
-    __tests__/                     71 tests (Jest + mongodb-memory-server)
+    __tests__/                     311 tests (Jest + mongodb-memory-server)
     server.js                      Entry: DB connect (retry), admin seed, graceful shutdown, process error handlers
     seed.js                        Seeder (65 realistic SA applications)
 
@@ -102,7 +102,7 @@ BeMore/
 - **Auto-tagging engine** with 20+ intelligence tags (HIGH_VALUE, PIPELINE_READY, INSTITUTIONAL_GRADE, SHOVEL_READY, etc.)
 - **Duplicate prevention** — same email + userType returns 409 with existing refNumber
 - **Analytics system** with 7 MongoDB aggregation pipelines, event tracking on all mutations
-- **Email system** with 6 templates: submission confirmation, 4 status notifications (reviewing, shortlisted, invited, funded), summit reminder. All co-branded with logo header. Every send logged to `EmailLog` collection
+- **Email system** with 8 templates: submission confirmation, 4 status notifications (reviewing, shortlisted, invited, funded), summit reminder, and 2 POPIA receipts (data export, data delete). All co-branded with logo header. Every send logged to `EmailLog` collection
 - **Source tracking** via `?src=` URL parameter, captured in `sessionStorage`, persisted on submission
 - **Classification** system (hot/warm/cold/unclassified) with follow-up tracking (required, due date, notes)
 - **Site Settings** — key-value store for admin-configurable values (Mentimeter ID, summit config, etc.) with write whitelist
@@ -149,11 +149,11 @@ node seed.js --force  # Clear + re-seed
 ### Run Tests
 
 ```bash
-# Backend (71 tests — Jest + mongodb-memory-server)
+# Backend (311 tests — Jest + mongodb-memory-server)
 cd backend
 npm test
 
-# Frontend (43 tests — Vitest)
+# Frontend (386 tests — Vitest)
 cd frontend
 npx vitest run
 ```

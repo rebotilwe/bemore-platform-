@@ -2,7 +2,7 @@
 
 **Generated:** 2026-05-11
 **Architect:** bukani-architect
-**Source spec:** [`/home/sibnaye/Development/Bemore/docs/superpowers/specs/2026-05-11-onboarding-flow-update-design.md`](./2026-05-11-onboarding-flow-update-design.md) (commit `f7aedaa`)
+**Source spec:** [`/home/sibnaye/Development/Bemore/docs/specs/2026-05-11-onboarding-flow-update-design.md`](./2026-05-11-onboarding-flow-update-design.md) (commit `f7aedaa`)
 **Sprint goal:** Replace each profile's question set with the Workstream C memorandum content within the existing 5-step shell, add a universal feedback layer, add optional CV upload for Built Environment Professionals, and update auto-tagging + admin views accordingly. No DB migration. Ship all 6 profiles in one update.
 **Status:** **CLOSED 2026-05-11.** All BE-1..5, FE-1..5, QA-1..4, DOC-1..3 complete. DV-1 (production Railway volume) is the only carry-over (staging volume already provisioned and verified).
 
@@ -28,7 +28,7 @@
 | QA-4 — Pre-prod sign-off + vercel.json check | ✅ Complete |
 | DOC-1 — OpenAPI + SCHEMA + ADR | ✅ Complete |
 | DOC-2 — POPIA + deployment runbook | ✅ Complete |
-| DOC-3 — CLAUDE.md update | ✅ Complete (this docs pass, 2026-05-11) |
+| DOC-3 — the project guide update | ✅ Complete (this docs pass, 2026-05-11) |
 
 ---
 
@@ -55,7 +55,7 @@
 | **CP-2** | Frontend reports FE-1…FE-5 done | All 6 profile configs exist; renderer + step-readiness pass unit tests; admin lead detail renders both new and legacy applications without crashing; CSV export emits the §6.8 column set. |
 | **CP-3** | DevOps reports DV-1…DV-2 done | Staging Railway volume mounted at `/app/uploads`; redeploy survives a touch-file test; production volume provisioned but not yet active. |
 | **CP-4** | QA reports QA-1…QA-4 done | All §11.1–11.3 automated tests green; §11.4 manual checklist signed off on staging; cross-engine parity test green. |
-| **CP-5** | Pre-prod cutover | Staging soak (spec §10.4) complete; `frontend/vercel.json` post-merge sanity check (CLAUDE.md "Post-Merge Warning") performed. |
+| **CP-5** | Pre-prod cutover | Staging soak (spec §10.4) complete; `frontend/vercel.json` post-merge sanity check (the project guide "Post-Merge Warning") performed. |
 
 ---
 
@@ -364,7 +364,7 @@ Note: backend-side CSV export at `backend/src/controllers/applicationController.
 
 ## QA-4 — Pre-prod sign-off & vercel.json verification
 
-**Input:** spec §10.5, CLAUDE.md "Post-Merge Warning".
+**Input:** spec §10.5, the project guide "Post-Merge Warning".
 **Task:** Before squash-merging `staging` → `main`:
 - Confirm all QA-3 items signed off.
 - Inspect the proposed merge diff for `frontend/vercel.json`. The rewrite destination must be `bemore-production.up.railway.app` (NOT staging). The CSP `connect-src` must reference `bemore-production.up.railway.app`. If staging URLs leak, the squash merge will overwrite production URLs — flag back to architect.
@@ -408,9 +408,9 @@ Note: backend-side CSV export at `backend/src/controllers/applicationController.
 
 ---
 
-## DOC-3 — Update CLAUDE.md
+## DOC-3 — Update the project guide
 
-**Input:** Sections of CLAUDE.md to edit (architect-scoped):
+**Input:** Sections of the project guide to edit (architect-scoped):
 1. **"Application Data Model"** — add `attachments[]` field to the model snippet.
 2. **"Profile-Aware Form"** — replace the description with the new §6 architecture (declarative configs in `frontend/src/constants/profiles/`, shared `<question-group>` renderer, conditional `showIf` predicates, universal Step-5 feedback).
 3. **"Auto-Tagging Engine"** — replace the tag list with the spec §9.1–9.4 set; explicitly call out that §9.5 legacy tags exist on old documents but are no longer emitted.
@@ -419,8 +419,8 @@ Note: backend-side CSV export at `backend/src/controllers/applicationController.
 6. **"API"** section — add the four new endpoints to the public + admin lists.
 7. **"Sprint state"** section — mark sprint complete with merge date and link to the spec + manifest.
 
-**Output:** CLAUDE.md updated; `Last updated` date bumped.
-**Acceptance:** All seven edits landed; CLAUDE.md still well-structured (no duplication, no stale references to legacy field keys).
+**Output:** the project guide updated; `Last updated` date bumped.
+**Acceptance:** All seven edits landed; the project guide still well-structured (no duplication, no stale references to legacy field keys).
 **Dependencies:** DOC-1, DOC-2.
 
 ---

@@ -336,7 +336,7 @@ mongorestore --uri="$PROD_URI" \
 If both the application and database need to be recreated:
 
 1. **Code**: Clone the repository from GitHub (`main` branch).
-2. **Backend environment**: Create a new Railway project, set all environment variables from `.env.example` and the values documented in the CLAUDE.md (or retrieve from the team's secrets manager).
+2. **Backend environment**: Create a new Railway project, set all environment variables from `.env.example` and the values documented in `docs/environment-setup.md` (or retrieve from the team's secrets manager).
 3. **Database**: Either restore from an Atlas snapshot or create a fresh Atlas cluster and run the backend -- it will auto-seed the admin account on first startup (`server.js` seed logic).
 4. **Frontend**: Create a new Vercel project linked to the GitHub repo, configure `vercel.json` rewrites to point to the new Railway backend URL.
 5. **DNS**: Update any custom domain records if applicable.

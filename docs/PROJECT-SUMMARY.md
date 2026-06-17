@@ -23,13 +23,13 @@ The platform was built for the BeMore Summit (30-31 March 2026, Sandton Conventi
 
 | Metric | Value |
 |--------|-------|
-| Total frontend tests | 43 |
-| Total backend tests | 55 |
-| Combined test count | **98** |
-| API endpoints | 28 |
+| Total frontend tests | 386 |
+| Total backend tests | 311 |
+| Combined test count | **697** |
+| API endpoints | 44 |
 | Admin pages | 10 |
 | Public pages | 8 |
-| Email templates | 6 |
+| Email templates | 8 |
 | Intelligence tags | 20+ |
 | Rate limit tiers | 5 |
 | CSS modules | 29 |
@@ -65,7 +65,7 @@ The platform was built for the BeMore Summit (30-31 March 2026, Sandton Conventi
 
 ### Backend Infrastructure
 - Auto-tagging engine: 20+ intelligence tags applied on submission
-- Email system: 6 branded templates with delivery tracking (EmailLog)
+- Email system: 8 branded templates with delivery tracking (EmailLog)
 - Duplicate prevention: same email + userType returns 409
 - Site settings: admin-configurable key-value store (Mentimeter ID, etc.)
 - 5-tier rate limiting: health, public, admin, auth, vote
@@ -91,7 +91,7 @@ The application underwent a comprehensive production readiness audit and hardeni
 ### Reliability (P1/P2)
 - Process handlers: unhandledRejection + uncaughtException
 - MongoDB: connection retry (3 attempts, 2s/4s/8s backoff)
-- Health check: SMTP result cached for 60s
+- Health check: reports email provider status (Resend configured / not configured)
 - Service worker: cache version bumped, logo precached
 
 ### Performance (P2)
@@ -128,7 +128,7 @@ The application underwent a comprehensive production readiness audit and hardeni
 | Frontend | Vercel | https://bemore-tawny.vercel.app | Push to `main` |
 | Backend | Railway | https://bemore-production.up.railway.app | Push to `main` |
 | Database | MongoDB Atlas | (connection string in env) | Managed |
-| Email | BTS SMTP | mail.bts-app.co.za:465 | Managed |
+| Email | Resend | api.resend.com | Managed |
 
 API traffic flows: Browser → Vercel CDN → `/api/*` rewrite → Railway backend → MongoDB Atlas
 
@@ -142,7 +142,7 @@ API traffic flows: Browser → Vercel CDN → `/api/*` rewrite → Railway backe
 | Backend | Express + Mongoose | Mature ecosystem, rapid development, flexible schema |
 | Database | MongoDB Atlas | Mixed formData schema, TTL indexes for POPIA, aggregation pipelines for analytics |
 | Auth | JWT | Stateless, scales horizontally, no session store needed |
-| Email | Nodemailer + SMTP | Direct control, branded templates, delivery tracking |
+| Email | Resend | Managed deliverability, branded templates, delivery tracking |
 | Hosting | Vercel + Railway | Auto-deploy from git, edge CDN, managed infrastructure |
 | Monitoring | Vercel Analytics + Winston | RUM + server-side structured logging |
 
