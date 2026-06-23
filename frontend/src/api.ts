@@ -290,6 +290,74 @@ export const api = {
     }
   },
 
+  /**
+   * Upload a document (multi-document upload for professionals)
+   * Uses the /api/applications/upload-document endpoint
+   * NEW: Added to support multi-document uploads
+   */
+  async uploadDocument(
+    file: File,
+    field: string
+  ): Promise<ApiResponse<{ filename: string; storedAs: string; size: number; mimeType: string; field: string; expiryDate?: string }>> {
+    if (!store.get('useApi')) {
+      // Demo-mode no-op
+      return {
+        success: true,
+        data: {
+          field: field,
+          filename: file.name,
+          storedAs: `demo-${Date.now()}-${file.name}`,
+          size: file.size,
+          mimeType: file.type || 'application/octet-stream',
+          expiryDate: null,
+        },
+      };
+    }
+
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('field', field);
+
+    const headers: Record<string, string> = {};
+    const authToken = getAuthToken();
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+    try {
+      const res = await fetchWithTimeout(`${API_URL}/applications/upload-document`, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: fd,
+      });
+
+      let body: any = {};
+      try { body = await res.json(); } catch { /* ignore parse error */ }
+
+      if (!res.ok || !body.success) {
+        return {
+          success: false,
+          message: body.message || `Upload failed (${res.status})`,
+        };
+      }
+      return {
+        success: true,
+        data: {
+          field: body.file?.field || field,
+          filename: body.file?.filename || file.name,
+          storedAs: body.file?.storedAs || '',
+          size: body.file?.size || file.size,
+          mimeType: body.file?.mimeType || (file.type || 'application/octet-stream'),
+          expiryDate: body.file?.expiryDate || null,
+        },
+      };
+    } catch (err) {
+      const msg = (err as Error).name === 'AbortError'
+        ? 'Upload timed out'
+        : 'Network error — please check your connection';
+      return { success: false, message: msg };
+    }
+  },
+
   async exportMyData(refNumber: string, email: string): Promise<ApiResponse<unknown>> {
     return request('POST', '/applications/data-export', { refNumber, email });
   },
