@@ -109,54 +109,26 @@ function renderFileGroup(question: Question, fd: Record<string, unknown>): strin
 
 /**
  * Handle file upload for a file group
- * FIXED: Properly handles storedAs from backend response
+ * FIXED: Uses api.uploadDocument instead of direct fetch
  */
 async function handleFileGroupUpload(
   field: string, 
   file: File
 ): Promise<FileGroupValue | null> {
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('field', field);
-
   try {
-    const response = await fetch('/api/applications/upload-document', {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      let errorMessage = 'Upload failed';
-      try {
-        const error = await response.json();
-        errorMessage = error.message || errorMessage;
-      } catch {
-        errorMessage = response.statusText || errorMessage;
-      }
-      throw new Error(errorMessage);
-    }
-
-    const result = await response.json();
-    console.log('📤 Upload response:', result);
+    const result = await api.uploadDocument(file, field);
     
-    if (result.success && result.file) {
-      const storedAs = result.file.storedAs || result.file.storedName || result.file.filename;
-      
-      if (!storedAs) {
-        console.error('❌ No storedAs in response:', result);
-        throw new Error('Upload response missing storedAs');
-      }
-      
+    if (result.success && result.data) {
       return {
         field: field,
-        filename: result.file.filename || file.name,
-        storedAs: storedAs,
-        size: result.file.size || file.size,
-        mimeType: result.file.mimeType || file.type,
-        expiryDate: result.file.expiryDate || null,
+        filename: result.data.filename,
+        storedAs: result.data.storedAs,
+        size: result.data.size,
+        mimeType: result.data.mimeType,
+        expiryDate: result.data.expiryDate || null,
       };
     }
-    throw new Error('Invalid upload response');
+    throw new Error(result.message || 'Upload failed');
   } catch (error) {
     const err = error as Error;
     console.error('Upload error:', err);
