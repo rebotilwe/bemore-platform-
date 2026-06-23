@@ -20,19 +20,6 @@ import { tracker } from '../../services/tracker.ts';
 
 const TOTAL = 5;
 
-/* ══════════════════════════════════════════════
-   formData layout (in store):
-     {
-       personal: { firstName, surname, email, phone, companyName? },
-       attachments?: [{ field: 'cv', filename, storedAs }],
-       consent?:    { tc: bool, popia: bool },
-       __uploadInFlight?: boolean,
-       // NEW: File group data stored as array
-       documents?: [{ field: string, filename, storedAs, size, mimeType, expiryDate }],
-       ...question-config field IDs (spec §7.2)...
-     }
-   ══════════════════════════════════════════════ */
-
 interface PersonalSlice {
   firstName?: string;
   surname?: string;
@@ -66,9 +53,6 @@ function getStep(): number { return store.get('currentStep'); }
    File Group Rendering
    ══════════════════════════════════════════════ */
 
-/**
- * Render a file_group type question
- */
 function renderFileGroup(question: Question, fd: Record<string, unknown>): string {
   const files = (fd[question.id] as FileGroupValue[]) || [];
   const fileGroup = question as Question & { files: FileGroupConfig[] };
@@ -125,17 +109,11 @@ function renderFileGroup(question: Question, fd: Record<string, unknown>): strin
 
 /**
  * Handle file upload for a file group
- * UPDATED: Uses /api/applications/upload-document endpoint
- */
-/**
- * Handle file upload for a file group
  * FIXED: Properly handles storedAs from backend response
  */
 async function handleFileGroupUpload(
   field: string, 
-  file: File, 
-  questionId: string,
-  onProgress?: (percent: number) => void
+  file: File
 ): Promise<FileGroupValue | null> {
   const formData = new FormData();
   formData.append('file', file);
@@ -162,7 +140,6 @@ async function handleFileGroupUpload(
     console.log('📤 Upload response:', result);
     
     if (result.success && result.file) {
-      // Ensure storedAs is set - try multiple possible field names
       const storedAs = result.file.storedAs || result.file.storedName || result.file.filename;
       
       if (!storedAs) {
@@ -181,8 +158,9 @@ async function handleFileGroupUpload(
     }
     throw new Error('Invalid upload response');
   } catch (error) {
-    console.error('Upload error:', error);
-    toast(`Failed to upload ${field}: ${error.message}`);
+    const err = error as Error;
+    console.error('Upload error:', err);
+    toast(`Failed to upload ${field}: ${err.message}`);
     return null;
   }
 }
@@ -292,7 +270,6 @@ function validate(): boolean {
   
   if (missing.length === 0) return true;
 
-  // Show a more helpful message
   if (step === 4 && ctx.uploadInFlight) {
     toast('Please wait for the upload to finish.');
   } else if (missing.length === 1) {
@@ -371,7 +348,6 @@ let uploadingFiles: Set<string> = new Set();
 
 /**
  * Handle file input change - upload file and update store
- * FIXED: Properly saves documents to store with verification
  */
 async function handleFileInputChange(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement;
@@ -387,31 +363,25 @@ async function handleFileInputChange(event: Event): Promise<void> {
   const fileGroupQ = fileGroupQuestions.find(q => q.files?.some(f => f.field === field));
   if (!fileGroupQ) return;
 
-  // Show progress
   const item = input.closest('.file-group-item');
-  const progress = item?.querySelector('.file-upload-progress');
-  const progressBar = progress?.querySelector('.progress-bar');
+  const progress = item?.querySelector('.file-upload-progress') as HTMLElement | null;
+  const progressBar = progress?.querySelector('.progress-bar') as HTMLElement | null;
   if (progress) progress.style.display = 'block';
   if (progressBar) progressBar.style.width = '30%';
 
-  // Set uploading flag
   uploadingFiles.add(field);
   let fd = getFD();
   fd.__uploadInFlight = true;
   store.set('formData', fd);
 
   try {
-    const result = await handleFileGroupUpload(field, file, questionId, (percent) => {
-      if (progressBar) progressBar.style.width = `${percent}%`;
-    });
+    const result = await handleFileGroupUpload(field, file);
 
     if (progressBar) progressBar.style.width = '100%';
 
     if (result) {
-      // Get fresh form data from store
       const currentFd = getFD();
       
-      // Get existing files or initialize empty array
       let files = (currentFd[questionId] as FileGroupValue[]) || [];
       
       const existingIndex = files.findIndex(f => f.field === field);
@@ -421,18 +391,14 @@ async function handleFileInputChange(event: Event): Promise<void> {
         files.push(result);
       }
       
-      // Update the form data
       currentFd[questionId] = files;
       currentFd.__uploadInFlight = false;
       
-      // Save to store
       store.set('formData', currentFd);
       
-      // 🔥 VERIFY the save
       const verify = store.get('formData');
       console.log('✅ Documents saved:', verify?.documents);
       
-      // Update UI to show uploaded status
       const status = input.closest('.file-group-item')?.querySelector('.file-group-status');
       const fileName = input.closest('.file-group-input')?.querySelector('.file-name');
       const fileSize = input.closest('.file-group-input')?.querySelector('.file-size');
@@ -450,27 +416,6 @@ async function handleFileInputChange(event: Event): Promise<void> {
         fileExpiry.textContent = `Expires: ${new Date(result.expiryDate).toLocaleDateString()}`;
       }
       if (progress) progress.style.display = 'none';
-
-      // 🔥 Force validation to re-check
-      const step = getStep();
-      const profile2 = store.get('selectedProfile')!;
-      const fd2 = getFD();
-      const ctx = {
-        personal: getPersonal(),
-        consent: (fd2.consent as { tc?: boolean; popia?: boolean }) ?? {},
-        uploadInFlight: Boolean(fd2.__uploadInFlight),
-      };
-      const missing = getMissingItems(step, profile2, fd2, ctx);
-      console.log('🔍 Missing items after save:', missing);
-      
-      if (missing.length === 0) {
-        // Enable the next button if validation passes
-        const nextBtn = document.getElementById('btn-next') as HTMLButtonElement;
-        if (nextBtn) {
-          // The validation check happens when the button is clicked
-          // We can optionally re-render the button state
-        }
-      }
 
       toast(`✅ ${field} uploaded successfully`);
     } else {
@@ -526,30 +471,23 @@ async function handleSubmit(): Promise<void> {
     
     const attachments: AttachmentRef[] = [];
     
-    const cv = fd2.cv as { storedAs?: string; filename?: string; size?: number; mimeType?: string } | undefined;
+    const cv = fd2.cv as { storedAs?: string; filename?: string } | undefined;
     if (cv?.storedAs) {
       attachments.push({
         field: 'cv',
         filename: cv.filename || 'cv.pdf',
         storedAs: cv.storedAs,
-        size: cv.size || 0,
-        mimeType: cv.mimeType || 'application/pdf',
       });
     }
     
     const documents = fd2.documents as FileGroupValue[] | undefined;
     if (documents && documents.length > 0) {
       for (const doc of documents) {
-        // Ensure storedAs is a string and not undefined
-        const storedAs = doc.storedAs || '';
-        if (storedAs) {
+        if (doc.storedAs) {
           attachments.push({
             field: doc.field,
             filename: doc.filename || 'document.pdf',
-            storedAs: storedAs,
-            size: doc.size || 0,
-            mimeType: doc.mimeType || 'application/pdf',
-            expiryDate: doc.expiryDate,
+            storedAs: doc.storedAs,
           });
         }
       }
@@ -594,6 +532,7 @@ async function handleSubmit(): Promise<void> {
     submitting = false;
   }
 }
+
 /* ══════════════════════════════════════════════
    Page export
    ══════════════════════════════════════════════ */

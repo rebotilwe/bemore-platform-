@@ -98,7 +98,8 @@ function isFileGroupComplete(
   return true;
 }
 
-function questionPasses(q: Question, value: unknown, formData?: Record<string, unknown>): boolean {
+// ✅ FIXED: Removed the unused `formData` parameter
+function questionPasses(q: Question, value: unknown): boolean {
   // Handle file_group type
   if (q.type === 'file_group' && q.files) {
     const files = value as FileGroupValue[] | undefined;
@@ -204,9 +205,9 @@ export function getMissingItems(
       continue;
     }
 
-    // Regular questions
+    // ✅ FIXED: Now only passing 2 arguments to questionPasses
     const value = formData[q.id];
-    if (!questionPasses(q, value, formData)) {
+    if (!questionPasses(q, value)) {
       // Strip trailing punctuation for cleaner toast copy.
       out.push(q.label.replace(/[?:.]+\s*$/, ''));
     }

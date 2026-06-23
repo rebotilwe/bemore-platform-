@@ -267,6 +267,7 @@ function renderQuestion(q: Question, formData: FormData): string {
     case 'checkbox': return renderCheckbox(q, value);
     case 'dropdown': return renderDropdown(q, value);
     case 'file':     return renderFile(q, value);
+    default:         return ''; // ✅ FIXED: Added default return
   }
 }
 
