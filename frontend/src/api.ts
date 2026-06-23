@@ -293,7 +293,6 @@ export const api = {
   /**
    * Upload a document (multi-document upload for professionals)
    * Uses the /api/applications/upload-document endpoint
-   * NEW: Added to support multi-document uploads
    */
   async uploadDocument(
     file: File,
@@ -309,7 +308,7 @@ export const api = {
           storedAs: `demo-${Date.now()}-${file.name}`,
           size: file.size,
           mimeType: file.type || 'application/octet-stream',
-          expiryDate: null,
+          expiryDate: undefined,
         },
       };
     }
@@ -347,7 +346,7 @@ export const api = {
           storedAs: body.file?.storedAs || '',
           size: body.file?.size || file.size,
           mimeType: body.file?.mimeType || (file.type || 'application/octet-stream'),
-          expiryDate: body.file?.expiryDate || null,
+          expiryDate: body.file?.expiryDate || undefined,
         },
       };
     } catch (err) {

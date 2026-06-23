@@ -111,6 +111,10 @@ function renderFileGroup(question: Question, fd: Record<string, unknown>): strin
  * Handle file upload for a file group
  * FIXED: Uses api.uploadDocument instead of direct fetch
  */
+/**
+ * Handle file upload for a file group
+ * FIXED: Uses api.uploadDocument instead of direct fetch
+ */
 async function handleFileGroupUpload(
   field: string, 
   file: File
@@ -125,7 +129,7 @@ async function handleFileGroupUpload(
         storedAs: result.data.storedAs,
         size: result.data.size,
         mimeType: result.data.mimeType,
-        expiryDate: result.data.expiryDate || null,
+        expiryDate: result.data.expiryDate || undefined,
       };
     }
     throw new Error(result.message || 'Upload failed');
@@ -136,7 +140,6 @@ async function handleFileGroupUpload(
     return null;
   }
 }
-
 /* ══════════════════════════════════════════════
    Render helpers
    ══════════════════════════════════════════════ */
