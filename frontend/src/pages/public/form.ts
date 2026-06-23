@@ -109,11 +109,7 @@ function renderFileGroup(question: Question, fd: Record<string, unknown>): strin
 
 /**
  * Handle file upload for a file group
- * FIXED: Uses api.uploadDocument instead of direct fetch
- */
-/**
- * Handle file upload for a file group
- * FIXED: Uses api.uploadDocument instead of direct fetch
+ * Uses api.uploadDocument for multi-document uploads
  */
 async function handleFileGroupUpload(
   field: string, 
@@ -140,6 +136,7 @@ async function handleFileGroupUpload(
     return null;
   }
 }
+
 /* ══════════════════════════════════════════════
    Render helpers
    ══════════════════════════════════════════════ */

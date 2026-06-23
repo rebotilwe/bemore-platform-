@@ -1,518 +1,569 @@
-import type {
-  ApiResponse, PaginatedResponse, StatsData, LoginResponse, ReportData,
-  Application, SubmitPayload, UpdatePayload, FilterParams, ReportName,
-  AnalyticsDashboard, FunnelData, TrendData, TagAnalytics, DemographicsData, DealRoomAnalytics,
-  TrafficOverview, TrafficTrends, ReferrerData, DeviceData, HourlyData, FormFunnelData, ClickData,
-  UploadResponse,
-} from './types/index.ts';
-import { store, localStore } from './store.ts';
-import { autoTag } from './utils/auto-tag.ts';
-import { generateRefNumber } from './utils/format.ts';
+/* ---------------------------------------------------------------
+   form.ts — Main form page with file_group support
+   ---------------------------------------------------------------*/
 
-// Always use relative /api path — Vercel rewrites it to the Railway backend.
-// Using the Railway URL directly causes CORS preflight failures.
-const API_URL = '/api';
+import type { Page, ProfileCategory, AttachmentRef } from '../../types/index.ts';
+import type { Question, FileGroupConfig } from '../../types/question.ts';
+import { store } from '../../store.ts';
+import { navigate } from '../../router.ts';
+import { FORM_STEPS, getStepMeta } from '../../constants/form-steps.ts';
+import { toast } from '../../components/toast.ts';
+import { api } from '../../api.ts';
+import { normalizePhone } from '../../utils/validation.ts';
+import { getMissingItems, PROFILE_CONFIG } from '../../utils/step-readiness.ts';
+import { renderStepIdentity, mountStepIdentity } from './form-steps/step-identity.ts';
+import { renderStepPosition, mountStepPosition } from './form-steps/step-position.ts';
+import { renderStepConstraints, mountStepConstraints } from './form-steps/step-constraints.ts';
+import { renderStepContact, mountStepContact } from './form-steps/step-contact.ts';
+import { renderStepFeedbackConsent, mountStepFeedbackConsent } from './form-steps/step-feedback-consent.ts';
+import { tracker } from '../../services/tracker.ts';
 
-const REQUEST_TIMEOUT = 15000; // 15 seconds
-const RETRY_DELAY = 2000;
-const MAX_RETRIES = 1; // 1 retry for GET on network error
+const TOTAL = 5;
 
-// Read auth token from sessionStorage (set on login)
-function getAuthToken(): string | null {
-  return sessionStorage.getItem('bm_token');
+interface PersonalSlice {
+  firstName?: string;
+  surname?: string;
+  companyName?: string;
+  email?: string;
+  phone?: string;
 }
 
-// Read CSRF token from sessionStorage (set on login)
-function getCsrfToken(): string | null {
-  return sessionStorage.getItem('bm_csrf');
+interface FileGroupValue {
+  field: string;
+  filename: string;
+  storedAs: string;
+  size: number;
+  mimeType: string;
+  uploadedAt?: string;
+  expiryDate?: string;
+  isVerified?: boolean;
 }
 
-async function fetchWithTimeout(url: string, opts: RequestInit, timeout = REQUEST_TIMEOUT): Promise<Response> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeout);
+function getFD(): Record<string, unknown> {
+  return (store.get('formData') ?? {}) as Record<string, unknown>;
+}
+
+function getPersonal(): PersonalSlice {
+  return (getFD().personal as PersonalSlice) ?? {};
+}
+
+function getStep(): number { return store.get('currentStep'); }
+
+/* ══════════════════════════════════════════════
+   File Group Rendering
+   ══════════════════════════════════════════════ */
+
+function renderFileGroup(question: Question, fd: Record<string, unknown>): string {
+  const files = (fd[question.id] as FileGroupValue[]) || [];
+  const fileGroup = question as Question & { files: FileGroupConfig[] };
+  
+  let html = `
+    <div class="file-group-container">
+      <p class="file-group-help">${question.helpText || 'Please upload the required documents'}</p>
+      <div class="file-group-list">
+  `;
+  
+  for (const fileConfig of fileGroup.files || []) {
+    const existing = files.find(f => f.field === fileConfig.field);
+    const isRequired = fileConfig.required;
+    const statusClass = existing ? 'uploaded' : (isRequired ? 'required' : 'optional');
+    const statusText = existing ? '✅ Uploaded' : (isRequired ? '⚠️ Required' : 'Optional');
+    
+    html += `
+      <div class="file-group-item" data-field="${fileConfig.field}">
+        <div class="file-group-header">
+          <span class="file-group-label">${fileConfig.label}</span>
+          <span class="file-group-status ${statusClass}">${statusText}</span>
+        </div>
+        <div class="file-group-input">
+          <input 
+            type="file" 
+            id="file-${fileConfig.field}" 
+            name="file-${fileConfig.field}"
+            accept="${fileConfig.accept || '.pdf,.jpg,.png'}"
+            data-field="${fileConfig.field}"
+            ${isRequired ? 'data-required="true"' : ''}
+          />
+          <label for="file-${fileConfig.field}" class="file-upload-btn">
+            ${existing ? '🔄 Replace' : '📎 Choose File'}
+          </label>
+          ${fileConfig.helpText ? `<small class="file-help">${fileConfig.helpText}</small>` : ''}
+          ${existing ? `<span class="file-name">📄 ${existing.filename}</span>` : ''}
+          ${existing ? `<span class="file-size">(${(existing.size / 1024).toFixed(0)} KB)</span>` : ''}
+          ${existing && existing.expiryDate ? `<span class="file-expiry">Expires: ${new Date(existing.expiryDate).toLocaleDateString()}</span>` : ''}
+        </div>
+        <div class="file-upload-progress" style="display:none">
+          <div class="progress-bar" style="width:0%"></div>
+        </div>
+      </div>
+    `;
+  }
+  
+  html += `
+      </div>
+    </div>
+  `;
+  
+  return html;
+}
+
+/**
+ * Handle file upload for a file group
+ * Uses api.uploadDocument for multi-document uploads
+ */
+async function handleFileGroupUpload(
+  field: string, 
+  file: File
+): Promise<FileGroupValue | null> {
   try {
-    const res = await fetch(url, { ...opts, signal: controller.signal });
-    return res;
+    const result = await api.uploadDocument(file, field);
+    
+    if (result.success && result.data) {
+      return {
+        field: field,
+        filename: result.data.filename,
+        storedAs: result.data.storedAs,
+        size: result.data.size,
+        mimeType: result.data.mimeType,
+        expiryDate: result.data.expiryDate || undefined,
+      };
+    }
+    throw new Error(result.message || 'Upload failed');
+  } catch (error) {
+    const err = error as Error;
+    console.error('Upload error:', err);
+    toast(`Failed to upload ${field}: ${err.message}`);
+    return null;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   Render helpers
+   ══════════════════════════════════════════════ */
+
+function renderProgress(): string {
+  const step = getStep();
+  let html = `<div class="ps"><div class="ps-dot done">✓</div><div class="ps-lbl done">Profile</div></div>`;
+  const profile = store.get('selectedProfile') ?? undefined;
+  for (let i = 0; i < TOTAL; i++) {
+    const s = i + 1;
+    const dotClass = s < step ? 'done' : s === step ? 'active' : 'idle';
+    const lblClass = s <= step ? (s < step ? 'done' : 'active') : '';
+    const lineClass = s <= step ? 'done' : '';
+    html += `<div class="prog-line ${lineClass}"></div>`;
+    html += `<div class="ps"><div class="ps-dot ${dotClass}">${s < step ? '✓' : s + 1}</div><div class="ps-lbl ${lblClass}">${getStepMeta(i, profile).label}</div></div>`;
+  }
+  return html;
+}
+
+function renderStepContent(): string {
+  const profile = store.get('selectedProfile')!;
+  const fd = getFD();
+  
+  switch (getStep()) {
+    case 1: return renderStepIdentity(profile);
+    case 2: return renderStepPosition(profile);
+    case 3: return renderStepConstraints(profile);
+    case 4: {
+      const config = PROFILE_CONFIG[profile];
+      const fileGroupQuestions = config?.step4?.filter(q => q.type === 'file_group') || [];
+      
+      let html = renderStepContact(profile);
+      
+      for (const q of fileGroupQuestions) {
+        html += renderFileGroup(q, fd);
+      }
+      
+      return html;
+    }
+    case 5: return renderStepFeedbackConsent(profile);
+    default: return '';
+  }
+}
+
+/* ══════════════════════════════════════════════
+   In-page step navigation (no hash change)
+   ══════════════════════════════════════════════ */
+
+function goToStep(newStep: number): void {
+  const prevStep = getStep();
+  if (newStep > prevStep) {
+    const stepLabel = FORM_STEPS[prevStep - 1]?.title || `Step ${prevStep}`;
+    tracker.trackEvent('form_funnel', 'form_step_complete', stepLabel, prevStep);
+  }
+  store.set('currentStep', newStep);
+
+  const body = document.querySelector('.form-body');
+  const prog = document.querySelector('.prog-steps');
+  const foot = document.querySelector('.form-btns');
+  const stepLbl = document.querySelector('.form-step-lbl');
+  const backBtn = document.getElementById('form-back');
+  if (!body || !prog || !foot) return;
+
+  const step = newStep;
+  const meta = getStepMeta(step - 1, store.get('selectedProfile') ?? undefined);
+  const isLast = step === TOTAL;
+
+  body.innerHTML = `
+    <h2 class="form-title">${meta.title}</h2>
+    <p class="form-sub">${meta.subtitle}</p>
+    <div class="form-step active">${renderStepContent()}</div>`;
+
+  prog.innerHTML = renderProgress();
+
+  foot.innerHTML = `
+    ${step > 1 ? '<button class="btn-secondary" id="btn-prev" data-track="Form — Previous">← Previous</button>' : ''}
+    ${!isLast ? '<button class="btn-primary" id="btn-next" data-track="Form — Continue">Continue →</button>' : ''}
+    ${isLast ? '<button class="btn-primary" id="btn-submit" data-track="Form — Submit">Submit →</button>' : ''}`;
+
+  if (stepLbl) stepLbl.textContent = `STEP ${step + 1} OF ${TOTAL + 1}`;
+  if (backBtn) backBtn.textContent = step === 1 ? '← Change Profile' : '← Back';
+
+  mountCurrentStep();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ══════════════════════════════════════════════
+   Validation — driven entirely by spec §6.4 nextStepReady()
+   ══════════════════════════════════════════════ */
+
+function validate(): boolean {
+  const step = getStep();
+  const profile = store.get('selectedProfile')!;
+  const fd = getFD();
+  const ctx = {
+    personal: getPersonal(),
+    consent: (fd.consent as { tc?: boolean; popia?: boolean }) ?? {},
+    uploadInFlight: Boolean(fd.__uploadInFlight),
+  };
+  const missing = getMissingItems(step, profile, fd, ctx);
+  console.log('🔍 Validation missing items:', missing);
+  console.log('🔍 Documents in formData:', fd.documents);
+  
+  if (missing.length === 0) return true;
+
+  if (step === 4 && ctx.uploadInFlight) {
+    toast('Please wait for the upload to finish.');
+  } else if (missing.length === 1) {
+    toast(`Please complete: ${missing[0]}`);
+  } else if (missing.length <= 3) {
+    toast(`Please complete: ${missing.join(', ')}`);
+  } else {
+    toast(`Please complete: ${missing.slice(0, 3).join(', ')} and ${missing.length - 3} more`);
+  }
+  return false;
+}
+
+/* ══════════════════════════════════════════════
+   Collect submission body — spec §7.2 keys ONLY
+   ══════════════════════════════════════════════ */
+
+function collectAllFormData(profile: ProfileCategory): Record<string, unknown> {
+  const fd = getFD();
+  const config = PROFILE_CONFIG[profile];
+  const ids = new Set<string>();
+  
+  for (const stepKey of ['step1', 'step2', 'step3', 'step4', 'step5'] as const) {
+    for (const q of config[stepKey]) {
+      if (q.type === 'file' || q.type === 'file_group') continue;
+      ids.add(q.id);
+    }
+  }
+
+  const out: Record<string, unknown> = {};
+  for (const id of ids) {
+    if (id in fd) out[id] = fd[id];
+  }
+  return out;
+}
+
+/* ══════════════════════════════════════════════
+   Mount — wire event listeners for current step
+   ══════════════════════════════════════════════ */
+
+function mountCurrentStep(): void {
+  const step = getStep();
+  const profile = store.get('selectedProfile')!;
+
+  if (step === 1) mountStepIdentity(profile);
+  if (step === 2) mountStepPosition(profile);
+  if (step === 3) mountStepConstraints(profile);
+  if (step === 4) {
+    mountStepContact(profile);
+    mountFileGroupUploads();
+  }
+  if (step === 5) mountStepFeedbackConsent(profile);
+
+  addListener(document.getElementById('btn-prev'), 'click', () => goToStep(step - 1));
+  addListener(document.getElementById('btn-next'), 'click', () => {
+    if (validate()) goToStep(step + 1);
+  });
+  addListener(document.getElementById('btn-submit'), 'click', handleSubmit);
+}
+
+/**
+ * Mount file group upload handlers
+ */
+function mountFileGroupUploads(): void {
+  const fileInputs = document.querySelectorAll('.file-group-input input[type="file"]');
+  
+  for (const input of fileInputs) {
+    const field = input.getAttribute('data-field');
+    if (!field) continue;
+    
+    input.removeEventListener('change', handleFileInputChange);
+    input.addEventListener('change', handleFileInputChange);
+  }
+}
+
+let uploadingFiles: Set<string> = new Set();
+
+/**
+ * Handle file input change - upload file and update store
+ */
+async function handleFileInputChange(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement;
+  const field = input.getAttribute('data-field');
+  if (!field || !input.files || input.files.length === 0) return;
+
+  const file = input.files[0];
+  const questionId = 'documents';
+  
+  const profile = store.get('selectedProfile')!;
+  const config = PROFILE_CONFIG[profile];
+  const fileGroupQuestions = config?.step4?.filter(q => q.type === 'file_group') || [];
+  const fileGroupQ = fileGroupQuestions.find(q => q.files?.some(f => f.field === field));
+  if (!fileGroupQ) return;
+
+  const item = input.closest('.file-group-item');
+  const progress = item?.querySelector('.file-upload-progress') as HTMLElement | null;
+  const progressBar = progress?.querySelector('.progress-bar') as HTMLElement | null;
+  if (progress) progress.style.display = 'block';
+  if (progressBar) progressBar.style.width = '30%';
+
+  uploadingFiles.add(field);
+  let fd = getFD();
+  fd.__uploadInFlight = true;
+  store.set('formData', fd);
+
+  try {
+    const result = await handleFileGroupUpload(field, file);
+
+    if (progressBar) progressBar.style.width = '100%';
+
+    if (result) {
+      const currentFd = getFD();
+      
+      let files = (currentFd[questionId] as FileGroupValue[]) || [];
+      
+      const existingIndex = files.findIndex(f => f.field === field);
+      if (existingIndex >= 0) {
+        files[existingIndex] = result;
+      } else {
+        files.push(result);
+      }
+      
+      currentFd[questionId] = files;
+      currentFd.__uploadInFlight = false;
+      
+      store.set('formData', currentFd);
+      
+      const verify = store.get('formData');
+      console.log('✅ Documents saved:', verify?.documents);
+      
+      const status = input.closest('.file-group-item')?.querySelector('.file-group-status');
+      const fileName = input.closest('.file-group-input')?.querySelector('.file-name');
+      const fileSize = input.closest('.file-group-input')?.querySelector('.file-size');
+      const fileExpiry = input.closest('.file-group-input')?.querySelector('.file-expiry');
+      const uploadBtn = input.closest('.file-group-input')?.querySelector('.file-upload-btn');
+
+      if (status) {
+        status.textContent = '✅ Uploaded';
+        status.className = 'file-group-status uploaded';
+      }
+      if (fileName) fileName.textContent = `📄 ${result.filename}`;
+      if (fileSize) fileSize.textContent = `(${(result.size / 1024).toFixed(0)} KB)`;
+      if (uploadBtn) uploadBtn.textContent = '🔄 Replace';
+      if (fileExpiry && result.expiryDate) {
+        fileExpiry.textContent = `Expires: ${new Date(result.expiryDate).toLocaleDateString()}`;
+      }
+      if (progress) progress.style.display = 'none';
+
+      toast(`✅ ${field} uploaded successfully`);
+    } else {
+      const currentFd = getFD();
+      currentFd.__uploadInFlight = false;
+      store.set('formData', currentFd);
+      if (progress) progress.style.display = 'none';
+      if (progressBar) progressBar.style.width = '0%';
+    }
+  } catch (error) {
+    const currentFd = getFD();
+    currentFd.__uploadInFlight = false;
+    store.set('formData', currentFd);
+    if (progress) progress.style.display = 'none';
+    if (progressBar) progressBar.style.width = '0%';
+    console.error('Upload error:', error);
+    toast(`❌ Failed to upload ${field}`);
   } finally {
-    clearTimeout(timer);
+    uploadingFiles.delete(field);
+    const currentFd = getFD();
+    if (uploadingFiles.size === 0) {
+      currentFd.__uploadInFlight = false;
+      store.set('formData', currentFd);
+    }
+    input.value = '';
   }
 }
 
-// State-changing methods that need CSRF protection
-const CSRF_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
+let submitting = false;
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-
-  // Add Bearer token for auth (works through Vercel proxy rewrites)
-  const authToken = getAuthToken();
-  if (authToken) {
-    headers['Authorization'] = `Bearer ${authToken}`;
+async function handleSubmit(): Promise<void> {
+  if (submitting) return;
+  if (!validate()) return;
+  
+  const fd = getFD();
+  if (fd.__uploadInFlight || uploadingFiles.size > 0) {
+    toast('Please wait for all uploads to complete before submitting.');
+    return;
   }
-
-  // Add CSRF token for state-changing requests
-  if (CSRF_METHODS.includes(method.toUpperCase())) {
-    const csrfToken = getCsrfToken();
-    if (csrfToken) {
-      headers['X-CSRF-Token'] = csrfToken;
-    }
-  }
-
-  const opts: RequestInit = { method, headers, credentials: 'include', body: body ? JSON.stringify(body) : undefined };
-  let res: Response | undefined;
-
-  // Retry loop (only retries GET on network/timeout errors)
-  const maxAttempts = method === 'GET' ? MAX_RETRIES + 1 : 1;
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    try {
-      if (attempt > 0) await new Promise(r => setTimeout(r, RETRY_DELAY));
-      res = await fetchWithTimeout(`${API_URL}${path}`, opts);
-      break;
-    } catch (err) {
-      const msg = (err as Error).name === 'AbortError' ? 'Request timed out' : 'Network error — please check your connection';
-      if (attempt === maxAttempts - 1) {
-        return { success: false, message: msg } as T;
-      }
-    }
-  }
-
-  if (!res) return { success: false, message: 'Request failed' } as T;
-
-  if (!res.ok) {
-    // Auto-logout on expired/invalid token
-    if (res.status === 401 && store.get('isAuthenticated') && !path.includes('/auth/login')) {
-      store.set('isAuthenticated', false);
-      store.set('adminEmail', null);
-      sessionStorage.removeItem('bm_token');
-      sessionStorage.removeItem('bm_csrf');
-      window.location.hash = '/admin/login';
-    }
-
-    try {
-      const data = await res.json();
-      if (res.status === 409) {
-        return {
-          success: false,
-          message: 'This email has already submitted an application. We\'ll be in touch soon!'
-        } as T;
-      }
-      return data;
-    } catch {
-      return { success: false, message: `Server error (${res.status})` } as T;
-    }
+  
+  submitting = true;
+  const btn = document.getElementById('btn-submit') as HTMLButtonElement;
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Submitting...';
   }
 
   try {
-    return await res.json();
-  } catch {
-    return { success: false, message: 'Invalid response from server' } as T;
+    const profile = store.get('selectedProfile')!;
+    const fd2 = getFD();
+    const personal = getPersonal();
+    const formData = collectAllFormData(profile);
+    
+    const attachments: AttachmentRef[] = [];
+    
+    const cv = fd2.cv as { storedAs?: string; filename?: string } | undefined;
+    if (cv?.storedAs) {
+      attachments.push({
+        field: 'cv',
+        filename: cv.filename || 'cv.pdf',
+        storedAs: cv.storedAs,
+      });
+    }
+    
+    const documents = fd2.documents as FileGroupValue[] | undefined;
+    if (documents && documents.length > 0) {
+      for (const doc of documents) {
+        if (doc.storedAs) {
+          attachments.push({
+            field: doc.field,
+            filename: doc.filename || 'document.pdf',
+            storedAs: doc.storedAs,
+          });
+        }
+      }
+    }
+
+    const payload = {
+      userType: profile,
+      personal: {
+        firstName: (personal.firstName ?? '').trim(),
+        surname: (personal.surname ?? '').trim(),
+        email: (personal.email ?? '').trim().toLowerCase(),
+        phone: normalizePhone((personal.phone ?? '').trim()),
+        companyName: personal.companyName?.trim() || undefined,
+      },
+      formData,
+      attachments: attachments.length ? attachments : undefined,
+      engagementSource: sessionStorage.getItem('bm_source') || 'direct',
+      consent: (fd2.consent as Record<string, unknown>) ?? { tc: false, popia: false },
+    };
+
+    console.log('📤 Submitting payload:', JSON.stringify(payload, null, 2));
+
+    const result = await api.submit(payload);
+
+    if (result.success && result.data) {
+      tracker.trackEvent('form_funnel', 'form_submitted', profile, TOTAL);
+      store.set('formData', { refNumber: result.data.refNumber });
+      store.set('currentStep', 1);
+      navigate('/success');
+    } else {
+      const msg = result.message || 'Submission failed';
+      const isNetwork = msg.toLowerCase().includes('network');
+      toast(isNetwork
+        ? 'No internet connection. Your data is saved — please try again when online.'
+        : msg);
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Retry Submission →';
+      }
+    }
+  } finally {
+    submitting = false;
   }
 }
 
-function buildQuery(params: FilterParams): string {
-  const q = new URLSearchParams();
-  if (params.userType && params.userType !== 'all') q.set('userType', params.userType);
-  if (params.status && params.status !== 'all') q.set('status', params.status);
-  if (params.tags) q.set('tags', params.tags);
-  if (params.search) q.set('search', params.search);
-  if (params.page) q.set('page', String(params.page));
-  if (params.limit) q.set('limit', String(params.limit));
-  if (params.sortBy) q.set('sortBy', params.sortBy);
-  if (params.order) q.set('order', params.order);
-  const str = q.toString();
-  return str ? `?${str}` : '';
+/* ══════════════════════════════════════════════
+   Page export
+   ══════════════════════════════════════════════ */
+
+let cleanupFns: (() => void)[] = [];
+
+function addListener<K extends keyof HTMLElementEventMap>(
+  el: HTMLElement | null,
+  event: K,
+  handler: (e: HTMLElementEventMap[K]) => void,
+): void {
+  if (!el) return;
+  el.addEventListener(event, handler);
+  cleanupFns.push(() => el.removeEventListener(event, handler));
 }
 
-export const api = {
-  async checkBackend(): Promise<boolean> {
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 5000);
-      const r = await fetch(`${API_URL}/health?_t=${Date.now()}`, {
-        signal: controller.signal,
-        cache: 'no-store',
-        headers: { 'Accept': 'application/json' },
-      });
-      clearTimeout(timer);
-      if (!r.ok) return false;
-      const text = await r.text();
-      try {
-        const data = JSON.parse(text);
-        return data.success === true;
-      } catch {
-        return false; // Got HTML instead of JSON
-      }
-    } catch {
-      return false;
-    }
+export const formPage: Page = {
+  render() {
+    const step = getStep();
+    const meta = getStepMeta(step - 1, store.get('selectedProfile') ?? undefined);
+    const isLast = step === TOTAL;
+    return `
+    <section class="form-view">
+      <div class="form-bar">
+        <button class="btn-ghost" id="form-back" data-track="Form — Back">${step === 1 ? '← Change Profile' : '← Back'}</button>
+        <span class="form-step-lbl mono">STEP ${step + 1} OF ${TOTAL + 1}</span>
+      </div>
+      <div class="form-prog"><div class="prog-steps">${renderProgress()}</div></div>
+      <div class="form-body">
+        <h2 class="form-title">${meta.title}</h2>
+        <p class="form-sub">${meta.subtitle}</p>
+        <div class="form-step active">${renderStepContent()}</div>
+      </div>
+      <div class="form-foot">
+        <p class="form-note"><strong>🔒 Secure</strong> · SSL Encrypted · POPIA Compliant · <span id="save-indicator" class="save-indicator">Progress auto-saved</span></p>
+        <div class="form-btns">
+          ${step > 1 ? '<button class="btn-secondary" id="btn-prev" data-track="Form — Previous">← Previous</button>' : ''}
+          ${!isLast ? '<button class="btn-primary" id="btn-next" data-track="Form — Continue">Continue →</button>' : ''}
+          ${isLast ? '<button class="btn-primary" id="btn-submit" data-track="Form — Submit">Submit →</button>' : ''}
+        </div>
+      </div>
+    </section>`;
   },
-
-  // ── Auth ──
-  async login(email: string, password: string): Promise<ApiResponse<LoginResponse>> {
-    if (!store.get('useApi')) {
-      if (email && password) {
-        return { success: true, data: { token: 'demo_token', expiresIn: '8h' } };
-      }
-      return { success: false, message: 'Invalid credentials' };
-    }
-    return request('POST', '/auth/login', { email, password });
+  mount() {
+    cleanupFns = [];
+    submitting = false;
+    uploadingFiles.clear();
+    tracker.trackEvent('form_funnel', 'form_start', store.get('selectedProfile') || '', 1);
+    addListener(document.getElementById('form-back'), 'click', () => {
+      if (getStep() === 1) navigate('/gateway');
+      else goToStep(getStep() - 1);
+    });
+    mountCurrentStep();
   },
-
-  async logout(): Promise<void> {
-    if (!store.get('useApi')) return;
-    try { await request('POST', '/auth/logout'); } catch { /* ignore */ }
-  },
-
-  async verifyToken(): Promise<boolean> {
-    if (!store.get('useApi')) return store.get('isAuthenticated');
-    try {
-      const r = await request<ApiResponse<unknown>>('GET', '/auth/verify');
-      return r.success;
-    } catch {
-      return false;
-    }
-  },
-
-  // ── Applications ──
-  async lookupStatus(refNumber: string, email: string): Promise<ApiResponse<{
-    refNumber: string; firstName: string; userType: string; status: string;
-    tags: string[]; summitAccess: boolean; allocatedProjects: string[]; submittedAt: string; updatedAt?: string;
-  }>> {
-    if (store.get('useApi')) {
-      return request('POST', '/applications/lookup', { refNumber, email });
-    }
-    const apps = localStore.get();
-    const app = apps.find(a => a.refNumber === refNumber.toUpperCase() && a.personal.email === email.toLowerCase());
-    if (!app) return { success: false, message: 'No application found. Please check your reference number and email.' };
-    return { success: true, data: {
-      refNumber: app.refNumber, firstName: app.personal.firstName, userType: app.userType,
-      status: app.status, tags: app.tags, summitAccess: app.dealRoom?.summitAccess || false,
-      allocatedProjects: (app as Application & { allocatedProjects?: string[] }).allocatedProjects || [],
-      submittedAt: app.submittedAt, updatedAt: app.updatedAt,
-    }};
-  },
-
-  async submit(payload: SubmitPayload): Promise<ApiResponse<{ refNumber: string }>> {
-    if (store.get('useApi')) {
-      return request('POST', '/applications', payload);
-    }
-    // Demo / offline mode — accept attachments[] as a no-op stub so the local
-    // record still saves without any disk write. The real `storedAs` only
-    // matters for the backend.
-    const refNumber = generateRefNumber();
-    const stubAttachments = (payload.attachments ?? []).map(a => ({
-      field: a.field,
-      filename: a.filename ?? `demo-${a.field}`,
-      storedAs: a.storedAs,
-      size: 0,
-      mimeType: 'application/octet-stream',
-      uploadedAt: new Date().toISOString(),
-    }));
-    const app: Application = {
-      _id: `local_${Date.now()}`,
-      refNumber,
-      userType: payload.userType,
-      personal: payload.personal,
-      formData: payload.formData,
-      tags: autoTag(payload.userType, payload.formData),
-      status: 'new',
-      dealRoom: { summitAccess: false, dealRoomEntry: false, funders: [] },
-      attachments: stubAttachments.length ? stubAttachments : undefined,
-      engagementSource: payload.engagementSource,
-      submittedAt: new Date().toISOString(),
-    };
-    localStore.add(app);
-    return { success: true, data: { refNumber } };
-  },
-
-  /** Upload a file (e.g. CV) to POST /api/applications/upload (multipart).
-   *  Returns the four-field success body per spec §8.1. The error code (e.g.
-   *  'FILE_TOO_LARGE', 'INVALID_MIME_TYPE') is bubbled up via `message`.
-   *  In demo / offline mode, returns a stub `storedAs` so the form still
-   *  proceeds — the local app.submit() also accepts the stub.
-   */
-  async uploadAttachment(
-    file: File,
-  ): Promise<ApiResponse<{ filename: string; storedAs: string; size: number; mimeType: string }>> {
-    if (!store.get('useApi')) {
-      // Demo-mode no-op — pretend the upload succeeded.
-      return {
-        success: true,
-        data: {
-          filename: file.name,
-          storedAs: `demo-${Date.now()}-${file.name}`,
-          size: file.size,
-          mimeType: file.type || 'application/octet-stream',
-        },
-      };
-    }
-
-    const fd = new FormData();
-    fd.append('file', file);
-
-    const headers: Record<string, string> = {};
-    const csrfToken = getCsrfToken();
-    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
-    const authToken = getAuthToken();
-    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-
-    try {
-      const res = await fetchWithTimeout(`${API_URL}/applications/upload`, {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: fd,
-      });
-
-      let body: Partial<UploadResponse> & { message?: string; code?: string } = {};
-      try { body = await res.json(); } catch { /* ignore parse error */ }
-
-      if (!res.ok || !body.success) {
-        return {
-          success: false,
-          message: body.message || body.code || `Upload failed (${res.status})`,
-        };
-      }
-      return {
-        success: true,
-        data: {
-          filename: body.filename ?? file.name,
-          storedAs: body.storedAs ?? '',
-          size: body.size ?? file.size,
-          mimeType: body.mimeType ?? (file.type || 'application/octet-stream'),
-        },
-      };
-    } catch (err) {
-      const msg = (err as Error).name === 'AbortError'
-        ? 'Upload timed out'
-        : 'Network error — please check your connection';
-      return { success: false, message: msg };
-    }
-  },
-
-  /**
-   * Upload a document (multi-document upload for professionals)
-   * Uses the /api/applications/upload-document endpoint
-   */
-  async uploadDocument(
-    file: File,
-    field: string
-  ): Promise<ApiResponse<{ filename: string; storedAs: string; size: number; mimeType: string; field: string; expiryDate?: string }>> {
-    if (!store.get('useApi')) {
-      // Demo-mode no-op
-      return {
-        success: true,
-        data: {
-          field: field,
-          filename: file.name,
-          storedAs: `demo-${Date.now()}-${file.name}`,
-          size: file.size,
-          mimeType: file.type || 'application/octet-stream',
-          expiryDate: undefined,
-        },
-      };
-    }
-
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('field', field);
-
-    const headers: Record<string, string> = {};
-    const authToken = getAuthToken();
-    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-
-    try {
-      const res = await fetchWithTimeout(`${API_URL}/applications/upload-document`, {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: fd,
-      });
-
-      let body: any = {};
-      try { body = await res.json(); } catch { /* ignore parse error */ }
-
-      if (!res.ok || !body.success) {
-        return {
-          success: false,
-          message: body.message || `Upload failed (${res.status})`,
-        };
-      }
-      return {
-        success: true,
-        data: {
-          field: body.file?.field || field,
-          filename: body.file?.filename || file.name,
-          storedAs: body.file?.storedAs || '',
-          size: body.file?.size || file.size,
-          mimeType: body.file?.mimeType || (file.type || 'application/octet-stream'),
-          expiryDate: body.file?.expiryDate || undefined,
-        },
-      };
-    } catch (err) {
-      const msg = (err as Error).name === 'AbortError'
-        ? 'Upload timed out'
-        : 'Network error — please check your connection';
-      return { success: false, message: msg };
-    }
-  },
-
-  async exportMyData(refNumber: string, email: string): Promise<ApiResponse<unknown>> {
-    return request('POST', '/applications/data-export', { refNumber, email });
-  },
-
-  async deleteMyData(refNumber: string, email: string): Promise<ApiResponse<unknown>> {
-    return request('POST', '/applications/data-delete', { refNumber, email, confirm: 'DELETE' });
-  },
-
-  async getApplications(params: FilterParams = {}): Promise<PaginatedResponse<Application>> {
-    if (store.get('useApi')) {
-      return request('GET', `/applications${buildQuery(params)}`);
-    }
-    let apps = localStore.get();
-    if (params.userType && params.userType !== 'all') apps = apps.filter(a => a.userType === params.userType);
-    if (params.status && params.status !== 'all') apps = apps.filter(a => a.status === params.status);
-    if (params.search) {
-      const q = params.search.toLowerCase();
-      apps = apps.filter(a =>
-        a.personal?.firstName?.toLowerCase().includes(q) ||
-        a.personal?.surname?.toLowerCase().includes(q) ||
-        a.personal?.email?.toLowerCase().includes(q) ||
-        a.refNumber?.toLowerCase().includes(q)
-      );
-    }
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const start = (page - 1) * limit;
-    return {
-      success: true,
-      data: apps.slice(start, start + limit),
-      pagination: { total: apps.length, page, limit, pages: Math.ceil(apps.length / limit) },
-    };
-  },
-
-  async getApplication(id: string): Promise<ApiResponse<Application>> {
-    if (store.get('useApi')) return request('GET', `/applications/${id}`);
-    const app = localStore.get().find(a => a._id === id);
-    return app ? { success: true, data: app } : { success: false, message: 'Not found' };
-  },
-
-  async updateApplication(id: string, data: UpdatePayload): Promise<ApiResponse<Application>> {
-    if (store.get('useApi')) return request('PATCH', `/applications/${id}`, data);
-    localStore.update(id, data as Partial<Application>);
-    const app = localStore.get().find(a => a._id === id);
-    return { success: true, data: app };
-  },
-
-  async getStats(): Promise<ApiResponse<StatsData>> {
-    if (store.get('useApi')) return request('GET', '/applications/stats');
-    const apps = localStore.get();
-    const byType = Object.entries(apps.reduce<Record<string, number>>((acc, a) => { acc[a.userType] = (acc[a.userType] || 0) + 1; return acc; }, {})).map(([_id, count]) => ({ _id, count }));
-    const byStatus = Object.entries(apps.reduce<Record<string, number>>((acc, a) => { acc[a.status] = (acc[a.status] || 0) + 1; return acc; }, {})).map(([_id, count]) => ({ _id, count }));
-    const tagCounts: Record<string, number> = {};
-    apps.forEach(a => a.tags?.forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; }));
-    const byTag = Object.entries(tagCounts).map(([_id, count]) => ({ _id, count }));
-    const sourceCounts: Record<string, number> = {};
-    apps.forEach(a => { const s = a.engagementSource as string || 'direct'; sourceCounts[s] = (sourceCounts[s] || 0) + 1; });
-    const bySource = Object.entries(sourceCounts).map(([_id, count]) => ({ _id, count }));
-    const classCounts: Record<string, number> = {};
-    apps.forEach(a => { const c = a.classification as string || 'unclassified'; classCounts[c] = (classCounts[c] || 0) + 1; });
-    const byClassification = Object.entries(classCounts).map(([_id, count]) => ({ _id, count }));
-    return { success: true, data: { total: apps.length, byType, byStatus, byTag, bySource, byClassification, recentApps: apps.slice(0, 8) } };
-  },
-
-  // ── Analytics ──
-  async getAnalyticsDashboard(range = '30d'): Promise<ApiResponse<AnalyticsDashboard>> {
-    return request('GET', `/insights/dashboard?range=${range}`);
-  },
-  async getAnalyticsFunnel(): Promise<ApiResponse<FunnelData>> {
-    return request('GET', '/insights/funnel');
-  },
-  async getAnalyticsTrends(granularity = 'day', range = '30d'): Promise<ApiResponse<TrendData>> {
-    return request('GET', `/insights/trends?granularity=${granularity}&range=${range}`);
-  },
-  async getAnalyticsTags(): Promise<ApiResponse<TagAnalytics>> {
-    return request('GET', '/insights/tags');
-  },
-  async getAnalyticsDemographics(): Promise<ApiResponse<DemographicsData>> {
-    return request('GET', '/insights/demographics');
-  },
-  async getAnalyticsDealRoom(): Promise<ApiResponse<DealRoomAnalytics>> {
-    return request('GET', '/insights/deal-room');
-  },
-
-  // ── Traffic Analytics ──
-  async getTrafficOverview(range = '30d'): Promise<ApiResponse<TrafficOverview>> {
-    return request('GET', `/insights/traffic?range=${range}`);
-  },
-  async getTrafficTrends(granularity = 'day', range = '30d'): Promise<ApiResponse<TrafficTrends>> {
-    return request('GET', `/insights/traffic/trends?granularity=${granularity}&range=${range}`);
-  },
-  async getTrafficReferrers(range = '30d'): Promise<ApiResponse<ReferrerData>> {
-    return request('GET', `/insights/traffic/referrers?range=${range}`);
-  },
-  async getTrafficDevices(range = '30d'): Promise<ApiResponse<DeviceData>> {
-    return request('GET', `/insights/traffic/devices?range=${range}`);
-  },
-  async getTrafficHours(range = '30d'): Promise<ApiResponse<HourlyData>> {
-    return request('GET', `/insights/traffic/hours?range=${range}`);
-  },
-  async getTrafficFormFunnel(range = '30d'): Promise<ApiResponse<FormFunnelData>> {
-    return request('GET', `/insights/traffic/form-funnel?range=${range}`);
-  },
-  async getTrafficClicks(range = '30d'): Promise<ApiResponse<ClickData>> {
-    return request('GET', `/insights/traffic/clicks?range=${range}`);
-  },
-
-  async getAuditLog(queryString: string): Promise<PaginatedResponse<unknown>> {
-    return request('GET', `/insights/events?${queryString}`);
-  },
-
-  // ── Settings ──
-  async getSetting(key: string): Promise<ApiResponse<{ key: string; value: unknown }>> {
-    return request('GET', `/settings/public/${key}`);
-  },
-  async getAllSettings(): Promise<ApiResponse<Record<string, unknown>>> {
-    return request('GET', '/settings');
-  },
-  async updateSetting(key: string, value: unknown): Promise<ApiResponse<unknown>> {
-    return request('PUT', `/settings/${key}`, { value });
-  },
-
-  async bulkUpdateStatus(ids: string[], status: string): Promise<ApiResponse<{ updated: number }>> {
-    return request('POST', '/applications/bulk-status', { ids, status });
-  },
-
-  async sendReminders(ids: string[]): Promise<ApiResponse<{ sent: number }>> {
-    return request('POST', '/applications/send-reminders', { ids });
-  },
-
-  async getReport(name: ReportName): Promise<ApiResponse<ReportData>> {
-    if (store.get('useApi')) return request('GET', `/reports/${name}`);
-    const apps = localStore.get();
-    const filters: Record<string, (a: Application) => boolean> = {
-      'high-value-developers': a => a.tags?.some(t => ['HIGH_VALUE', 'LARGE_CAPITAL'].includes(t)) ?? false,
-      'pipeline-ready-developers': a => a.tags?.includes('PIPELINE_READY') ?? false,
-      // Deprecated alias kept for old bookmarks (removed in next major).
-      'pipeline-ready-land': a => a.tags?.includes('PIPELINE_READY') ?? false,
-      'institutional-grade-housing': a => a.tags?.includes('INSTITUTIONAL_GRADE') ?? false,
-      'deal-room-shortlist': a => ['shortlisted', 'invited'].includes(a.status),
-    };
-    const filtered = apps.filter(filters[name] || (() => false));
-    return { success: true, data: { report: name, description: '', count: filtered.length, data: filtered } };
-  },
-
-  // ── Admins ──
-  async getAdmins(): Promise<ApiResponse<unknown[]>> {
-    return request('GET', '/admins');
-  },
-  async createAdmin(data: { email: string; password: string; name?: string }): Promise<ApiResponse<unknown>> {
-    return request('POST', '/admins', data);
-  },
-  async updateAdmin(id: string, data: { email?: string; password?: string; name?: string }): Promise<ApiResponse<unknown>> {
-    return request('PATCH', `/admins/${id}`, data);
-  },
-  async deleteAdmin(id: string): Promise<ApiResponse<unknown>> {
-    return request('DELETE', `/admins/${id}`);
+  unmount() {
+    cleanupFns.forEach(fn => fn());
+    cleanupFns = [];
   },
 };
+
+// Re-export for tests
+export { collectAllFormData };
