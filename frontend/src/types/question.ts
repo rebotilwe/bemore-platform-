@@ -11,7 +11,8 @@ export type QuestionType =
   | 'radio'
   | 'checkbox'
   | 'dropdown'
-  | 'file';
+  | 'file'
+  | 'file_group'; // NEW: For multi-document upload
 
 /**
  * Option for radio / checkbox / dropdown.
@@ -23,6 +24,16 @@ export type QuestionType =
  */
 export type QuestionOption = string | { label: string; value: string };
 
+// NEW: File group configuration for multi-document upload
+export interface FileGroupConfig {
+  field: string;
+  label: string;
+  required: boolean;
+  accept: string;
+  maxSizeBytes: number;
+  helpText?: string;
+}
+
 export interface Question {
   /** formData key — see spec §7.2 */
   id: string;
@@ -31,6 +42,8 @@ export interface Question {
   required: boolean;
   /** option values for radio / checkbox / dropdown */
   options?: QuestionOption[];
+  /** For file_group type: list of files to upload */
+  files?: FileGroupConfig[];
   /** companion free-text "Other: ___" field, written to a sibling formData key */
   otherField?: { id: string; label: string };
   /** predicate used by the renderer + step-readiness; receives the live formData snapshot */
@@ -56,4 +69,16 @@ export interface ProfileQuestions {
   step4: Question[];
   /** Step 5 — Feedback (consent rendered separately by the step file) */
   step5: Question[];
+}
+
+// NEW: Attachment reference type
+export interface AttachmentRef {
+  field: string;
+  filename: string;
+  storedAs: string;
+  size: number;
+  mimeType: string;
+  uploadedAt?: string;
+  expiryDate?: string;
+  isVerified?: boolean;
 }

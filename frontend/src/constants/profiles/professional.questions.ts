@@ -1,11 +1,6 @@
 /* ---------------------------------------------------------------
    FLOW 05 — Built Environment Professional
-   Spec §5 + §5.1 (Q15 Why not actively looking shows when
-   activityLookingNow ∈ {'Open to the right opportunity', 'Not actively looking'}).
-   §7.2 field IDs. §14 canonical activityLevel enum.
-   Step 4 includes the optional CV upload (5 MB, PDF/DOC/DOCX) —
-   the `cv` question id maps to the application's `attachments[]`
-   sub-document, not formData (see spec §7.1).
+   Step 4 includes multi-document upload for panel inclusion.
    ---------------------------------------------------------------*/
 
 import type { ProfileQuestions, Question } from '../../types/question.ts';
@@ -27,6 +22,12 @@ const SA_PROVINCES = [
   'Free State',
   'Northern Cape',
 ];
+
+const DOCUMENT_ACCEPTED_MIME = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+].join(',');
 
 const CV_ACCEPTED_MIME = [
   'application/pdf',
@@ -148,13 +149,7 @@ const step3: Question[] = [
 ];
 
 const step4: Question[] = [
-  // Phone / email → `personal` via step file.
   {
-    // Optional CV / company profile upload — spec §5 (Step 4 Q13) + §7.1.
-    // The id `cv` keys into the application's `attachments[]` payload, not
-    // formData. The step file owns the actual upload network call (POST
-    // /api/applications/upload) and replaces this value with the returned
-    // metadata before submission.
     id: 'cv',
     type: 'file',
     label: 'Upload CV or company profile',
@@ -163,11 +158,52 @@ const step4: Question[] = [
     maxSizeBytes: 5 * 1024 * 1024,
     helpText: 'PDF, DOC, or DOCX up to 5 MB. Optional but speeds up shortlist review.',
   },
+  // NEW: Multi-document upload for panel inclusion
+  {
+    id: 'documents',
+    type: 'file_group',
+    label: 'Professional Documentation (For Panel Inclusion)',
+    required: true,
+    helpText: 'Please upload the following documents to be considered for the professional panel. All documents must be current and valid.',
+    files: [
+      {
+        field: 'company_registration',
+        label: 'Company Registration Certificate',
+        required: true,
+        accept: DOCUMENT_ACCEPTED_MIME,
+        maxSizeBytes: 5 * 1024 * 1024,
+        helpText: 'CIPC registration certificate for your company',
+      },
+      {
+        field: 'tax_clearance',
+        label: 'Tax Clearance Certificate',
+        required: true,
+        accept: DOCUMENT_ACCEPTED_MIME,
+        maxSizeBytes: 5 * 1024 * 1024,
+        helpText: 'Valid SARS Tax Clearance Certificate (valid for 12 months)',
+      },
+      {
+        field: 'bee_certificate',
+        label: 'B-BBEE Certificate/Affidavit',
+        required: true,
+        accept: DOCUMENT_ACCEPTED_MIME,
+        maxSizeBytes: 5 * 1024 * 1024,
+        helpText: 'Current B-BBEE Certificate or Sworn Affidavit',
+      },
+      {
+        field: 'professional_indemnity',
+        label: 'Professional Indemnity Insurance',
+        required: true,
+        accept: DOCUMENT_ACCEPTED_MIME,
+        maxSizeBytes: 5 * 1024 * 1024,
+        helpText: 'Valid Professional Indemnity Insurance Certificate',
+      },
+    ],
+  },
 ];
 
 const step5: Question[] = [
   {
-    // PDF Q14 — universal canonical `activityLevel` (spec §14).
     id: 'activityLevel',
     type: 'radio',
     label: 'How actively are you looking for new project opportunities right now?',
@@ -175,9 +211,6 @@ const step5: Question[] = [
     options: ACTIVITY_LEVEL_OPTIONS,
   },
   {
-    // PDF Q15 — dropdown of 5 fixed reasons + free-text "Other" branch.
-    // Trigger: PDF says "If NOT actively looking" → narrow to that single
-    // option (Developer flow's broader two-value trigger does NOT apply here).
     id: 'notActiveReason',
     type: 'dropdown',
     label: 'What is the main reason you are not actively looking right now?',
@@ -192,7 +225,6 @@ const step5: Question[] = [
     showIf: (fd) => fd.activityLevel === 'Not actively looking',
   },
   {
-    // Free-text branch when Q15 = 'Other' (PDF: "Other (text)").
     id: 'notActiveReasonOther',
     type: 'text',
     label: 'Please specify',

@@ -14,8 +14,8 @@ export const landingPage: Page = {
         </div>
         <div class="landing-brand-divider" aria-hidden="true"></div>
         <div class="landing-brand-item">
-          <span class="landing-brand-logo display">PBSA</span>
-          <span class="landing-brand-label">Funding Partner</span>
+          <span class="landing-brand-logo display" style="font-size:1.8rem;font-weight:700;color:#c9a84c;">BeMore</span>
+          <span class="landing-brand-label">Deal Origination Engine</span>
         </div>
       </div>
 
@@ -51,7 +51,7 @@ export const landingPage: Page = {
 
       <!-- Footer -->
       <div class="landing-footer fade-up stagger-4">
-        <p>BeMore Group (Pty) Ltd &times; PBSA &mdash; Institutional Funding Partnership</p>
+        <p>BeMore Group (Pty) Ltd &mdash; Institutional Funding Partnership</p>
       </div>
     </section>`;
   },

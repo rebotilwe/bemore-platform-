@@ -41,6 +41,20 @@ const step2: Question[] = [
 ];
 
 const step3: Question[] = [
+  // NEW: Equity amount field
+  {
+    id: 'equityAmount',
+    type: 'dropdown',
+    label: 'What equity/capital do you currently have available?',
+    required: true,
+    options: [
+      'R0 - R50,000',
+      'R50,001 - R200,000',
+      'R200,001 - R500,000',
+      'R500,001 - R1,000,000',
+      'R1,000,000+'
+    ],
+  },
   {
     id: 'holdingBack',
     type: 'dropdown',

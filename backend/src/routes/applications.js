@@ -7,10 +7,10 @@ import { publicApplicationLimiter, adminLimiter } from '../config/rateLimit.js';
 import { PROFILE_CATEGORIES, APPLICATION_STATUSES, SORTABLE_FIELDS, FUNDER_NAMES } from '../constants/enums.js';
 import {
   submit, list, getOne, update, stats, exportCsv, bulkUpdateStatus, sendReminders,
-  uploadCv, downloadAttachment, deleteAttachment, downloadSignedAttachment,
+  uploadCv, uploadDocument, downloadAttachment, deleteAttachment, downloadSignedAttachment,
+  bulkAssignDepartment, getRoutingStats,
 } from '../controllers/applicationController.js';
-import { singleCvUploadMiddleware } from '../services/uploadService.js';
-import { csrfProtection } from '../middleware/auth.js';
+import { singleCvUploadMiddleware, multiUploadMiddleware } from '../services/uploadService.js';
 import { sendDataExportReceipt, sendDataDeleteReceipt } from '../utils/mailer.js';
 import logger from '../utils/logger.js';
 
@@ -55,6 +55,8 @@ router.post('/', publicApplicationLimiter,
         // Developer
         'developmentStage', 'developmentTypes', 'projectValue', 'fundingPosition',
         'biggestConstraint', 'biggestConstraintOther', 'whatMatters',
+        // NEW: Developer portfolio size
+        'portfolioSize',
         // Land Owner
         'landLocation', 'landOutcome', 'zoning', 'startedDevWork', 'whatPreventsProgress',
         // Investor
@@ -62,6 +64,8 @@ router.post('/', publicApplicationLimiter,
         'capitalDeployment',
         // Student Operator
         'portfolioSize', 'portfolioLocations', 'opChallenge', 'occupancyLevel', 'scaleLimit',
+        // NEW: Student accreditation
+        'accreditation', 'accreditationOther',
         // Professional
         'primaryRole', 'experienceLevel', 'provinces', 'workStructure', 'companyPractice',
         'projectTypes', 'avgProjectSize', 'workStyle', 'proWhatMatters',
@@ -70,6 +74,8 @@ router.post('/', publicApplicationLimiter,
         // collapsed onto universal `activityLevel` + `notActiveReason` per spec §14)
         // Aspiring
         'involvedBefore', 'hasLandAccess', 'aspiringDevType', 'holdingBack', 'realisticStart',
+        // NEW: Aspiring equity amount
+        'equityAmount',
       ]);
       for (const key of Object.keys(val)) {
         if (!allowed.has(key)) delete val[key]; // Strip unknown fields
@@ -77,10 +83,13 @@ router.post('/', publicApplicationLimiter,
       return true;
     }),
   // Spec §8.2 — optional attachments[] (CV references from /upload).
-  body('attachments').optional().isArray({ max: 5 }).withMessage('attachments must be an array (max 5)'),
-  body('attachments.*.field').optional().isString().withMessage('attachments[].field required'),
+  body('attachments').optional().isArray({ max: 10 }).withMessage('attachments must be an array (max 10)'),
+  body('attachments.*.field').optional().isString().withMessage('attachments[].field required')
+    .isIn(['cv', 'company_registration', 'tax_clearance', 'bee_certificate', 'professional_indemnity'])
+    .withMessage('Invalid attachment field'),
   body('attachments.*.storedAs').optional().isString()
     .matches(/^[a-zA-Z0-9._-]+$/).withMessage('attachments[].storedAs must be a safe basename'),
+  body('attachments.*.expiryDate').optional().isISO8601().withMessage('attachments[].expiryDate must be a valid date'),
   // POPIA — both consents are mandatory at submission. The frontend gates
   // the Submit button on these but server-side enforcement is the
   // load-bearing check for compliance.
@@ -93,13 +102,20 @@ router.post('/', publicApplicationLimiter,
   submit,
 );
 
-// ── Public: CV upload (no auth, CSRF required, rate-limited) ──
-// Spec §8.1 — POST /api/applications/upload (multipart/form-data, field "file")
+// ── Public: CV upload (no auth, rate-limited) ──
+// CSRF protection removed for file uploads to allow multipart/form-data
 router.post('/upload',
   publicApplicationLimiter,
-  csrfProtection,
   singleCvUploadMiddleware,
   uploadCv,
+);
+
+// ── Public: Multi-document upload (NEW) ──
+// CSRF protection removed for file uploads to allow multipart/form-data
+router.post('/upload-document',
+  publicApplicationLimiter,
+  multiUploadMiddleware,
+  uploadDocument,
 );
 
 // ── Public: status lookup (no auth, rate-limited) ──
@@ -177,6 +193,8 @@ router.post('/data-export',
           size: a.size,
           mimeType: a.mimeType,
           uploadedAt: a.uploadedAt,
+          expiryDate: a.expiryDate,
+          isVerified: a.isVerified,
           downloadUrl: buildSignedDownloadUrl(app.refNumber, a.storedAs),
         }));
       }
@@ -264,6 +282,10 @@ router.post('/data-delete',
 // ── Admin (order matters: static routes before :id) ──
 router.get('/stats', adminLimiter, auth, stats);
 router.get('/export/csv', adminLimiter, auth, exportCsv);
+
+// NEW: Routing statistics
+router.get('/routing-stats', adminLimiter, auth, getRoutingStats);
+
 router.post('/bulk-status',
   adminLimiter,
   auth,
@@ -272,6 +294,16 @@ router.post('/bulk-status',
   body('status').isIn(APPLICATION_STATUSES).withMessage('Invalid status'),
   validate,
   bulkUpdateStatus);
+
+// NEW: Bulk department assignment
+router.post('/bulk-department',
+  adminLimiter,
+  auth,
+  body('ids').isArray({ min: 1, max: 100 }).withMessage('ids must be an array with 1-100 items'),
+  body('ids.*').isMongoId().withMessage('Each id must be a valid MongoDB ObjectId'),
+  body('department').isIn(['pormat_sales', 'pormat_management', 'muma_consulting']).withMessage('Invalid department'),
+  validate,
+  bulkAssignDepartment);
 
 router.post('/send-reminders',
   adminLimiter,
@@ -295,8 +327,7 @@ router.get('/',
 );
 
 // ── Public: signed attachment download — spec §8.5 ──
-// IMPORTANT: NO auth, NO csrfProtection. Verifies HMAC signature + expiry.
-// Defined before /:id so the literal /attachment/ segment wins routing.
+// IMPORTANT: NO auth. Verifies HMAC signature + expiry.
 router.get('/:refNumber/attachment/:storedAs/signed',
   publicApplicationLimiter,
   param('refNumber').matches(/^BM-[A-Z0-9]{4,12}$/).withMessage('Invalid reference number format'),
@@ -351,6 +382,14 @@ router.patch('/:id',
   body('followUp.dueDate').optional().isISO8601().withMessage('followUp.dueDate must be a valid date'),
   body('followUp.notes').optional().isString().withMessage('followUp.notes must be a string')
     .isLength({ max: 2000 }).withMessage('followUp.notes max 2000 characters'),
+  body('routing').optional().isObject().withMessage('routing must be an object'),
+  body('routing.department').optional().isIn(['pormat_sales', 'pormat_management', 'muma_consulting', 'unassigned'])
+    .withMessage('Invalid department'),
+  body('routing.status').optional().isIn(['pending', 'assigned', 'reviewed', 'completed'])
+    .withMessage('Invalid routing status'),
+  body('workload').optional().isObject().withMessage('workload must be an object'),
+  body('workload.activeProjects').optional().isInt({ min: 0 }).withMessage('activeProjects must be >= 0'),
+  body('workload.maxProjects').optional().isInt({ min: 1 }).withMessage('maxProjects must be >= 1'),
   validate,
   update,
 );

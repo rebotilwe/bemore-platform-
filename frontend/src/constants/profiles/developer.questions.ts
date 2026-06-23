@@ -30,6 +30,20 @@ const step1: Question[] = [
 ];
 
 const step2: Question[] = [
+  // NEW: Portfolio size field
+  {
+    id: 'portfolioSize',
+    type: 'dropdown',
+    label: 'What is your current development portfolio size?',
+    required: true,
+    options: [
+      '0-50 units',
+      '51-200 units',
+      '201-500 units',
+      '501-1000 units',
+      '1000+ units'
+    ],
+  },
   {
     id: 'developmentStage',
     type: 'dropdown',

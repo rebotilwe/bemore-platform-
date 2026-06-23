@@ -1,6 +1,12 @@
 import Application from '../models/Application.js';
 import { APPLICATION_STATUSES, FUNDER_NAMES, SORTABLE_FIELDS } from '../constants/enums.js';
-import { ALLOWED_ATTACHMENT_FIELDS, cvStat, mimeFromStoredName, sanitizeFilename } from './uploadService.js';
+import {
+  ALLOWED_ATTACHMENT_FIELDS,
+  cvStat,
+  mimeFromStoredName,
+  sanitizeFilename,
+  getDocumentStat,   // ← added
+} from './uploadService.js';
 
 const ALLOWED_UPDATE_FIELDS = ['status', 'dealRoom', 'adminNotes', 'classification', 'followUp', 'allocatedProjects'];
 
@@ -25,16 +31,19 @@ async function resolveAttachments(refs = []) {
       err.code = 'ATTACHMENT_FIELD_INVALID';
       throw err;
     }
-    const stat = await cvStat(ref.storedAs);
+
+    // Use getDocumentStat instead of cvStat so it checks the correct
+    // directory for each field type (cv/ vs documents/).
+    const stat = await getDocumentStat(ref.storedAs, ref.field);
+
     if (!stat.exists) {
-      const err = new Error(`Attachment ${ref.storedAs} not found`);
+      const err = new Error(`Attachment ${ref.storedAs} not found in ${ref.field} directory`);
       err.status = 400;
       err.code = 'ATTACHMENT_NOT_FOUND';
       throw err;
     }
     resolved.push({
       field: ref.field,
-      // If client supplies original filename, sanitise it; otherwise fall back to storedAs.
       filename: sanitizeFilename(ref.filename) || ref.storedAs,
       storedAs: ref.storedAs,
       size: stat.size,

@@ -31,17 +31,27 @@ const applicationSchema = new mongoose.Schema({
   },
   adminNotes: String,
   allocatedProjects: [{ type: String }],
-  // POPIA audit trail (spec §3 — Protection of Personal Information Act).
-  // Captured at submission; both flags must be true (route validator enforces).
-  // IMPORTANT: subdocument is `default: undefined` so that legacy applications
-  // submitted BEFORE 2026-05-11 (when consent persistence was added) do NOT
-  // have a fake consent block hydrated on read. Without this, Mongoose would
-  // silently inject `{tc:false, popia:false, capturedAt:<now>}` for every
-  // legacy doc on every read — corrupting the POPIA audit trail by:
-  //   1. marking historic applicants as having NOT consented (false)
-  //   2. stamping a fake `capturedAt` timestamp for the moment of read
-  // The admin lead-detail modal falls back to legacy `formData.tcAccepted` /
-  // `formData.popiaConsent` keys when `consent` is undefined.
+  // NEW: Routing information
+  routing: {
+    department: { 
+      type: String, 
+      enum: ['pormat_sales', 'pormat_management', 'muma_consulting', 'unassigned'],
+      default: 'unassigned'
+    },
+    leadType: { 
+      type: String,
+      enum: ['development_project', 'land', 'investment', 'student_accommodation', 'consultant_panel', 'aspiring_developer', 'general'],
+      default: 'general'
+    },
+    assignedTo: { type: String },
+    assignedAt: Date,
+    status: { 
+      type: String,
+      enum: ['pending', 'assigned', 'reviewed', 'completed'],
+      default: 'pending'
+    },
+  },
+  // POPIA audit trail
   consent: {
     type: {
       tc: { type: Boolean, required: true },
@@ -51,21 +61,44 @@ const applicationSchema = new mongoose.Schema({
     default: undefined,
     _id: false,
   },
+  // UPDATED: Multi-document upload with expiry tracking
   attachments: {
     type: [{
-      field: { type: String, required: true },        // 'cv' for Professional Q13
-      filename: { type: String, required: true },     // sanitised original name
-      storedAs: { type: String, required: true },     // UUID-based filename on disk
+      field: { 
+        type: String, 
+        required: true,
+        enum: ['cv', 'company_registration', 'tax_clearance', 'bee_certificate', 'professional_indemnity']
+      },
+      filename: { type: String, required: true },
+      storedAs: { type: String, required: true },
       size: { type: Number, required: true },
       mimeType: { type: String, required: true },
       uploadedAt: { type: Date, default: Date.now },
+      // NEW: Document expiry tracking
+      expiryDate: Date,
+      isVerified: { type: Boolean, default: false },
+      verifiedAt: Date,
+      verifiedBy: String,
+      rejectionReason: String,
     }],
     default: [],
+  },
+  // NEW: Professional workload tracking
+  workload: {
+    activeProjects: { type: Number, default: 0 },
+    maxProjects: { type: Number, default: 5 },
+    projectHistory: [{
+      projectId: String,
+      allocatedAt: Date,
+      completedAt: Date,
+      status: { type: String, enum: ['active', 'completed', 'archived'] },
+    }],
   },
   submittedAt: { type: Date, default: Date.now },
   updatedAt: Date,
 });
 
+// Indexes
 applicationSchema.index({ 'personal.email': 1 });
 applicationSchema.index({ status: 1 });
 applicationSchema.index({ userType: 1 });
@@ -74,10 +107,12 @@ applicationSchema.index({ submittedAt: -1 });
 applicationSchema.index({ classification: 1 });
 applicationSchema.index({ engagementSource: 1 });
 applicationSchema.index({ 'dealRoom.summitAccess': 1 });
-applicationSchema.index({ classification: 1, status: 1 }); // Admin filtering by classification + status
-applicationSchema.index({ engagementSource: 1, submittedAt: -1 }); // Source analytics
-// Compound index for status lookup endpoint
+applicationSchema.index({ classification: 1, status: 1 });
+applicationSchema.index({ engagementSource: 1, submittedAt: -1 });
 applicationSchema.index({ refNumber: 1, 'personal.email': 1 });
+applicationSchema.index({ 'routing.department': 1 });
+applicationSchema.index({ 'routing.status': 1 });
+applicationSchema.index({ 'workload.activeProjects': 1 });
 // POPIA: auto-delete applications older than 24 months
 applicationSchema.index({ submittedAt: 1 }, { expireAfterSeconds: 24 * 30 * 24 * 60 * 60 });
 

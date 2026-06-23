@@ -21,7 +21,7 @@ export const heroPage: Page = {
           <p class="hero-sub fade-up stagger-2">
             The BeMore SME Access Initiative connects emerging property developers, landowners,
             student accommodation operators, and built environment professionals with institutional funding
-            partners including PBSA. Limited access. Strictly merit-based selection.
+            partners. Limited access. Strictly merit-based selection.
           </p>
           <div class="hero-actions fade-up stagger-3">
             <a class="btn-primary" href="#/gateway" data-track="Hero — Apply Now">Apply Now →</a>
@@ -29,8 +29,8 @@ export const heroPage: Page = {
           </div>
           <div class="hero-stats fade-up stagger-4">
             <div class="stat-item">
-              <div class="stat-num display">PBSA</div>
-              <div class="stat-label">Lead Funding Partner</div>
+              <div class="stat-num display">BeMore</div>
+              <div class="stat-label">SME Access Initiative</div>
             </div>
             <div class="stat-item">
               <div class="stat-num display">R20M+</div>
@@ -41,10 +41,12 @@ export const heroPage: Page = {
         <div class="hero-right fade-up stagger-2">
           <div class="hero-card">
             <h3 class="hero-card-title display">Institutional Funding Partners</h3>
-            <div class="funders-label">Lead institutional funding partner</div>
+            <div class="funders-label">Lead institutional funding partners</div>
             <div class="funders-grid funders-grid--single">
-              <div class="funder-pill funder-pill--featured">PBSA</div>
-              <div class="funder-pill">Institutional Partners</div>
+              <div class="funder-pill funder-pill--featured">DBSA</div>
+              <div class="funder-pill">NHFC</div>
+              <div class="funder-pill">NEF</div>
+              <div class="funder-pill">SAIF</div>
             </div>
             <div class="merit-box">
               <p>Limited Access</p>

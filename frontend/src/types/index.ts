@@ -4,6 +4,20 @@ export type {
   AttachmentRef, AttachmentRecord, UploadResponse,
 } from './application.ts';
 
+// NEW: Export routing types
+export type {
+  RoutingInfo,
+  RoutingDepartment,
+  RoutingStatus,
+  LeadType,
+} from './routing.ts';
+
+// NEW: Export workload types
+export type {
+  WorkloadInfo,
+  ProjectHistory,
+} from './workload.ts';
+
 export type {
   ApiResponse, PaginatedResponse, StatsData, LoginResponse, ReportData, TypeCount,
   AnalyticsDashboard, FunnelData, TrendData, TagAnalytics, DemographicsData, DealRoomAnalytics,

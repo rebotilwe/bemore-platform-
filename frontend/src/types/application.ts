@@ -1,6 +1,9 @@
 export type ProfileCategory = 'developer' | 'landowner' | 'investor' | 'student' | 'professional' | 'aspiring';
 export type ApplicationStatus = 'new' | 'reviewing' | 'shortlisted' | 'invited' | 'funded';
-export type FunderName = 'PBSA';
+
+// Updated: Replaced PBSA with actual institutional funders
+export type FunderName = 'DBSA' | 'NHFC' | 'NEF' | 'SAIF';
+
 export type ReportName = 'high-value-developers' | 'pipeline-ready-developers' | 'pipeline-ready-land' | 'institutional-grade-housing' | 'deal-room-shortlist';
 
 export interface Personal {
@@ -43,6 +46,8 @@ export interface AttachmentRecord extends AttachmentRef {
   size: number;
   mimeType: string;
   uploadedAt?: string;
+  expiryDate?: string; // NEW: Document expiry tracking
+  isVerified?: boolean; // NEW: Document verification status
 }
 
 export interface Application {
@@ -62,6 +67,25 @@ export interface Application {
   /** POPIA audit trail captured at submission. Optional for compatibility
    *  with applications submitted before 2026-05-11. */
   consent?: { tc?: boolean; popia?: boolean; capturedAt?: string };
+  // NEW: Routing information
+  routing?: {
+    department?: 'pormat_sales' | 'pormat_management' | 'muma_consulting' | 'unassigned';
+    leadType?: string;
+    assignedTo?: string;
+    assignedAt?: string;
+    status?: 'pending' | 'assigned' | 'reviewed' | 'completed';
+  };
+  // NEW: Professional workload tracking
+  workload?: {
+    activeProjects?: number;
+    maxProjects?: number;
+    projectHistory?: Array<{
+      projectId: string;
+      allocatedAt: string;
+      completedAt?: string;
+      status: 'active' | 'completed' | 'archived';
+    }>;
+  };
   submittedAt: string;
   updatedAt?: string;
 }
@@ -83,6 +107,8 @@ export interface UploadResponse {
   storedAs: string;
   size: number;
   mimeType: string;
+  field?: string;
+  expiryDate?: string;
 }
 
 export interface UpdatePayload {
@@ -91,6 +117,16 @@ export interface UpdatePayload {
   classification?: Classification;
   followUp?: Partial<FollowUp>;
   adminNotes?: string;
+  // NEW: Routing updates
+  routing?: {
+    department?: 'pormat_sales' | 'pormat_management' | 'muma_consulting' | 'unassigned';
+    status?: 'pending' | 'assigned' | 'reviewed' | 'completed';
+  };
+  // NEW: Workload updates
+  workload?: {
+    activeProjects?: number;
+    maxProjects?: number;
+  };
 }
 
 export interface FilterParams {

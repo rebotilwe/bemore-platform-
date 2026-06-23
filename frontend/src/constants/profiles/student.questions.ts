@@ -30,6 +30,21 @@ const step2: Question[] = [
     required: true,
     options: ['Under 50 beds', '51–200 beds', '201–500 beds', '500+ beds'],
   },
+  // NEW: Accreditation field
+  {
+    id: 'accreditation',
+    type: 'dropdown',
+    label: 'Do you have any formal accreditation?',
+    required: false,
+    options: [
+      'None',
+      'Department of Higher Education (DHET)',
+      'Private Accreditation Body',
+      'University Partnership',
+      'Other'
+    ],
+    otherField: { id: 'accreditationOther', label: 'Please specify' },
+  },
   {
     id: 'portfolioLocations',
     type: 'checkbox',

@@ -1,12 +1,16 @@
+/* ---------------------------------------------------------------
+   form.ts — Main form page with file_group support
+   ---------------------------------------------------------------*/
+
 import type { Page, ProfileCategory, AttachmentRef } from '../../types/index.ts';
+import type { Question, FileGroupConfig } from '../../types/question.ts';
 import { store } from '../../store.ts';
 import { navigate } from '../../router.ts';
 import { FORM_STEPS, getStepMeta } from '../../constants/form-steps.ts';
 import { toast } from '../../components/toast.ts';
 import { api } from '../../api.ts';
 import { normalizePhone } from '../../utils/validation.ts';
-import { getMissingItems } from '../../utils/step-readiness.ts';
-import { PROFILE_CONFIG } from '../../utils/step-readiness.ts';
+import { getMissingItems, PROFILE_CONFIG } from '../../utils/step-readiness.ts';
 import { renderStepIdentity, mountStepIdentity } from './form-steps/step-identity.ts';
 import { renderStepPosition, mountStepPosition } from './form-steps/step-position.ts';
 import { renderStepConstraints, mountStepConstraints } from './form-steps/step-constraints.ts';
@@ -22,7 +26,9 @@ const TOTAL = 5;
        personal: { firstName, surname, email, phone, companyName? },
        attachments?: [{ field: 'cv', filename, storedAs }],
        consent?:    { tc: bool, popia: bool },
-       __uploadInFlight?: boolean,    // step-contact transient flag
+       __uploadInFlight?: boolean,
+       // NEW: File group data stored as array
+       documents?: [{ field: string, filename, storedAs, size, mimeType, expiryDate }],
        ...question-config field IDs (spec §7.2)...
      }
    ══════════════════════════════════════════════ */
@@ -35,6 +41,17 @@ interface PersonalSlice {
   phone?: string;
 }
 
+interface FileGroupValue {
+  field: string;
+  filename: string;
+  storedAs: string;
+  size: number;
+  mimeType: string;
+  uploadedAt?: string;
+  expiryDate?: string;
+  isVerified?: boolean;
+}
+
 function getFD(): Record<string, unknown> {
   return (store.get('formData') ?? {}) as Record<string, unknown>;
 }
@@ -44,6 +61,131 @@ function getPersonal(): PersonalSlice {
 }
 
 function getStep(): number { return store.get('currentStep'); }
+
+/* ══════════════════════════════════════════════
+   File Group Rendering
+   ══════════════════════════════════════════════ */
+
+/**
+ * Render a file_group type question
+ */
+function renderFileGroup(question: Question, fd: Record<string, unknown>): string {
+  const files = (fd[question.id] as FileGroupValue[]) || [];
+  const fileGroup = question as Question & { files: FileGroupConfig[] };
+  
+  let html = `
+    <div class="file-group-container">
+      <p class="file-group-help">${question.helpText || 'Please upload the required documents'}</p>
+      <div class="file-group-list">
+  `;
+  
+  for (const fileConfig of fileGroup.files || []) {
+    const existing = files.find(f => f.field === fileConfig.field);
+    const isRequired = fileConfig.required;
+    const statusClass = existing ? 'uploaded' : (isRequired ? 'required' : 'optional');
+    const statusText = existing ? '✅ Uploaded' : (isRequired ? '⚠️ Required' : 'Optional');
+    
+    html += `
+      <div class="file-group-item" data-field="${fileConfig.field}">
+        <div class="file-group-header">
+          <span class="file-group-label">${fileConfig.label}</span>
+          <span class="file-group-status ${statusClass}">${statusText}</span>
+        </div>
+        <div class="file-group-input">
+          <input 
+            type="file" 
+            id="file-${fileConfig.field}" 
+            name="file-${fileConfig.field}"
+            accept="${fileConfig.accept || '.pdf,.jpg,.png'}"
+            data-field="${fileConfig.field}"
+            ${isRequired ? 'data-required="true"' : ''}
+          />
+          <label for="file-${fileConfig.field}" class="file-upload-btn">
+            ${existing ? '🔄 Replace' : '📎 Choose File'}
+          </label>
+          ${fileConfig.helpText ? `<small class="file-help">${fileConfig.helpText}</small>` : ''}
+          ${existing ? `<span class="file-name">📄 ${existing.filename}</span>` : ''}
+          ${existing ? `<span class="file-size">(${(existing.size / 1024).toFixed(0)} KB)</span>` : ''}
+          ${existing && existing.expiryDate ? `<span class="file-expiry">Expires: ${new Date(existing.expiryDate).toLocaleDateString()}</span>` : ''}
+        </div>
+        <div class="file-upload-progress" style="display:none">
+          <div class="progress-bar" style="width:0%"></div>
+        </div>
+      </div>
+    `;
+  }
+  
+  html += `
+      </div>
+    </div>
+  `;
+  
+  return html;
+}
+
+/**
+ * Handle file upload for a file group
+ * UPDATED: Uses /api/applications/upload-document endpoint
+ */
+/**
+ * Handle file upload for a file group
+ * FIXED: Properly handles storedAs from backend response
+ */
+async function handleFileGroupUpload(
+  field: string, 
+  file: File, 
+  questionId: string,
+  onProgress?: (percent: number) => void
+): Promise<FileGroupValue | null> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('field', field);
+
+  try {
+    const response = await fetch('/api/applications/upload-document', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      let errorMessage = 'Upload failed';
+      try {
+        const error = await response.json();
+        errorMessage = error.message || errorMessage;
+      } catch {
+        errorMessage = response.statusText || errorMessage;
+      }
+      throw new Error(errorMessage);
+    }
+
+    const result = await response.json();
+    console.log('📤 Upload response:', result);
+    
+    if (result.success && result.file) {
+      // Ensure storedAs is set - try multiple possible field names
+      const storedAs = result.file.storedAs || result.file.storedName || result.file.filename;
+      
+      if (!storedAs) {
+        console.error('❌ No storedAs in response:', result);
+        throw new Error('Upload response missing storedAs');
+      }
+      
+      return {
+        field: field,
+        filename: result.file.filename || file.name,
+        storedAs: storedAs,
+        size: result.file.size || file.size,
+        mimeType: result.file.mimeType || file.type,
+        expiryDate: result.file.expiryDate || null,
+      };
+    }
+    throw new Error('Invalid upload response');
+  } catch (error) {
+    console.error('Upload error:', error);
+    toast(`Failed to upload ${field}: ${error.message}`);
+    return null;
+  }
+}
 
 /* ══════════════════════════════════════════════
    Render helpers
@@ -66,11 +208,24 @@ function renderProgress(): string {
 
 function renderStepContent(): string {
   const profile = store.get('selectedProfile')!;
+  const fd = getFD();
+  
   switch (getStep()) {
     case 1: return renderStepIdentity(profile);
     case 2: return renderStepPosition(profile);
     case 3: return renderStepConstraints(profile);
-    case 4: return renderStepContact(profile);
+    case 4: {
+      const config = PROFILE_CONFIG[profile];
+      const fileGroupQuestions = config?.step4?.filter(q => q.type === 'file_group') || [];
+      
+      let html = renderStepContact(profile);
+      
+      for (const q of fileGroupQuestions) {
+        html += renderFileGroup(q, fd);
+      }
+      
+      return html;
+    }
     case 5: return renderStepFeedbackConsent(profile);
     default: return '';
   }
@@ -132,8 +287,12 @@ function validate(): boolean {
     uploadInFlight: Boolean(fd.__uploadInFlight),
   };
   const missing = getMissingItems(step, profile, fd, ctx);
+  console.log('🔍 Validation missing items:', missing);
+  console.log('🔍 Documents in formData:', fd.documents);
+  
   if (missing.length === 0) return true;
 
+  // Show a more helpful message
   if (step === 4 && ctx.uploadInFlight) {
     toast('Please wait for the upload to finish.');
   } else if (missing.length === 1) {
@@ -153,18 +312,12 @@ function validate(): boolean {
 function collectAllFormData(profile: ProfileCategory): Record<string, unknown> {
   const fd = getFD();
   const config = PROFILE_CONFIG[profile];
-  // The spec §7.2 IDs for this profile = union of question IDs across steps 2,3,5
-  // (Step 1 + Step 4 carry no formData IDs except Professional `cv` which is
-  // routed to attachments[], not formData).
   const ids = new Set<string>();
-  for (const stepKey of ['step2', 'step3', 'step5'] as const) {
-    for (const q of config[stepKey]) ids.add(q.id);
-  }
-  // Step 1 + Step 4 *can* carry formData IDs for some profiles (Professional
-  // has `primaryRole` on Step 1). Include those too — but skip `cv`.
-  for (const stepKey of ['step1', 'step4'] as const) {
+  
+  for (const stepKey of ['step1', 'step2', 'step3', 'step4', 'step5'] as const) {
     for (const q of config[stepKey]) {
-      if (q.id !== 'cv') ids.add(q.id);
+      if (q.type === 'file' || q.type === 'file_group') continue;
+      ids.add(q.id);
     }
   }
 
@@ -186,7 +339,10 @@ function mountCurrentStep(): void {
   if (step === 1) mountStepIdentity(profile);
   if (step === 2) mountStepPosition(profile);
   if (step === 3) mountStepConstraints(profile);
-  if (step === 4) mountStepContact(profile);
+  if (step === 4) {
+    mountStepContact(profile);
+    mountFileGroupUploads();
+  }
   if (step === 5) mountStepFeedbackConsent(profile);
 
   addListener(document.getElementById('btn-prev'), 'click', () => goToStep(step - 1));
@@ -196,10 +352,165 @@ function mountCurrentStep(): void {
   addListener(document.getElementById('btn-submit'), 'click', handleSubmit);
 }
 
+/**
+ * Mount file group upload handlers
+ */
+function mountFileGroupUploads(): void {
+  const fileInputs = document.querySelectorAll('.file-group-input input[type="file"]');
+  
+  for (const input of fileInputs) {
+    const field = input.getAttribute('data-field');
+    if (!field) continue;
+    
+    input.removeEventListener('change', handleFileInputChange);
+    input.addEventListener('change', handleFileInputChange);
+  }
+}
+
+let uploadingFiles: Set<string> = new Set();
+
+/**
+ * Handle file input change - upload file and update store
+ * FIXED: Properly saves documents to store with verification
+ */
+async function handleFileInputChange(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement;
+  const field = input.getAttribute('data-field');
+  if (!field || !input.files || input.files.length === 0) return;
+
+  const file = input.files[0];
+  const questionId = 'documents';
+  
+  const profile = store.get('selectedProfile')!;
+  const config = PROFILE_CONFIG[profile];
+  const fileGroupQuestions = config?.step4?.filter(q => q.type === 'file_group') || [];
+  const fileGroupQ = fileGroupQuestions.find(q => q.files?.some(f => f.field === field));
+  if (!fileGroupQ) return;
+
+  // Show progress
+  const item = input.closest('.file-group-item');
+  const progress = item?.querySelector('.file-upload-progress');
+  const progressBar = progress?.querySelector('.progress-bar');
+  if (progress) progress.style.display = 'block';
+  if (progressBar) progressBar.style.width = '30%';
+
+  // Set uploading flag
+  uploadingFiles.add(field);
+  let fd = getFD();
+  fd.__uploadInFlight = true;
+  store.set('formData', fd);
+
+  try {
+    const result = await handleFileGroupUpload(field, file, questionId, (percent) => {
+      if (progressBar) progressBar.style.width = `${percent}%`;
+    });
+
+    if (progressBar) progressBar.style.width = '100%';
+
+    if (result) {
+      // Get fresh form data from store
+      const currentFd = getFD();
+      
+      // Get existing files or initialize empty array
+      let files = (currentFd[questionId] as FileGroupValue[]) || [];
+      
+      const existingIndex = files.findIndex(f => f.field === field);
+      if (existingIndex >= 0) {
+        files[existingIndex] = result;
+      } else {
+        files.push(result);
+      }
+      
+      // Update the form data
+      currentFd[questionId] = files;
+      currentFd.__uploadInFlight = false;
+      
+      // Save to store
+      store.set('formData', currentFd);
+      
+      // 🔥 VERIFY the save
+      const verify = store.get('formData');
+      console.log('✅ Documents saved:', verify?.documents);
+      
+      // Update UI to show uploaded status
+      const status = input.closest('.file-group-item')?.querySelector('.file-group-status');
+      const fileName = input.closest('.file-group-input')?.querySelector('.file-name');
+      const fileSize = input.closest('.file-group-input')?.querySelector('.file-size');
+      const fileExpiry = input.closest('.file-group-input')?.querySelector('.file-expiry');
+      const uploadBtn = input.closest('.file-group-input')?.querySelector('.file-upload-btn');
+
+      if (status) {
+        status.textContent = '✅ Uploaded';
+        status.className = 'file-group-status uploaded';
+      }
+      if (fileName) fileName.textContent = `📄 ${result.filename}`;
+      if (fileSize) fileSize.textContent = `(${(result.size / 1024).toFixed(0)} KB)`;
+      if (uploadBtn) uploadBtn.textContent = '🔄 Replace';
+      if (fileExpiry && result.expiryDate) {
+        fileExpiry.textContent = `Expires: ${new Date(result.expiryDate).toLocaleDateString()}`;
+      }
+      if (progress) progress.style.display = 'none';
+
+      // 🔥 Force validation to re-check
+      const step = getStep();
+      const profile2 = store.get('selectedProfile')!;
+      const fd2 = getFD();
+      const ctx = {
+        personal: getPersonal(),
+        consent: (fd2.consent as { tc?: boolean; popia?: boolean }) ?? {},
+        uploadInFlight: Boolean(fd2.__uploadInFlight),
+      };
+      const missing = getMissingItems(step, profile2, fd2, ctx);
+      console.log('🔍 Missing items after save:', missing);
+      
+      if (missing.length === 0) {
+        // Enable the next button if validation passes
+        const nextBtn = document.getElementById('btn-next') as HTMLButtonElement;
+        if (nextBtn) {
+          // The validation check happens when the button is clicked
+          // We can optionally re-render the button state
+        }
+      }
+
+      toast(`✅ ${field} uploaded successfully`);
+    } else {
+      const currentFd = getFD();
+      currentFd.__uploadInFlight = false;
+      store.set('formData', currentFd);
+      if (progress) progress.style.display = 'none';
+      if (progressBar) progressBar.style.width = '0%';
+    }
+  } catch (error) {
+    const currentFd = getFD();
+    currentFd.__uploadInFlight = false;
+    store.set('formData', currentFd);
+    if (progress) progress.style.display = 'none';
+    if (progressBar) progressBar.style.width = '0%';
+    console.error('Upload error:', error);
+    toast(`❌ Failed to upload ${field}`);
+  } finally {
+    uploadingFiles.delete(field);
+    const currentFd = getFD();
+    if (uploadingFiles.size === 0) {
+      currentFd.__uploadInFlight = false;
+      store.set('formData', currentFd);
+    }
+    input.value = '';
+  }
+}
+
 let submitting = false;
+
 async function handleSubmit(): Promise<void> {
   if (submitting) return;
   if (!validate()) return;
+  
+  const fd = getFD();
+  if (fd.__uploadInFlight || uploadingFiles.size > 0) {
+    toast('Please wait for all uploads to complete before submitting.');
+    return;
+  }
+  
   submitting = true;
   const btn = document.getElementById('btn-submit') as HTMLButtonElement;
   if (btn) {
@@ -209,12 +520,42 @@ async function handleSubmit(): Promise<void> {
 
   try {
     const profile = store.get('selectedProfile')!;
-    const fd = getFD();
+    const fd2 = getFD();
     const personal = getPersonal();
     const formData = collectAllFormData(profile);
-    const attachments = (fd.attachments as AttachmentRef[] | undefined) ?? [];
+    
+    const attachments: AttachmentRef[] = [];
+    
+    const cv = fd2.cv as { storedAs?: string; filename?: string; size?: number; mimeType?: string } | undefined;
+    if (cv?.storedAs) {
+      attachments.push({
+        field: 'cv',
+        filename: cv.filename || 'cv.pdf',
+        storedAs: cv.storedAs,
+        size: cv.size || 0,
+        mimeType: cv.mimeType || 'application/pdf',
+      });
+    }
+    
+    const documents = fd2.documents as FileGroupValue[] | undefined;
+    if (documents && documents.length > 0) {
+      for (const doc of documents) {
+        // Ensure storedAs is a string and not undefined
+        const storedAs = doc.storedAs || '';
+        if (storedAs) {
+          attachments.push({
+            field: doc.field,
+            filename: doc.filename || 'document.pdf',
+            storedAs: storedAs,
+            size: doc.size || 0,
+            mimeType: doc.mimeType || 'application/pdf',
+            expiryDate: doc.expiryDate,
+          });
+        }
+      }
+    }
 
-    const result = await api.submit({
+    const payload = {
       userType: profile,
       personal: {
         firstName: (personal.firstName ?? '').trim(),
@@ -226,13 +567,12 @@ async function handleSubmit(): Promise<void> {
       formData,
       attachments: attachments.length ? attachments : undefined,
       engagementSource: sessionStorage.getItem('bm_source') || 'direct',
-      // Server-side validation also enforces both flags === true (POPIA).
-      // Use a SAFE-FAIL default — if `fd.consent` is somehow missing the
-      // server rejects rather than silently forging consent. The Submit
-      // button is gated by validate() / getMissingItems() so this fallback
-      // should never fire in practice.
-      consent: (fd.consent as Record<string, unknown>) ?? { tc: false, popia: false },
-    });
+      consent: (fd2.consent as Record<string, unknown>) ?? { tc: false, popia: false },
+    };
+
+    console.log('📤 Submitting payload:', JSON.stringify(payload, null, 2));
+
+    const result = await api.submit(payload);
 
     if (result.success && result.data) {
       tracker.trackEvent('form_funnel', 'form_submitted', profile, TOTAL);
@@ -251,14 +591,9 @@ async function handleSubmit(): Promise<void> {
       }
     }
   } finally {
-    // Always release the in-flight lock. The success path navigates away (a
-    // fresh formPage.mount() also resets this defensively), but the flag
-    // must clear so back-navigation + resubmit + any unhandled exception
-    // can't strand the form with a dead Submit button.
     submitting = false;
   }
 }
-
 /* ══════════════════════════════════════════════
    Page export
    ══════════════════════════════════════════════ */
@@ -304,9 +639,8 @@ export const formPage: Page = {
   },
   mount() {
     cleanupFns = [];
-    // Reset module-level submit lock so back-navigation from /success can never
-    // strand the Submit button silently disabled.
     submitting = false;
+    uploadingFiles.clear();
     tracker.trackEvent('form_funnel', 'form_start', store.get('selectedProfile') || '', 1);
     addListener(document.getElementById('form-back'), 'click', () => {
       if (getStep() === 1) navigate('/gateway');
