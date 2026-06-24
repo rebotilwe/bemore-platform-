@@ -257,6 +257,10 @@ export const api = {
    * POST /api/applications/upload-document — public, no auth required.
    * Returns { file: { field, filename, storedAs, size, mimeType, expiryDate } }
    */
+  /**
+   * Upload a document for multi-document fields (professionals).
+   * POST /api/applications/upload-document — public, no auth required.
+   */
   async uploadDocument(
     file: File,
     field: string,
@@ -279,12 +283,10 @@ export const api = {
     fd.append('file', file);
     fd.append('field', field);
 
-    // ✅ ADD CSRF TOKEN — required for all POST requests
-    const headers: Record<string, string> = {};
+    // Only CSRF — NO Authorization header for public uploads
+ const headers: Record<string, string> = {};
     const csrfToken = getCsrfToken();
-    if (csrfToken) {
-      headers['X-CSRF-Token'] = csrfToken;
-    }
+    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
 
     try {
       const res = await fetchWithTimeout(`${API_URL}/applications/upload-document`, {
@@ -294,16 +296,20 @@ export const api = {
         body: fd,
       });
 
-      let body: { success?: boolean; file?: { field?: string; filename?: string; storedAs?: string; size?: number; mimeType?: string; expiryDate?: string }; message?: string } = {};
-      try { body = await res.json(); } catch { /* ignore */ }
+      let body: any = {};
+      try { body = await res.json(); } catch (e) { console.error('Upload parse error:', e); }
 
       if (!res.ok || !body.success) {
-        return { success: false, message: body.message || `Upload failed (${res.status})` };
+        console.error('Upload failed response:', body);
+        return { 
+          success: false, 
+          message: body.message || `Upload failed (${res.status})` 
+        };
       }
 
-      const f = body.file;
+      const f = body.file || body;
       if (!f?.storedAs) {
-        return { success: false, message: 'Upload response missing storedAs — contact support' };
+        return { success: false, message: 'Upload response missing storedAs' };
       }
 
       return {
@@ -318,9 +324,8 @@ export const api = {
         },
       };
     } catch (err) {
-      const msg = (err as Error).name === 'AbortError'
-        ? 'Upload timed out'
-        : 'Network error — please check your connection';
+      console.error('Upload network error:', err);
+      const msg = (err as Error).name === 'AbortError' ? 'Upload timed out' : 'Network error — please check your connection';
       return { success: false, message: msg };
     }
   },
