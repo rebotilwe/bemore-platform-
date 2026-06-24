@@ -1,24 +1,27 @@
 import jwt from 'jsonwebtoken';
 import { config } from '../config/index.js';
 
+// Full paths including /api prefix
 const PUBLIC_PATHS = [
-  '/applications/upload',
-  '/applications/upload-document',
-  '/applications',
-  '/applications/lookup',
-  '/applications/data-export',
-  '/applications/data-delete',
-  '/health',
-  '/auth/login',
-  '/auth/verify',
+  '/api/applications/upload',
+  '/api/applications/upload-document',
+  '/api/applications',
+  '/api/applications/lookup',
+  '/api/applications/data-export',
+  '/api/applications/data-delete',
+  '/api/health',
+  '/api/auth/login',
+  '/api/auth/verify',
 ];
 
 export default function auth(req, res, next) {
   const url = req.originalUrl || req.url;
 
-  if (PUBLIC_PATHS.some(p => url.startsWith(p)) ||
-      url.match(/^\/applications\/[^/]+\/attachment\/[^/]+\/signed$/)) {
-    console.log(`🔓 AUTH BYPASSED: ${url}`);
+  const isPublic = PUBLIC_PATHS.some(p => url.startsWith(p)) ||
+                   url.match(/^\/api\/applications\/[^/]+\/attachment\/[^/]+\/signed$/);
+
+  if (isPublic) {
+    console.log(`🔓 AUTH BYPASSED for: ${url}`);
     return next();
   }
 
@@ -26,6 +29,7 @@ export default function auth(req, res, next) {
     (req.get('Authorization')?.startsWith('Bearer ') && req.get('Authorization').slice(7));
 
   if (!token) {
+    console.log(`❌ No token for protected route: ${url}`);
     return res.status(401).json({ success: false, message: 'No token provided' });
   }
 
@@ -49,13 +53,13 @@ export function csrfProtection(req, res, next) {
     return next();
   }
 
-  if (url.endsWith('/auth/login')) return next();
+  if (url.includes('/auth/login')) return next();
 
   const headerToken = req.get('X-CSRF-Token');
   const cookieToken = req.cookies?.bm_csrf;
 
   if (!headerToken || !cookieToken || headerToken !== cookieToken) {
-    console.log(`❌ CSRF BLOCKED: ${url}`);
+    console.log(`❌ CSRF FAILED for ${url} | Header: ${headerToken}, Cookie: ${cookieToken}`);
     return res.status(403).json({ success: false, message: 'Missing or invalid CSRF token' });
   }
 
