@@ -1,19 +1,15 @@
 import express from 'express';
 import { multiUploadMiddleware, finaliseUploads, DOCUMENT_TYPES } from '../services/uploadService.js';
-import { authGuard } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Upload multiple documents (for professionals) — used by admin/bulk flows
-router.post('/upload', authGuard, multiUploadMiddleware, async (req, res) => {
+// Upload multiple documents — public, no auth required.
+// authGuard removed so the public onboarding form can upload without a session.
+router.post('/upload', multiUploadMiddleware, async (req, res) => {
   try {
     const files = req.files || [];
     if (!files.length) {
-      return res.status(400).json({
-        success: false,
-        code: 'NO_FILES',
-        message: 'No files uploaded',
-      });
+      return res.status(400).json({ success: false, code: 'NO_FILES', message: 'No files uploaded' });
     }
 
     const results = await finaliseUploads(files);
@@ -46,10 +42,9 @@ router.post('/upload', authGuard, multiUploadMiddleware, async (req, res) => {
 
 /**
  * Single-document upload used by the onboarding form (file_group fields).
+ * Public — no auth required.
  * Frontend posts: FormData { file: <File>, field: <string> }
- * Response shape: { success: true, file: { field, filename, storedAs, size, mimeType, expiryDate } }
- * The `storedAs` value is the UUID filename on disk — this is what the backend
- * looks up in resolveAttachments, so it MUST be the server-generated name.
+ * Response: { success: true, file: { field, filename, storedAs, size, mimeType, expiryDate } }
  */
 router.post('/upload-document', multiUploadMiddleware, async (req, res) => {
   try {
@@ -58,13 +53,8 @@ router.post('/upload-document', multiUploadMiddleware, async (req, res) => {
       return res.status(400).json({ success: false, code: 'NO_FILE', message: 'No file uploaded' });
     }
 
-    // multer stores files under their fieldname; the form sends fieldname="file"
-    // but also sends a `field` body param indicating the document type.
     const file = files[0];
     const documentField = req.body?.field || file.fieldname;
-
-    // Re-tag the file with the logical document field so finaliseUploads
-    // applies the correct DOCUMENT_TYPES config and directory.
     file.fieldname = documentField;
 
     const results = await finaliseUploads([file]);
@@ -78,13 +68,12 @@ router.post('/upload-document', multiUploadMiddleware, async (req, res) => {
       });
     }
 
-    // Return a single `file` object — frontend reads result.file.storedAs
     return res.status(200).json({
       success: true,
       file: {
         field: result.field,
         filename: result.filename,
-        storedAs: result.storedAs,   // ← UUID on disk, e.g. "a3f2c1d4-….pdf"
+        storedAs: result.storedAs,
         size: result.size,
         mimeType: result.mimeType,
         expiryDate: result.expiryDate ?? null,
@@ -96,7 +85,7 @@ router.post('/upload-document', multiUploadMiddleware, async (req, res) => {
   }
 });
 
-// Get document types (public — frontend needs this before auth)
+// Get document types — public
 router.get('/document-types', (req, res) => {
   const types = Object.entries(DOCUMENT_TYPES).map(([key, config]) => ({
     field: key,

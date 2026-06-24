@@ -6,9 +6,7 @@ export const healthLimiter = rateLimit({
   message: { success: false, error: 'Too many requests to health check. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (_req, res) => {
-    return res.locals.skipRateLimit === true;
-  },
+  skip: (_req, res) => res.locals.skipRateLimit === true,
 });
 
 export const publicApplicationLimiter = rateLimit({
@@ -58,3 +56,13 @@ export const authLimiter = rateLimit({
   legacyHeaders: false,
   skip: () => process.env.NODE_ENV === 'test',
 });
+
+// Grouped export so applicationRoutes.js can import { rateLimiters }
+export const rateLimiters = {
+  public: publicApplicationLimiter,
+  admin: adminLimiter,
+  auth: authLimiter,
+  tracking: trackingLimiter,
+  vote: voteLimiter,
+  health: healthLimiter,
+};
