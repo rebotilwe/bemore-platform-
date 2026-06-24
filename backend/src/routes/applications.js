@@ -10,21 +10,23 @@ import {
   uploadCv, uploadDocument, downloadAttachment, deleteAttachment, downloadSignedAttachment,
   bulkAssignDepartment, getRoutingStats,
 } from '../controllers/applicationController.js';
-import { multiUploadMiddleware } from '../services/uploadService.js';
+import { singleCvUploadMiddleware, multiUploadMiddleware } from '../services/uploadService.js';
 
 const router = Router();
 
-// ── PUBLIC ROUTES (No auth) ─────────────────────────────────────
+// ──────────────────────────────────────────────────────────────
+// PUBLIC ROUTES — NO AUTH, NO CSRF
+// ──────────────────────────────────────────────────────────────
 
 router.post('/',
   publicApplicationLimiter,
-  // ... your existing validators ...
+  // Your validators here...
   submit
 );
 
 router.post('/upload',
   publicApplicationLimiter,
-  // singleCvUploadMiddleware if still used
+  singleCvUploadMiddleware,
   uploadCv
 );
 
@@ -32,17 +34,13 @@ router.post('/upload-document',
   publicApplicationLimiter,
   multiUploadMiddleware,
   (req, res, next) => {
-    console.log('✅ /upload-document route reached (public)');
+    console.log('✅ /upload-document PUBLIC route hit');
     next();
   },
   uploadDocument
 );
 
-router.post('/lookup',
-  publicApplicationLimiter,
-  // validators...
-  async (req, res, next) => { /* ... your lookup handler ... */ }
-);
+router.post('/lookup', publicApplicationLimiter, /* validators */, /* handler */);
 
 router.post('/data-export', publicApplicationLimiter, /* ... */);
 router.post('/data-delete', publicApplicationLimiter, /* ... */);
@@ -52,7 +50,9 @@ router.get('/:refNumber/attachment/:storedAs/signed',
   downloadSignedAttachment
 );
 
-// ── ADMIN ROUTES (Require auth) ─────────────────────────────────
+// ──────────────────────────────────────────────────────────────
+// ADMIN ROUTES — Require auth + csrf
+// ──────────────────────────────────────────────────────────────
 
 router.get('/stats', adminLimiter, auth, stats);
 router.get('/export/csv', adminLimiter, auth, exportCsv);
