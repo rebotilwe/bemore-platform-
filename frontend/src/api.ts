@@ -279,11 +279,17 @@ export const api = {
     fd.append('file', file);
     fd.append('field', field);
 
-    // No auth header — this is a public endpoint.
-    // Do NOT send Authorization here; it triggers the authGuard on some server configs.
+    // ✅ ADD CSRF TOKEN — required for all POST requests
+    const headers: Record<string, string> = {};
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken;
+    }
+
     try {
       const res = await fetchWithTimeout(`${API_URL}/applications/upload-document`, {
         method: 'POST',
+        headers,
         credentials: 'include',
         body: fd,
       });
@@ -305,14 +311,16 @@ export const api = {
         data: {
           field: f.field || field,
           filename: f.filename || file.name,
-          storedAs: f.storedAs,           // UUID on disk — must not fall back to original name
+          storedAs: f.storedAs,
           size: f.size || file.size,
           mimeType: f.mimeType || file.type || 'application/octet-stream',
           expiryDate: f.expiryDate || undefined,
         },
       };
     } catch (err) {
-      const msg = (err as Error).name === 'AbortError' ? 'Upload timed out' : 'Network error — please check your connection';
+      const msg = (err as Error).name === 'AbortError'
+        ? 'Upload timed out'
+        : 'Network error — please check your connection';
       return { success: false, message: msg };
     }
   },
