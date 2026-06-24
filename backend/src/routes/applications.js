@@ -7,7 +7,7 @@ import { APPLICATION_STATUSES } from '../constants/enums.js';
 import {
   submit, list, getOne, update, stats, exportCsv, bulkUpdateStatus, sendReminders,
   uploadCv, uploadDocument, downloadAttachment, deleteAttachment, downloadSignedAttachment,
-  bulkAssignDepartment, getRoutingStats,
+  bulkAssignDepartment, getRoutingStats, lookupStatus, exportMyData, deleteMyData,
 } from '../controllers/applicationController.js';
 import { singleCvUploadMiddleware, multiUploadMiddleware } from '../services/uploadService.js';
 
@@ -28,9 +28,30 @@ router.post('/upload-document',
   uploadDocument
 );
 
-router.post('/lookup', publicApplicationLimiter, /* validators, handler */);
-router.post('/data-export', publicApplicationLimiter, /* handler */);
-router.post('/data-delete', publicApplicationLimiter, /* handler */);
+router.post('/lookup',
+  publicApplicationLimiter,
+  body('refNumber').notEmpty().withMessage('Reference number required'),
+  body('email').isEmail().withMessage('Valid email required'),
+  validate,
+  lookupStatus,
+);
+
+router.post('/data-export',
+  publicApplicationLimiter,
+  body('refNumber').notEmpty(),
+  body('email').isEmail(),
+  validate,
+  exportMyData,
+);
+
+router.post('/data-delete',
+  publicApplicationLimiter,
+  body('refNumber').notEmpty(),
+  body('email').isEmail(),
+  body('confirm').equals('DELETE').withMessage('Must confirm deletion'),
+  validate,
+  deleteMyData,
+);
 
 // Signed attachment — public, must be before /:refNumber/attachment/:storedAs
 router.get('/:refNumber/attachment/:storedAs/signed',
@@ -42,24 +63,24 @@ router.get('/:refNumber/attachment/:storedAs/signed',
 // ADMIN ROUTES — specific paths BEFORE wildcards
 // ──────────────────────────────────────────────────────────────
 
-// ✅ All static GET paths first
+// Static GET paths first
 router.get('/stats', adminLimiter, auth, stats);
 router.get('/export/csv', adminLimiter, auth, exportCsv);
 router.get('/routing-stats', adminLimiter, auth, getRoutingStats);
 
-// ✅ All static POST paths
+// Static POST paths
 router.post('/bulk-status', adminLimiter, auth, bulkUpdateStatus);
 router.post('/bulk-department', adminLimiter, auth, bulkAssignDepartment);
 router.post('/send-reminders', adminLimiter, auth, sendReminders);
 
-// ✅ List (no wildcard)
+// List — no wildcard
 router.get('/', adminLimiter, auth, list);
 
-// ✅ Wildcard attachment route before /:id
+// Attachment routes before /:id
 router.get('/:refNumber/attachment/:storedAs', adminLimiter, auth, downloadAttachment);
 router.delete('/:refNumber/attachment/:storedAs', adminLimiter, auth, deleteAttachment);
 
-// ✅ /:id LAST — catches anything not matched above
+// /:id LAST — catches anything not matched above
 router.get('/:id', adminLimiter, auth, getOne);
 router.patch('/:id', adminLimiter, auth, update);
 

@@ -16,12 +16,13 @@ const PUBLIC_PATHS = [
 
 export default function auth(req, res, next) {
   const url = req.originalUrl || req.url;
+  console.log(`🔒 AUTH CALLED: ${req.method} ${url} | paths[0]="${PUBLIC_PATHS[0]}"`);
 
   const isPublic = PUBLIC_PATHS.some(p => url.startsWith(p)) ||
                    url.match(/^\/api\/applications\/[^/]+\/attachment\/[^/]+\/signed$/);
 
   if (isPublic) {
-    console.log(`🔓 AUTH BYPASSED for: ${url}`);
+    console.log(`🔓 AUTH BYPASSED: ${url}`);
     return next();
   }
 
