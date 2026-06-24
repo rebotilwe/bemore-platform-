@@ -12,7 +12,6 @@ import logger from './utils/logger.js';
 export function createApp() {
   const app = express();
 
-  // Trust first proxy (Railway / load balancer) so req.ip is accurate for rate limiting
   app.set('trust proxy', 1);
 
   app.use(requestLogger);
@@ -22,6 +21,7 @@ export function createApp() {
   app.use(cors(config.cors));
   app.use(helmet());
 
+  // ← IMPORTANT: No global auth here
   app.use('/api', routes);
 
   app.use((req, res) => {
@@ -31,6 +31,5 @@ export function createApp() {
   app.use(errorHandler);
 
   logger.info('Express app created');
-
   return app;
 }
