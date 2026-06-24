@@ -10,19 +10,16 @@ import { autoTag } from './utils/auto-tag.ts';
 import { generateRefNumber } from './utils/format.ts';
 
 // Always use relative /api path — Vercel rewrites it to the Railway backend.
-// Using the Railway URL directly causes CORS preflight failures.
 const API_URL = '/api';
 
-const REQUEST_TIMEOUT = 15000; // 15 seconds
+const REQUEST_TIMEOUT = 15000;
 const RETRY_DELAY = 2000;
-const MAX_RETRIES = 1; // 1 retry for GET on network error
+const MAX_RETRIES = 1;
 
-// Read auth token from sessionStorage (set on login)
 function getAuthToken(): string | null {
   return sessionStorage.getItem('bm_token');
 }
 
-// Read CSRF token from sessionStorage (set on login)
 function getCsrfToken(): string | null {
   return sessionStorage.getItem('bm_csrf');
 }
@@ -38,30 +35,22 @@ async function fetchWithTimeout(url: string, opts: RequestInit, timeout = REQUES
   }
 }
 
-// State-changing methods that need CSRF protection
 const CSRF_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
 
-  // Add Bearer token for auth (works through Vercel proxy rewrites)
   const authToken = getAuthToken();
-  if (authToken) {
-    headers['Authorization'] = `Bearer ${authToken}`;
-  }
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
 
-  // Add CSRF token for state-changing requests
   if (CSRF_METHODS.includes(method.toUpperCase())) {
     const csrfToken = getCsrfToken();
-    if (csrfToken) {
-      headers['X-CSRF-Token'] = csrfToken;
-    }
+    if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
   }
 
   const opts: RequestInit = { method, headers, credentials: 'include', body: body ? JSON.stringify(body) : undefined };
   let res: Response | undefined;
 
-  // Retry loop (only retries GET on network/timeout errors)
   const maxAttempts = method === 'GET' ? MAX_RETRIES + 1 : 1;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
@@ -70,16 +59,13 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       break;
     } catch (err) {
       const msg = (err as Error).name === 'AbortError' ? 'Request timed out' : 'Network error — please check your connection';
-      if (attempt === maxAttempts - 1) {
-        return { success: false, message: msg } as T;
-      }
+      if (attempt === maxAttempts - 1) return { success: false, message: msg } as T;
     }
   }
 
   if (!res) return { success: false, message: 'Request failed' } as T;
 
   if (!res.ok) {
-    // Auto-logout on expired/invalid token
     if (res.status === 401 && store.get('isAuthenticated') && !path.includes('/auth/login')) {
       store.set('isAuthenticated', false);
       store.set('adminEmail', null);
@@ -87,14 +73,10 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       sessionStorage.removeItem('bm_csrf');
       window.location.hash = '/admin/login';
     }
-
     try {
       const data = await res.json();
       if (res.status === 409) {
-        return {
-          success: false,
-          message: 'This email has already submitted an application. We\'ll be in touch soon!'
-        } as T;
+        return { success: false, message: 'This email has already submitted an application. We\'ll be in touch soon!' } as T;
       }
       return data;
     } catch {
@@ -140,7 +122,7 @@ export const api = {
         const data = JSON.parse(text);
         return data.success === true;
       } catch {
-        return false; // Got HTML instead of JSON
+        return false;
       }
     } catch {
       return false;
@@ -150,9 +132,7 @@ export const api = {
   // ── Auth ──
   async login(email: string, password: string): Promise<ApiResponse<LoginResponse>> {
     if (!store.get('useApi')) {
-      if (email && password) {
-        return { success: true, data: { token: 'demo_token', expiresIn: '8h' } };
-      }
+      if (email && password) return { success: true, data: { token: 'demo_token', expiresIn: '8h' } };
       return { success: false, message: 'Invalid credentials' };
     }
     return request('POST', '/auth/login', { email, password });
@@ -178,9 +158,7 @@ export const api = {
     refNumber: string; firstName: string; userType: string; status: string;
     tags: string[]; summitAccess: boolean; allocatedProjects: string[]; submittedAt: string; updatedAt?: string;
   }>> {
-    if (store.get('useApi')) {
-      return request('POST', '/applications/lookup', { refNumber, email });
-    }
+    if (store.get('useApi')) return request('POST', '/applications/lookup', { refNumber, email });
     const apps = localStore.get();
     const app = apps.find(a => a.refNumber === refNumber.toUpperCase() && a.personal.email === email.toLowerCase());
     if (!app) return { success: false, message: 'No application found. Please check your reference number and email.' };
@@ -193,12 +171,7 @@ export const api = {
   },
 
   async submit(payload: SubmitPayload): Promise<ApiResponse<{ refNumber: string }>> {
-    if (store.get('useApi')) {
-      return request('POST', '/applications', payload);
-    }
-    // Demo / offline mode — accept attachments[] as a no-op stub so the local
-    // record still saves without any disk write. The real `storedAs` only
-    // matters for the backend.
+    if (store.get('useApi')) return request('POST', '/applications', payload);
     const refNumber = generateRefNumber();
     const stubAttachments = (payload.attachments ?? []).map(a => ({
       field: a.field,
@@ -225,17 +198,11 @@ export const api = {
     return { success: true, data: { refNumber } };
   },
 
-  /** Upload a file (e.g. CV) to POST /api/applications/upload (multipart).
-   *  Returns the four-field success body per spec §8.1. The error code (e.g.
-   *  'FILE_TOO_LARGE', 'INVALID_MIME_TYPE') is bubbled up via `message`.
-   *  In demo / offline mode, returns a stub `storedAs` so the form still
-   *  proceeds — the local app.submit() also accepts the stub.
-   */
+  /** Upload a CV/single file to POST /api/applications/upload */
   async uploadAttachment(
     file: File,
   ): Promise<ApiResponse<{ filename: string; storedAs: string; size: number; mimeType: string }>> {
     if (!store.get('useApi')) {
-      // Demo-mode no-op — pretend the upload succeeded.
       return {
         success: true,
         data: {
@@ -265,13 +232,10 @@ export const api = {
       });
 
       let body: Partial<UploadResponse> & { message?: string; code?: string } = {};
-      try { body = await res.json(); } catch { /* ignore parse error */ }
+      try { body = await res.json(); } catch { /* ignore */ }
 
       if (!res.ok || !body.success) {
-        return {
-          success: false,
-          message: body.message || body.code || `Upload failed (${res.status})`,
-        };
+        return { success: false, message: body.message || body.code || `Upload failed (${res.status})` };
       }
       return {
         success: true,
@@ -283,27 +247,25 @@ export const api = {
         },
       };
     } catch (err) {
-      const msg = (err as Error).name === 'AbortError'
-        ? 'Upload timed out'
-        : 'Network error — please check your connection';
+      const msg = (err as Error).name === 'AbortError' ? 'Upload timed out' : 'Network error — please check your connection';
       return { success: false, message: msg };
     }
   },
 
   /**
-   * Upload a document (multi-document upload for professionals)
-   * Uses the /api/applications/upload-document endpoint
+   * Upload a document for multi-document fields (professionals).
+   * POST /api/applications/upload-document — public, no auth required.
+   * Returns { file: { field, filename, storedAs, size, mimeType, expiryDate } }
    */
   async uploadDocument(
     file: File,
-    field: string
+    field: string,
   ): Promise<ApiResponse<{ filename: string; storedAs: string; size: number; mimeType: string; field: string; expiryDate?: string }>> {
     if (!store.get('useApi')) {
-      // Demo-mode no-op
       return {
         success: true,
         data: {
-          field: field,
+          field,
           filename: file.name,
           storedAs: `demo-${Date.now()}-${file.name}`,
           size: file.size,
@@ -317,42 +279,40 @@ export const api = {
     fd.append('file', file);
     fd.append('field', field);
 
-    const headers: Record<string, string> = {};
-    const authToken = getAuthToken();
-    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-
+    // No auth header — this is a public endpoint.
+    // Do NOT send Authorization here; it triggers the authGuard on some server configs.
     try {
       const res = await fetchWithTimeout(`${API_URL}/applications/upload-document`, {
         method: 'POST',
-        headers,
         credentials: 'include',
         body: fd,
       });
 
-      let body: any = {};
-      try { body = await res.json(); } catch { /* ignore parse error */ }
+      let body: { success?: boolean; file?: { field?: string; filename?: string; storedAs?: string; size?: number; mimeType?: string; expiryDate?: string }; message?: string } = {};
+      try { body = await res.json(); } catch { /* ignore */ }
 
       if (!res.ok || !body.success) {
-        return {
-          success: false,
-          message: body.message || `Upload failed (${res.status})`,
-        };
+        return { success: false, message: body.message || `Upload failed (${res.status})` };
       }
+
+      const f = body.file;
+      if (!f?.storedAs) {
+        return { success: false, message: 'Upload response missing storedAs — contact support' };
+      }
+
       return {
         success: true,
         data: {
-          field: body.file?.field || field,
-          filename: body.file?.filename || file.name,
-          storedAs: body.file?.storedAs || '',
-          size: body.file?.size || file.size,
-          mimeType: body.file?.mimeType || (file.type || 'application/octet-stream'),
-          expiryDate: body.file?.expiryDate || undefined,
+          field: f.field || field,
+          filename: f.filename || file.name,
+          storedAs: f.storedAs,           // UUID on disk — must not fall back to original name
+          size: f.size || file.size,
+          mimeType: f.mimeType || file.type || 'application/octet-stream',
+          expiryDate: f.expiryDate || undefined,
         },
       };
     } catch (err) {
-      const msg = (err as Error).name === 'AbortError'
-        ? 'Upload timed out'
-        : 'Network error — please check your connection';
+      const msg = (err as Error).name === 'AbortError' ? 'Upload timed out' : 'Network error — please check your connection';
       return { success: false, message: msg };
     }
   },
@@ -366,9 +326,7 @@ export const api = {
   },
 
   async getApplications(params: FilterParams = {}): Promise<PaginatedResponse<Application>> {
-    if (store.get('useApi')) {
-      return request('GET', `/applications${buildQuery(params)}`);
-    }
+    if (store.get('useApi')) return request('GET', `/applications${buildQuery(params)}`);
     let apps = localStore.get();
     if (params.userType && params.userType !== 'all') apps = apps.filter(a => a.userType === params.userType);
     if (params.status && params.status !== 'all') apps = apps.filter(a => a.status === params.status);
@@ -378,7 +336,7 @@ export const api = {
         a.personal?.firstName?.toLowerCase().includes(q) ||
         a.personal?.surname?.toLowerCase().includes(q) ||
         a.personal?.email?.toLowerCase().includes(q) ||
-        a.refNumber?.toLowerCase().includes(q)
+        a.refNumber?.toLowerCase().includes(q),
       );
     }
     const page = params.page || 1;
@@ -493,7 +451,6 @@ export const api = {
     const filters: Record<string, (a: Application) => boolean> = {
       'high-value-developers': a => a.tags?.some(t => ['HIGH_VALUE', 'LARGE_CAPITAL'].includes(t)) ?? false,
       'pipeline-ready-developers': a => a.tags?.includes('PIPELINE_READY') ?? false,
-      // Deprecated alias kept for old bookmarks (removed in next major).
       'pipeline-ready-land': a => a.tags?.includes('PIPELINE_READY') ?? false,
       'institutional-grade-housing': a => a.tags?.includes('INSTITUTIONAL_GRADE') ?? false,
       'deal-room-shortlist': a => ['shortlisted', 'invited'].includes(a.status),

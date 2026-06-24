@@ -1,9 +1,5 @@
 /* ---------------------------------------------------------------
    Step 1 — Identity (spec §5)
-   Thin renderer: identity (firstName / surname / companyName) is written
-   directly to `store.personal` per spec §7.2 final paragraph. Profile-
-   specific Step-1 questions (e.g. Professional `primaryRole`) come from the
-   profile config and are rendered via the shared <question-group>.
    ---------------------------------------------------------------*/
 
 import type { ProfileCategory } from '../../../types/index.ts';
@@ -15,12 +11,6 @@ const PROFILES_WITH_COMPANY = new Set<ProfileCategory>([
   'developer', 'investor', 'student', 'professional',
 ]);
 
-/**
- * Profiles where `personal.companyName` is REQUIRED in Step 1.
- * Operator (Student) PDF Q2 explicitly requires Company. Other profiles either
- * make it optional ("If applicable") or treat it as alternative to a personal
- * name ("Full Name / Company Name").
- */
 const PROFILES_WITH_REQUIRED_COMPANY = new Set<ProfileCategory>(['student']);
 
 interface PersonalSlice {
@@ -90,6 +80,18 @@ export function renderStepIdentity(profile: ProfileCategory): string {
 }
 
 export function mountStepIdentity(profile: ProfileCategory): void {
+  // Guard: if profile is missing or has no config, bail out gracefully.
+  // This can happen if the store is cleared or the user navigates directly
+  // to /register without selecting a profile first.
+  if (!profile || !PROFILE_CONFIG[profile]) {
+    console.warn('mountStepIdentity: no profile config for', profile, '— redirecting to gateway');
+    // Avoid a hard crash; the router will handle the redirect.
+    import('../../../router.ts').then(({ navigate }) => navigate('/gateway')).catch(() => {
+      window.location.hash = '/gateway';
+    });
+    return;
+  }
+
   // Wire personal field inputs → store.personal
   const wirePersonal = (id: string, key: keyof PersonalSlice) => {
     const el = document.getElementById(id) as HTMLInputElement | null;
@@ -105,7 +107,7 @@ export function mountStepIdentity(profile: ProfileCategory): void {
   // Render any profile-specific Step-1 questions via the shared renderer.
   const config = PROFILE_CONFIG[profile];
   const host = document.getElementById('step1-questions');
-  if (host && config.step1.length) {
+  if (host && config.step1?.length) {
     const fd = (store.get('formData') ?? {}) as Record<string, unknown>;
     const group = renderQuestionGroup(config.step1, fd, patchFormData);
     host.innerHTML = '';
