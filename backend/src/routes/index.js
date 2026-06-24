@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import healthRouter from './health.js';
 import authRouter from './auth.js';
-import applicationsRouter from './applications.js';
+import applicationsRouter from './applicationRoutes.js';   // ← was './applications.js'
 import reportsRouter from './reports.js';
 import analyticsRouter from './analytics.js';
 import settingsRouter from './settings.js';
@@ -13,28 +13,23 @@ import EmailLog from '../models/EmailLog.js';
 
 const router = Router();
 
-// ── Route mounts ──────────────────────────────────────────────────────────────
-
 router.use('/health', healthRouter);
 router.use('/auth', authRouter);
 router.use('/track', trackingRouter);
 
-// Applications — has a mix of public and admin routes.
-// Public routes (/upload, /upload-document, /lookup, POST /) are unauthenticated.
-// Admin routes inside applicationsRouter already apply authGuard individually,
-// so we do NOT add a blanket authMiddleware here — doing so would block the
-// public upload endpoints.
+// Applications — mix of public and admin routes.
+// Public routes (/upload, /upload-document, POST /) have no auth.
+// Admin routes inside applicationRoutes.js apply authGuard individually.
 router.use('/applications', applicationsRouter);
 
-// These routers are fully admin-only, so blanket auth is correct here.
+// Fully admin-only routers — blanket auth is correct here.
 router.use('/reports',   authMiddleware, csrfProtection, reportsRouter);
 router.use('/analytics', authMiddleware, csrfProtection, analyticsRouter);
 router.use('/insights',  authMiddleware, csrfProtection, analyticsRouter);
 router.use('/settings',  authMiddleware, csrfProtection, settingsRouter);
 router.use('/admins',    authMiddleware, csrfProtection, adminsRouter);
 
-// ── Email logs (admin) ────────────────────────────────────────────────────────
-// Validate refNumber format to prevent NoSQL injection.
+// Email logs (admin)
 router.get(
   '/emails/:refNumber',
   authMiddleware,
