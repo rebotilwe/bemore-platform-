@@ -17,8 +17,10 @@ import fs from 'node:fs';
 
 // ── Public: CV upload — spec §8.1 ──
 // Returns { filename, storedAs, size, mimeType }. No DB write here.
+// ── Public: CV upload ──
 export async function uploadCv(req, res, next) {
   try {
+    console.log('🟢 uploadCv controller hit');
     const file = req.file || (req.files && req.files.length > 0 ? req.files[0] : null);
     
     if (!file) {
@@ -32,18 +34,18 @@ export async function uploadCv(req, res, next) {
 }
 
 // ── Public: Multi-document upload ──
-// Frontend posts: FormData { file: <File>, field: <string> }
-// Response: { success: true, file: { field, filename, storedAs, size, mimeType, expiryDate } }
-// storedAs is the UUID filename on disk — must match what resolveAttachments looks for.
 export async function uploadDocument(req, res, next) {
   try {
+    console.log('🟢 uploadDocument controller hit');
+    console.log('Field:', req.body?.field);
+    console.log('Files count:', req.files?.length);
+
     const uploadedFile = (req.files && req.files.length > 0 ? req.files[0] : null) || req.file || null;
 
     if (!uploadedFile) {
       return res.status(400).json({ success: false, code: 'NO_FILE', message: 'No file in request' });
     }
 
-    // `field` comes from the FormData body param the frontend sends alongside the file.
     const field = req.body?.field || uploadedFile.fieldname || 'cv';
 
     const allowedFields = ['cv', 'company_registration', 'tax_clearance', 'bee_certificate', 'professional_indemnity'];
@@ -55,8 +57,6 @@ export async function uploadDocument(req, res, next) {
       });
     }
 
-    // Re-tag fieldname so finaliseUploads picks the right DOCUMENT_TYPES config
-    // and saves to the correct directory (uploads/documents/ vs uploads/cv/).
     uploadedFile.fieldname = field;
 
     const results = await finaliseUploads([uploadedFile]);
@@ -70,15 +70,12 @@ export async function uploadDocument(req, res, next) {
       });
     }
 
-    // result.storedAs is the UUID filename multer wrote to disk.
-    // Never fall back to the original filename — the backend looks files up
-    // by their UUID, so sending the wrong value causes a 400 on submit.
     return res.status(200).json({
       success: true,
       file: {
         field: result.field,
-        filename: result.filename,       // sanitized original name, for display
-        storedAs: result.storedAs,       // UUID on disk, e.g. "a3f2c1d4-….pdf"
+        filename: result.filename,
+        storedAs: result.storedAs,
         size: result.size,
         mimeType: result.mimeType,
         expiryDate: result.expiryDate ?? null,
