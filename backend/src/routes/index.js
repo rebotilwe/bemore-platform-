@@ -13,7 +13,7 @@ import EmailLog from '../models/EmailLog.js';
 
 const router = Router();
 
-router.use((req, res, next) => {
+
 
 router.use('/health', healthRouter);
 router.use('/auth', authRouter);
