@@ -22,14 +22,19 @@ document.head.appendChild(fontLink);
 new ErrorBoundary('app');
 
 async function init(): Promise<void> {
-  // Check backend availability
-  const online = await api.checkBackend();
-  store.set('useApi', online);
-  if (import.meta.env.DEV) console.log(online ? '✓ Connected to backend API' : '◌ Running in localStorage demo mode');
+  // ✅ FORCE useApi to true in production
+  if (import.meta.env.PROD) {
+    store.set('useApi', true);
+    console.log('🔧 Production mode: useApi forced to true');
+  } else {
+    // Check backend availability in development
+    const online = await api.checkBackend();
+    store.set('useApi', online);
+    console.log(online ? '✓ Connected to backend API' : '◌ Running in localStorage demo mode');
+  }
 
-  // Always verify session with backend on page load (cookie is auto-sent)
-  // This handles both returning users and fresh page loads
-  if (online) {
+  // Verify session with backend (cookie is auto-sent)
+  if (store.get('useApi')) {
     const valid = await verifySession();
     if (import.meta.env.DEV) console.log(valid ? '✓ Session valid' : '◌ No valid session');
   }

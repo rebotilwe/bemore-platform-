@@ -16,11 +16,9 @@ const PUBLIC_PATHS = [
 
 export default function auth(req, res, next) {
   const url = req.originalUrl || req.url;
-  console.log(`🔐 AUTH CHECK: ${req.method} ${url}`);
 
   // ✅ BYPASS ALL /api/applications/* routes - COMPLETELY PUBLIC
   if (url.startsWith('/api/applications/')) {
-    console.log(`🔓 AUTH BYPASSED (all applications routes): ${url}`);
     return next();
   }
 
@@ -28,7 +26,6 @@ export default function auth(req, res, next) {
                    url.match(/^\/api\/applications\/[^/]+\/attachment\/[^/]+\/signed$/);
 
   if (isPublic) {
-    console.log(`🔓 AUTH BYPASSED (public path): ${url}`);
     return next();
   }
 
