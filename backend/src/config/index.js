@@ -59,7 +59,7 @@ export const config = Object.freeze({
       : process.env.CORS_ORIGIN.split(',').map(o => o.trim()).filter(Boolean),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
   },
   mail: {
     // Resend is the sole email provider (SMTP was removed 2026-05-11).
