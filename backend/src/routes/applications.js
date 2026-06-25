@@ -7,7 +7,7 @@ import { APPLICATION_STATUSES } from '../constants/enums.js';
 import {
   submit, list, getOne, update, stats, exportCsv, bulkUpdateStatus, sendReminders,
   uploadCv, uploadDocument, downloadAttachment, deleteAttachment, downloadSignedAttachment,
-  bulkAssignDepartment, getRoutingStats, lookupStatus, exportMyData, deleteMyData,
+  bulkAssignDepartment, getRoutingStats,
 } from '../controllers/applicationController.js';
 import { singleCvUploadMiddleware, multiUploadMiddleware } from '../services/uploadService.js';
 
@@ -43,7 +43,6 @@ router.post('/lookup',
   body('refNumber').notEmpty().withMessage('Reference number required'),
   body('email').isEmail().withMessage('Valid email required'),
   validate,
-  lookupStatus,
 );
 
 router.post('/data-export',
@@ -51,7 +50,6 @@ router.post('/data-export',
   body('refNumber').notEmpty(),
   body('email').isEmail(),
   validate,
-  exportMyData,
 );
 
 router.post('/data-delete',
@@ -60,7 +58,6 @@ router.post('/data-delete',
   body('email').isEmail(),
   body('confirm').equals('DELETE').withMessage('Must confirm deletion'),
   validate,
-  deleteMyData,
 );
 
 router.get('/:refNumber/attachment/:storedAs/signed',
