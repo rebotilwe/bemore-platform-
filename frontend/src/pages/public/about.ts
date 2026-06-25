@@ -144,7 +144,7 @@ const SECTION_CONTENT: Record<Tab, string> = {
           </div>
           <div class="about-group-card" style="--card-accent: #4cb87a">
             <div class="about-group-num">02</div>
-            <h3 class="about-group-name">Format Property Group</h3>
+            <h3 class="about-group-name">Pormat Property Group</h3>
             <p class="about-group-desc">
               Manages properties and assets with PPNG transactions, ensuring operational
               excellence across the portfolio.
@@ -152,9 +152,9 @@ const SECTION_CONTENT: Record<Tab, string> = {
           </div>
           <div class="about-group-card" style="--card-accent: #7ab8e8">
             <div class="about-group-num">03</div>
-            <h3 class="about-group-name">Mano Architects</h3>
+            <h3 class="about-group-name">Muma Consulting</h3>
             <p class="about-group-desc">
-              Provides professional architecture and planning services, delivering designs
+              Provides professional consulting and planning services, delivering solutions
               that balance function, sustainability, and community impact.
             </p>
           </div>
@@ -398,13 +398,12 @@ function makePage(tab: Tab): Page {
       </section>`;
     },
     mount() {
-      // Scroll to top of section content on tab change
       window.scrollTo({ top: 0, behavior: 'instant' });
     },
   };
 }
 
-export const aboutPage        = makePage('overview');
+export const aboutPage            = makePage('overview');
 export const aboutOverviewPage    = makePage('overview');
 export const aboutGroupPage       = makePage('group');
 export const aboutVisionPage      = makePage('vision');
