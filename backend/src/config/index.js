@@ -18,6 +18,7 @@ if (isProd || isStaging) {
 
 const productionOrigins = [
   'https://bemore-tawny.vercel.app',
+  'https://bemore-platform.vercel.app',
   'https://bemorecapital.co.za',
   'https://www.bemorecapital.co.za',
 ];
