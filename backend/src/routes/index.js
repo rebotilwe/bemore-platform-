@@ -10,7 +10,6 @@ import adminsRouter from './admins.js';
 import authMiddleware, { csrfProtection } from '../middleware/auth.js';
 import { adminLimiter } from '../config/rateLimit.js';
 import EmailLog from '../models/EmailLog.js';
-import logger from '../utils/logger.js';
 
 const router = Router();
 
