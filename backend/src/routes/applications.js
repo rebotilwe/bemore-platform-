@@ -17,16 +17,21 @@ const router = Router();
 // PUBLIC ROUTES — NO AUTH, NO CSRF
 // Must come before any /:param wildcards
 // ──────────────────────────────────────────────────────────────
-
 router.post('/', publicApplicationLimiter, submit);
 
-router.post('/upload', publicApplicationLimiter, singleCvUploadMiddleware, uploadCv);
+router.post('/upload', publicApplicationLimiter, (req, res, next) => {
+  singleCvUploadMiddleware(req, res, (err) => {
+    if (err) return next(err);
+    uploadCv(req, res, next);
+  });
+});
 
-router.post('/upload-document',
-  publicApplicationLimiter,
-  multiUploadMiddleware,
-  uploadDocument
-);
+router.post('/upload-document', publicApplicationLimiter, (req, res, next) => {
+  multiUploadMiddleware(req, res, (err) => {
+    if (err) return next(err);
+    uploadDocument(req, res, next);
+  });
+});
 
 router.post('/lookup',
   publicApplicationLimiter,
@@ -53,34 +58,27 @@ router.post('/data-delete',
   deleteMyData,
 );
 
-// Signed attachment — public, must be before /:refNumber/attachment/:storedAs
 router.get('/:refNumber/attachment/:storedAs/signed',
   publicApplicationLimiter,
-  downloadSignedAttachment
+  downloadSignedAttachment,
 );
 
 // ──────────────────────────────────────────────────────────────
-// ADMIN ROUTES — specific paths BEFORE wildcards
+// ADMIN ROUTES
 // ──────────────────────────────────────────────────────────────
-
-// Static GET paths first
 router.get('/stats', adminLimiter, auth, stats);
 router.get('/export/csv', adminLimiter, auth, exportCsv);
 router.get('/routing-stats', adminLimiter, auth, getRoutingStats);
 
-// Static POST paths
 router.post('/bulk-status', adminLimiter, auth, bulkUpdateStatus);
 router.post('/bulk-department', adminLimiter, auth, bulkAssignDepartment);
 router.post('/send-reminders', adminLimiter, auth, sendReminders);
 
-// List — no wildcard
 router.get('/', adminLimiter, auth, list);
 
-// Attachment routes before /:id
 router.get('/:refNumber/attachment/:storedAs', adminLimiter, auth, downloadAttachment);
 router.delete('/:refNumber/attachment/:storedAs', adminLimiter, auth, deleteAttachment);
 
-// /:id LAST — catches anything not matched above
 router.get('/:id', adminLimiter, auth, getOne);
 router.patch('/:id', adminLimiter, auth, update);
 
