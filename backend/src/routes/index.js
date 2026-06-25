@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import healthRouter from './health.js';
 import authRouter from './auth.js';
-import applicationsRouter from './applications.js';   // ← FIXED
+import applicationsRouter from './applications.js';
 import reportsRouter from './reports.js';
 import analyticsRouter from './analytics.js';
 import settingsRouter from './settings.js';
@@ -18,6 +18,7 @@ router.use('/auth', authRouter);
 router.use('/track', trackingRouter);
 
 // Applications — mix of public and admin routes.
+// ✅ NO auth middleware here — public routes are handled inside applications.js
 router.use('/applications', applicationsRouter);
 
 // Fully admin-only routers — blanket auth is correct here.
