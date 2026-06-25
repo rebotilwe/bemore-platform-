@@ -1,0 +1,6 @@
+Add this after "const router = Router();" in src/routes/index.js:
+
+router.use((req, res, next) => {
+  console.log(`🔥 INDEX ROUTER: ${req.method} ${req.originalUrl} | url: ${req.url}`);
+  next();
+});
