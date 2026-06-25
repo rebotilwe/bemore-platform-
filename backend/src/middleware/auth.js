@@ -16,7 +16,8 @@ const PUBLIC_PATHS = [
 
 export default function auth(req, res, next) {
   const url = req.originalUrl || req.url;
-  console.log(`🔒 AUTH CALLED: ${req.method} ${url} | paths[0]="${PUBLIC_PATHS[0]}"`);
+  console.log(`🔐 AUTH CHECK: ${req.method} ${url}`);
+  console.log(`🔐 Does it start with /api/applications/upload-document? ${url.startsWith('/api/applications/upload-document')}`);
 
   const isPublic = PUBLIC_PATHS.some(p => url.startsWith(p)) ||
                    url.match(/^\/api\/applications\/[^/]+\/attachment\/[^/]+\/signed$/);
