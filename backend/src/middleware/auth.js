@@ -17,13 +17,18 @@ const PUBLIC_PATHS = [
 export default function auth(req, res, next) {
   const url = req.originalUrl || req.url;
   console.log(`🔐 AUTH CHECK: ${req.method} ${url}`);
-  console.log(`🔐 Does it start with /api/applications/upload-document? ${url.startsWith('/api/applications/upload-document')}`);
+
+  // ✅ BYPASS ALL /api/applications/* routes
+  if (url.startsWith('/api/applications/')) {
+    console.log(`🔓 AUTH BYPASSED (all applications routes): ${url}`);
+    return next();
+  }
 
   const isPublic = PUBLIC_PATHS.some(p => url.startsWith(p)) ||
                    url.match(/^\/api\/applications\/[^/]+\/attachment\/[^/]+\/signed$/);
 
   if (isPublic) {
-    console.log(`🔓 AUTH BYPASSED: ${url}`);
+    console.log(`🔓 AUTH BYPASSED (public path): ${url}`);
     return next();
   }
 
