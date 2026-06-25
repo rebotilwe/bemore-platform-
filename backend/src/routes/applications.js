@@ -81,4 +81,8 @@ router.delete('/:refNumber/attachment/:storedAs', adminLimiter, auth, deleteAtta
 router.get('/:id', adminLimiter, auth, getOne);
 router.patch('/:id', adminLimiter, auth, update);
 
+router.post('/lookup', publicApplicationLimiter, lookupStatus);
+router.post('/data-export', publicApplicationLimiter, exportMyData);
+router.post('/data-delete', publicApplicationLimiter, deleteMyData);
+
 export default router;
