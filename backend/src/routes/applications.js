@@ -7,7 +7,7 @@ import { APPLICATION_STATUSES } from '../constants/enums.js';
 import {
   submit, list, getOne, update, stats, exportCsv, bulkUpdateStatus, sendReminders,
   uploadCv, uploadDocument, downloadAttachment, deleteAttachment, downloadSignedAttachment,
-  bulkAssignDepartment, getRoutingStats,
+  bulkAssignDepartment, getRoutingStats, lookupStatus, exportMyData, deleteMyData,
 } from '../controllers/applicationController.js';
 import { singleCvUploadMiddleware, multiUploadMiddleware } from '../services/uploadService.js';
 

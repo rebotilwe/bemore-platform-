@@ -669,3 +669,72 @@ export async function getRoutingStats(req, res, next) {
     next(err);
   }
 }
+// ── Public: Status lookup ──
+export async function lookupStatus(req, res, next) {
+  try {
+    const { refNumber, email } = req.body;
+    if (!refNumber || !email) {
+      return res.status(400).json({ success: false, message: 'refNumber and email required' });
+    }
+    const app = await Application.findOne({
+      refNumber: refNumber.toUpperCase(),
+      'personal.email': email.toLowerCase(),
+    }).lean();
+    if (!app) {
+      return res.status(404).json({ success: false, message: 'No application found. Please check your reference number and email.' });
+    }
+    return res.json({
+      success: true,
+      data: {
+        refNumber: app.refNumber,
+        firstName: app.personal.firstName,
+        userType: app.userType,
+        status: app.status,
+        tags: app.tags,
+        summitAccess: app.dealRoom?.summitAccess || false,
+        allocatedProjects: app.allocatedProjects || [],
+        submittedAt: app.submittedAt,
+        updatedAt: app.updatedAt,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ── Public: POPIA data export ──
+export async function exportMyData(req, res, next) {
+  try {
+    const { refNumber, email } = req.body;
+    const app = await Application.findOne({
+      refNumber: refNumber?.toUpperCase(),
+      'personal.email': email?.toLowerCase(),
+    }).lean();
+    if (!app) {
+      return res.status(404).json({ success: false, message: 'No application found' });
+    }
+    return res.json({ success: true, data: app });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ── Public: POPIA data delete ──
+export async function deleteMyData(req, res, next) {
+  try {
+    const { refNumber, email, confirm } = req.body;
+    if (confirm !== 'DELETE') {
+      return res.status(400).json({ success: false, message: 'Must confirm deletion with "DELETE"' });
+    }
+    const result = await Application.deleteOne({
+      refNumber: refNumber?.toUpperCase(),
+      'personal.email': email?.toLowerCase(),
+    });
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ success: false, message: 'No application found' });
+    }
+    return res.json({ success: true, message: 'Your data has been permanently deleted' });
+  } catch (err) {
+    next(err);
+  }
+}
