@@ -14,9 +14,6 @@ import { singleCvUploadMiddleware, multiUploadMiddleware } from '../services/upl
 const router = Router();
 
 router.use((req, res, next) => {
-  console.log(`🚨 APP ROUTER: ${req.method} ${req.originalUrl} | url: ${req.url}`);
-  next();
-});
 
 // ──────────────────────────────────────────────────────────────
 // PUBLIC ROUTES — NO AUTH, NO CSRF

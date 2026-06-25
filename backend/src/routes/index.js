@@ -14,9 +14,6 @@ import EmailLog from '../models/EmailLog.js';
 const router = Router();
 
 router.use((req, res, next) => {
-  console.log(`🔥 INDEX ROUTER: ${req.method} ${req.originalUrl} | url: ${req.url}`);
-  next();
-});
 
 router.use('/health', healthRouter);
 router.use('/auth', authRouter);
