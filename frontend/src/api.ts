@@ -198,7 +198,10 @@ export const api = {
     return { success: true, data: { refNumber } };
   },
 
-  /** Upload a CV/single file to POST /api/applications/upload */
+  /**
+   * Upload a CV/single file to POST /api/applications/upload
+   * PUBLIC endpoint — NO Authorization header
+   */
   async uploadAttachment(
     file: File,
   ): Promise<ApiResponse<{ filename: string; storedAs: string; size: number; mimeType: string }>> {
@@ -217,11 +220,10 @@ export const api = {
     const fd = new FormData();
     fd.append('file', file);
 
+    // ✅ NO Authorization header — public endpoint
     const headers: Record<string, string> = {};
     const csrfToken = getCsrfToken();
     if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
-    const authToken = getAuthToken();
-    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
 
     try {
       const res = await fetchWithTimeout(`${API_URL}/applications/upload`, {
@@ -257,10 +259,6 @@ export const api = {
    * POST /api/applications/upload-document — public, no auth required.
    * Returns { file: { field, filename, storedAs, size, mimeType, expiryDate } }
    */
-  /**
-   * Upload a document for multi-document fields (professionals).
-   * POST /api/applications/upload-document — public, no auth required.
-   */
   async uploadDocument(
     file: File,
     field: string,
@@ -283,8 +281,9 @@ export const api = {
     fd.append('file', file);
     fd.append('field', field);
 
-    // Only CSRF — NO Authorization header for public uploads
- const headers: Record<string, string> = {};
+    // ✅ NO Authorization header — public endpoint
+    // Only CSRF token for security
+    const headers: Record<string, string> = {};
     const csrfToken = getCsrfToken();
     if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
 
