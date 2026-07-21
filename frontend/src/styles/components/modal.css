@@ -135,6 +135,53 @@
   border-bottom: none;
 }
 
+/* ── Project Allocation (Built Environment Professionals) ── */
+.workload-summary-row {
+  margin: var(--sp-2) 0 var(--sp-3);
+}
+
+.workload-badge {
+  padding: 3px 10px;
+  border-radius: var(--r-full);
+  font-size: var(--fs-overline);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.workload-badge.workload-available {
+  background: rgba(76,184,122,0.15);
+  color: var(--green);
+}
+
+.workload-badge.workload-full {
+  background: rgba(201,76,76,0.15);
+  color: var(--red);
+}
+
+.workload-project-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+
+.workload-project-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+  border: 1px solid rgba(249,245,238,0.06);
+  border-radius: var(--r-sm);
+}
+
+.btn-action-sm {
+  padding: 4px var(--sp-2);
+  font-size: 11px;
+}
+
 .detail-key {
   width: 130px;
   flex-shrink: 0;

@@ -147,6 +147,49 @@ function renderAttachments(app: Application): string {
   return `${sectionLabel('Attachments')}<div class="detail-attachments">${items}</div>`;
 }
 
+function renderWorkloadSection(app: Application): string {
+  const workload = (app as Application & { workload?: { activeProjects?: number; maxProjects?: number } }).workload;
+  const active = workload?.activeProjects || 0;
+  const max = workload?.maxProjects || 5;
+  const atCapacity = active >= max;
+  const allocated = (app as Application & { allocatedProjects?: string[] }).allocatedProjects ?? [];
+  const isOnboarded = ['invited', 'funded'].includes(app.status);
+
+  const capacityCls = atCapacity ? 'workload-badge workload-full' : 'workload-badge workload-available';
+  const capacityBadge = `<span class="${capacityCls}">${active} / ${max} projects</span>`;
+
+  const notOnboardedNote = !isOnboarded
+    ? `<p class="detail-empty">Professional must be Onboarded before projects can be assigned.</p>`
+    : '';
+
+  const projectRows = allocated.length
+    ? allocated.map((p) => `
+        <div class="workload-project-row" data-project-id="${esc(p)}">
+          <span class="tag-badge">${esc(p)}</span>
+          <button class="btn-action btn-action-sm workload-complete-btn" data-project-id="${esc(p)}">Mark Complete</button>
+        </div>`).join('')
+    : '<p class="detail-empty">No projects allocated yet.</p>';
+
+  const assignRow = isOnboarded && !atCapacity
+    ? `<div class="modal-action-row">
+        <div class="modal-action-group" style="flex:1">
+          <label class="modal-action-lbl" for="workload-project-input">Assign New Project</label>
+          <input type="text" class="modal-action-select" id="workload-project-input" placeholder="Project ID or name" />
+        </div>
+        <button class="btn-action" id="workload-assign-btn">Assign Project</button>
+      </div>`
+    : atCapacity ? '<p class="detail-empty">At capacity — complete a project before assigning another.</p>' : '';
+
+  return `
+    <div id="workload-section">
+      ${sectionLabel('Project Allocation')}
+      <div class="workload-summary-row">${capacityBadge}</div>
+      ${notOnboardedNote}
+      <div class="workload-project-list">${projectRows}</div>
+      ${assignRow}
+    </div>`;
+}
+
 export function renderAppDetail(app: Application): string {
   const name = `${app.personal?.firstName ?? ''} ${app.personal?.surname ?? ''}`.trim() || 'Unknown';
   const typeLbl = (CATEGORY_LABELS as Record<string, string>)[app.userType] || app.userType;
@@ -273,11 +316,7 @@ export function renderAppDetail(app: Application): string {
 
         ${renderAttachments(app)}
 
-        ${app.userType === 'professional' ? `
-        ${sectionLabel('Allocated Projects')}
-        ${(app as Application & { allocatedProjects?: string[] }).allocatedProjects?.length
-          ? `<div class="detail-tags-wrap">${((app as Application & { allocatedProjects?: string[] }).allocatedProjects ?? []).map((p) => `<span class="tag-badge">${esc(p)}</span>`).join(' ')}</div>`
-          : '<p class="detail-empty">No projects allocated yet.</p>'}` : ''}
+        ${app.userType === 'professional' ? renderWorkloadSection(app) : ''}
 
         ${sectionLabel('Consent')}
         ${(() => {
@@ -407,6 +446,7 @@ export function openModal(html: string, app?: Application, onUpdate?: (updated: 
         }
         toast(`Status updated to ${(STATUS_LABELS as Record<string, string>)[newStatus]}`);
         if (onUpdate) onUpdate(res.data);
+        refreshWorkloadSection(res.data);
       } else {
         toast('Failed to update status');
       }
@@ -478,5 +518,66 @@ export function openModal(html: string, app?: Application, onUpdate?: (updated: 
       btn.disabled = false;
       btn.textContent = 'Save Notes';
     });
+
+    // ── Project allocation (Built Environment Professionals only) ──
+    if (app.userType === 'professional') {
+      wireWorkloadHandlers(app, onUpdate);
+    }
   }
+}
+
+/** Re-renders just the Project Allocation section in place after a status/allocation change. */
+function refreshWorkloadSection(app: Application, onUpdate?: (updated: Application) => void): void {
+  if (app.userType !== 'professional') return;
+  const section = document.getElementById('workload-section');
+  if (!section) return;
+  section.outerHTML = renderWorkloadSection(app);
+  wireWorkloadHandlers(app, onUpdate);
+}
+
+/** Wires the Assign Project / Mark Complete buttons for the Project Allocation section. */
+function wireWorkloadHandlers(app: Application, onUpdate?: (updated: Application) => void): void {
+  const assignBtn = document.getElementById('workload-assign-btn') as HTMLButtonElement | null;
+  const input = document.getElementById('workload-project-input') as HTMLInputElement | null;
+
+  assignBtn?.addEventListener('click', async () => {
+    const projectId = input?.value.trim();
+    if (!projectId) {
+      toast('Enter a project ID or name first');
+      return;
+    }
+    assignBtn.disabled = true;
+    assignBtn.textContent = 'Assigning...';
+    const res = await api.assignProject(app._id, projectId);
+    if (res.success && res.data) {
+      Object.assign(app, res.data);
+      toast(`Project "${projectId}" assigned`);
+      if (onUpdate) onUpdate(res.data);
+      refreshWorkloadSection(res.data, onUpdate);
+    } else {
+      toast(res.message || 'Failed to assign project');
+      assignBtn.disabled = false;
+      assignBtn.textContent = 'Assign Project';
+    }
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('.workload-complete-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const projectId = btn.dataset.projectId;
+      if (!projectId) return;
+      btn.disabled = true;
+      btn.textContent = 'Completing...';
+      const res = await api.completeProject(app._id, projectId);
+      if (res.success && res.data) {
+        Object.assign(app, res.data);
+        toast(`Project "${projectId}" marked complete`);
+        if (onUpdate) onUpdate(res.data);
+        refreshWorkloadSection(res.data, onUpdate);
+      } else {
+        toast(res.message || 'Failed to complete project');
+        btn.disabled = false;
+        btn.textContent = 'Mark Complete';
+      }
+    });
+  });
 }

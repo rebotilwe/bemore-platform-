@@ -64,6 +64,9 @@ export interface Application {
   followUp?: FollowUp;
   adminNotes?: string;
   attachments?: AttachmentRecord[];
+  /** Project refs assigned to this applicant. Populated for Built Environment
+   *  Professionals via the project allocation endpoints. */
+  allocatedProjects?: string[];
   /** POPIA audit trail captured at submission. Optional for compatibility
    *  with applications submitted before 2026-05-11. */
   consent?: { tc?: boolean; popia?: boolean; capturedAt?: string };
@@ -117,6 +120,7 @@ export interface UpdatePayload {
   classification?: Classification;
   followUp?: Partial<FollowUp>;
   adminNotes?: string;
+  allocatedProjects?: string[];
   // NEW: Routing updates
   routing?: {
     department?: 'pormat_sales' | 'pormat_management' | 'muma_consulting' | 'unassigned';
