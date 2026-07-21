@@ -1,22 +1,17 @@
 /**
- * Upload service — multipart parsing, filename sanitisation, disk persistence.
+ * Upload service — multipart parsing, filename sanitisation, Supabase Storage persistence.
  *
- * Spec: 2026-05-11 onboarding flow update §8.1.
- *
- * Storage layout: ${UPLOAD_DIR}/{document_type}/{uuid}.{ext}
- * UPLOAD_DIR defaults to ./uploads (relative to backend cwd) for local dev.
- * Railway production sets UPLOAD_DIR=/app/uploads (persistent volume mount).
+ * Storage layout (Supabase bucket, private): {cv|documents}/{uuid}.{ext}
+ * Files are held in memory only long enough to validate + upload — never
+ * written to local disk (Render's free tier has no persistent disk, so
+ * anything written locally is lost on every restart/redeploy).
  */
 import multer from 'multer';
 import path from 'node:path';
-import fs from 'node:fs';
-import fsp from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import logger from '../utils/logger.js';
+import { uploadObject, objectStat, deleteObject, fetchObjectBuffer } from './supabaseStorage.js';
 
-export const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
-export const CV_DIR = path.join(UPLOAD_DIR, 'cv');
-export const DOCS_DIR = path.join(UPLOAD_DIR, 'documents');
 export const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB
 
 // Common allowed MIME types across all document types
@@ -95,29 +90,13 @@ export const DOCUMENT_TYPES = {
 };
 
 /**
- * Get the subdirectory for a document field.
- * cv → ./uploads/cv/
- * everything else → ./uploads/documents/
+ * Build the Supabase object path/key for a stored file.
+ * cv → documents live under "cv/", everything else under "documents/".
  */
-export function getDocumentDir(field) {
-  if (field === 'cv') return CV_DIR;
-  return DOCS_DIR;
+export function buildObjectPath(field, storedAs) {
+  const folder = field === 'cv' ? 'cv' : 'documents';
+  return `${folder}/${storedAs}`;
 }
-
-/**
- * Ensure all upload directories exist.
- */
-export function ensureUploadDirs() {
-  try {
-    fs.mkdirSync(CV_DIR, { recursive: true, mode: 0o755 });
-    fs.mkdirSync(DOCS_DIR, { recursive: true, mode: 0o755 });
-  } catch (err) {
-    logger.warn('Failed to create upload dirs', { error: err.message });
-  }
-}
-
-// Initialise directories on module load.
-ensureUploadDirs();
 
 /**
  * Sanitise an original filename supplied by the browser.
@@ -177,22 +156,9 @@ export function validateDocument(field, file) {
   return { valid: true };
 }
 
-// ── Multer config ──────────────────────────────────────────────────────────────
+// ── Multer config — memory storage (buffer only, no disk writes) ──────────────
 
-const storage = multer.diskStorage({
-  destination(_req, file, cb) {
-    const dir = getDocumentDir(file.fieldname);
-    try {
-      fs.mkdirSync(dir, { recursive: true, mode: 0o755 });
-    } catch (err) {
-      return cb(err);
-    }
-    cb(null, dir);
-  },
-  filename(_req, file, cb) {
-    cb(null, buildStoredName(file.originalname, file.mimetype));
-  },
-});
+const storage = multer.memoryStorage();
 
 function fileFilter(_req, file, cb) {
   if (!ALLOWED_MIME_TYPES.has(file.mimetype)) {
@@ -247,7 +213,8 @@ export function multiUploadMiddleware(req, res, next) {
 export const singleCvUploadMiddleware = multiUploadMiddleware;
 
 /**
- * Post-upload finalisation: validate + chmod each uploaded file.
+ * Post-upload finalisation: validate, then upload the in-memory buffer to
+ * Supabase Storage (private bucket).
  */
 export async function finaliseUploads(files) {
   const results = [];
@@ -258,28 +225,31 @@ export async function finaliseUploads(files) {
     const docType = DOCUMENT_TYPES[field];
 
     if (!docType) {
-      await fsp.unlink(file.path).catch(() => {});
       results.push({ field, filename: sanitizeFilename(file.originalname), size: file.size, mimeType: file.mimetype, valid: false, error: 'Unknown document type' });
       continue;
     }
 
     const validation = validateDocument(field, file);
     if (!validation.valid) {
-      await fsp.unlink(file.path).catch(() => {});
       results.push({ field, filename: sanitizeFilename(file.originalname), size: file.size, mimeType: file.mimetype, valid: false, error: validation.error });
       continue;
     }
 
+    const storedAs = buildStoredName(file.originalname, file.mimetype);
+    const objectPath = buildObjectPath(field, storedAs);
+
     try {
-      await fsp.chmod(file.path, 0o644);
+      await uploadObject(objectPath, file.buffer, file.mimetype);
     } catch (err) {
-      logger.warn('chmod 0644 failed on upload', { path: file.path, error: err.message });
+      logger.error('Supabase upload failed', { field, storedAs, error: err.message });
+      results.push({ field, filename: sanitizeFilename(file.originalname), size: file.size, mimeType: file.mimetype, valid: false, error: 'Failed to persist file to storage' });
+      continue;
     }
 
     results.push({
       field,
-      filename: sanitizeFilename(file.originalname) || file.filename,
-      storedAs: file.filename,
+      filename: sanitizeFilename(file.originalname) || storedAs,
+      storedAs,
       size: file.size,
       mimeType: file.mimetype,
       valid: true,
@@ -297,66 +267,45 @@ export async function finaliseUpload(file) {
   const results = await finaliseUploads([file]);
   const result = results[0] || null;
   if (result && !result.storedAs) {
-    result.storedAs = result.filename || file.filename;
+    result.storedAs = result.filename;
   }
   return result;
 }
 
-// ── File path / stat helpers ───────────────────────────────────────────────────
+// ── File existence / delete / read helpers (Supabase-backed) ──────────────────
 
 /**
- * Resolve the absolute disk path for a stored file.
- * Returns null if storedAs looks like a path traversal attempt.
- */
-export function getFilePath(storedAs, field = 'cv') {
-  if (
-    typeof storedAs !== 'string' ||
-    storedAs.includes('/') ||
-    storedAs.includes('\\') ||
-    storedAs.includes('..')
-  ) {
-    return null;
-  }
-  return path.join(getDocumentDir(field), storedAs);
-}
-
-/**
- * Return existence + size for a stored file, looking in the correct
- * subdirectory for the given field.
+ * Return existence for a stored file (field-aware — checks the correct
+ * cv/ or documents/ prefix in the bucket).
  */
 export async function getFileStat(storedAs, field = 'cv') {
-  const p = getFilePath(storedAs, field);
-  if (!p) return { exists: false, path: null, size: 0 };
-  try {
-    const s = await fsp.stat(p);
-    return { exists: true, path: p, size: s.size };
-  } catch {
-    return { exists: false, path: p, size: 0 };
-  }
+  const objectPath = buildObjectPath(field, storedAs);
+  const stat = await objectStat(objectPath);
+  return { exists: stat.exists, path: objectPath, size: stat.size };
 }
 
 /**
- * Get file stats from the correct directory for a given field type.
- * Used by applicationService.resolveAttachments instead of cvStat.
+ * Get file stats — alias used by applicationService.resolveAttachments.
  */
 export async function getDocumentStat(storedAs, field) {
   return getFileStat(storedAs, field);
 }
 
 /**
- * Delete a stored file. Returns true on success, false if missing/error.
+ * Delete a stored file from Supabase Storage. Returns true on success.
  */
 export async function deleteFile(storedAs, field = 'cv') {
-  const p = getFilePath(storedAs, field);
-  if (!p) return false;
-  try {
-    await fsp.unlink(p);
-    return true;
-  } catch (err) {
-    if (err.code === 'ENOENT') return false;
-    logger.error('Failed to delete file', { storedAs, field, error: err.message });
-    return false;
-  }
+  const objectPath = buildObjectPath(field, storedAs);
+  return deleteObject(objectPath);
+}
+
+/**
+ * Fetch the raw bytes of a stored file (used by the download endpoints to
+ * proxy the file through our own API rather than exposing the Supabase URL).
+ */
+export async function readFileBuffer(storedAs, field = 'cv') {
+  const objectPath = buildObjectPath(field, storedAs);
+  return fetchObjectBuffer(objectPath);
 }
 
 /**
@@ -376,16 +325,12 @@ export function mimeFromStoredName(storedAs) {
   return mimeMap[ext] || 'application/octet-stream';
 }
 
-// ── Legacy exports (backward compatibility) ───────────────────────────────────
+// ── Legacy exports (backward compatibility — now field-aware where it matters) ─
 
-export async function cvStat(storedAs) {
-  return getFileStat(storedAs, 'cv');
+export async function cvStat(storedAs, field = 'cv') {
+  return getFileStat(storedAs, field);
 }
 
-export async function deleteCvFile(storedAs) {
-  return deleteFile(storedAs, 'cv');
-}
-
-export function cvPath(storedAs) {
-  return getFilePath(storedAs, 'cv');
+export async function deleteCvFile(storedAs, field = 'cv') {
+  return deleteFile(storedAs, field);
 }

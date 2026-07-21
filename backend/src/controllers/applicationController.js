@@ -11,9 +11,8 @@ import {
 } from '../utils/mailer.js';
 import { redactEmail, redactPhone } from '../utils/redactPII.js';
 import logger from '../utils/logger.js';
-import { finaliseUpload, finaliseUploads, cvPath, cvStat, deleteCvFile } from '../services/uploadService.js';
+import { finaliseUpload, finaliseUploads, cvStat, deleteCvFile, readFileBuffer } from '../services/uploadService.js';
 import { verifySignedLink } from '../utils/signedLinks.js';
-import fs from 'node:fs';
 import {
   isProfessionalAtCapacity,
   assignProjectToProfessional,
@@ -482,22 +481,22 @@ async function loadAppAndAttachment(refNumber, storedAs) {
   if (!app) return { error: { status: 404, code: 'APPLICATION_NOT_FOUND', message: 'Application not found' } };
   const att = findAttachment(app, storedAs);
   if (!att) return { error: { status: 404, code: 'ATTACHMENT_NOT_FOUND', message: 'Attachment not found' } };
-  const stat = await cvStat(storedAs);
-  if (!stat.exists) return { app, att, error: { status: 410, code: 'FILE_MISSING_ON_DISK', message: 'File no longer exists on disk' } };
-  return { app, att, path: stat.path };
+  const stat = await cvStat(storedAs, att.field);
+  if (!stat.exists) return { app, att, error: { status: 410, code: 'FILE_MISSING', message: 'File no longer exists in storage' } };
+  return { app, att };
 }
 
-function streamFile(res, absPath, originalFilename, mimeType) {
+async function sendAttachment(res, storedAs, field, originalFilename, mimeType) {
   const safeName = String(originalFilename || 'attachment').replace(/"/g, '');
+  const buffer = await readFileBuffer(storedAs, field);
+  if (!buffer) {
+    logger.error('Attachment fetch from storage failed', { storedAs, field });
+    if (!res.headersSent) res.status(502).json({ success: false, message: 'Failed to retrieve file from storage' });
+    return;
+  }
   res.setHeader('Content-Type', mimeType || 'application/octet-stream');
   res.setHeader('Content-Disposition', `attachment; filename="${safeName}"`);
-  const stream = fs.createReadStream(absPath);
-  stream.on('error', (err) => {
-    logger.error('Attachment stream error', { error: err.message, path: absPath });
-    if (!res.headersSent) res.status(500).end();
-    else res.destroy(err);
-  });
-  stream.pipe(res);
+  res.end(buffer);
 }
 
 export async function downloadAttachment(req, res, next) {
@@ -507,7 +506,7 @@ export async function downloadAttachment(req, res, next) {
     if (result.error) {
       return res.status(result.error.status).json({ success: false, code: result.error.code, message: result.error.message });
     }
-    const { app, att, path: absPath } = result;
+    const { app, att } = result;
 
     await AdminAuditLog.create({
       admin: { id: req.admin?.id, email: redactEmail(req.admin?.email) },
@@ -520,7 +519,7 @@ export async function downloadAttachment(req, res, next) {
       status: 'success',
     }).catch((err) => logger.error('Audit log failed', { error: err.message }));
 
-    streamFile(res, absPath, att.filename, att.mimeType);
+    await sendAttachment(res, att.storedAs, att.field, att.filename, att.mimeType);
   } catch (err) {
     next(err);
   }
@@ -538,9 +537,9 @@ export async function deleteAttachment(req, res, next) {
       return res.status(404).json({ success: false, code: 'ATTACHMENT_NOT_FOUND', message: 'Attachment not found' });
     }
 
-    const diskOk = await deleteCvFile(storedAs);
+    const diskOk = await deleteCvFile(storedAs, att.field);
     if (!diskOk) {
-      logger.warn('Attachment disk delete failed (orphan left for sweeper)', { refNumber, storedAs });
+      logger.warn('Attachment storage delete failed (orphan left for sweeper)', { refNumber, storedAs });
     }
 
     app.attachments = app.attachments.filter((a) => a.storedAs !== storedAs);
@@ -617,6 +616,8 @@ export async function verifyAttachment(req, res, next) {
 
 export async function downloadSignedAttachment(req, res, next) {
   try {
+    const { refNumber, storedAs } = req.params;
+    const { expires, sig } = req.query;
 
     const verdict = verifySignedLink(refNumber, storedAs, expires, sig);
     if (!verdict.ok) {
@@ -628,7 +629,7 @@ export async function downloadSignedAttachment(req, res, next) {
     if (result.error) {
       return res.status(result.error.status).json({ success: false, code: result.error.code, message: result.error.message });
     }
-    const { app, att, path: absPath } = result;
+    const { app, att } = result;
 
     await AdminAuditLog.create({
       admin: { id: null, email: 'self-service' },
@@ -641,7 +642,7 @@ export async function downloadSignedAttachment(req, res, next) {
       status: 'success',
     }).catch((err) => logger.error('Audit log failed', { error: err.message }));
 
-    streamFile(res, absPath, att.filename, att.mimeType);
+    await sendAttachment(res, att.storedAs, att.field, att.filename, att.mimeType);
   } catch (err) {
     next(err);
   }

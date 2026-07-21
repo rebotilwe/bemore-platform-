@@ -107,26 +107,35 @@ function buildQuery(params: FilterParams): string {
 
 export const api = {
   async checkBackend(): Promise<boolean> {
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 5000);
-      const r = await fetch(`${API_URL}/health?_t=${Date.now()}`, {
-        signal: controller.signal,
-        cache: 'no-store',
-        headers: { 'Accept': 'application/json' },
-      });
-      clearTimeout(timer);
-      if (!r.ok) return false;
-      const text = await r.text();
+    // Render's free tier can cold-start in 30-60s after being idle. A single
+    // 5s check was routinely timing out and silently dropping real users into
+    // localStorage demo mode with no submissions ever reaching the backend.
+    // Two attempts, 20s each, give a cold instance a real chance to wake up.
+    const attempt = async (timeoutMs: number): Promise<boolean> => {
       try {
-        const data = JSON.parse(text);
-        return data.success === true;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        const r = await fetch(`${API_URL}/health?_t=${Date.now()}`, {
+          signal: controller.signal,
+          cache: 'no-store',
+          headers: { 'Accept': 'application/json' },
+        });
+        clearTimeout(timer);
+        if (!r.ok) return false;
+        const text = await r.text();
+        try {
+          const data = JSON.parse(text);
+          return data.success === true;
+        } catch {
+          return false;
+        }
       } catch {
         return false;
       }
-    } catch {
-      return false;
-    }
+    };
+
+    if (await attempt(20000)) return true;
+    return attempt(20000);
   },
 
   // ── Auth ──

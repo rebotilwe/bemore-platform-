@@ -9,6 +9,7 @@ import { ErrorBoundary } from './components/error-boundary.ts';
 
 import { tracker } from './services/tracker.ts';
 import { initInstallPrompt } from './components/install-prompt.ts';
+import { showDemoModeBanner } from './components/demo-mode-banner.ts';
 
 inject();
 injectSpeedInsights();
@@ -26,6 +27,7 @@ async function init(): Promise<void> {
   const online = await api.checkBackend();
   store.set('useApi', online);
   if (import.meta.env.DEV) console.log(online ? '✓ Connected to backend API' : '◌ Running in localStorage demo mode');
+  if (!online) showDemoModeBanner();
 
   // Always verify session with backend on page load (cookie is auto-sent)
   // This handles both returning users and fresh page loads
