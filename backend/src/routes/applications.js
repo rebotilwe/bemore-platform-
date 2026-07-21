@@ -7,7 +7,7 @@ import {
   submit, list, getOne, update, stats, exportCsv, bulkUpdateStatus, sendReminders,
   uploadCv, uploadDocument, downloadAttachment, deleteAttachment, downloadSignedAttachment,
   bulkAssignDepartment, getRoutingStats, lookupStatus, exportMyData, deleteMyData,
-  professionalsWorkload, assignProject, completeProject,
+  professionalsWorkload, assignProject, completeProject, verifyAttachment,
 } from '../controllers/applicationController.js';
 import { singleCvUploadMiddleware, multiUploadMiddleware } from '../services/uploadService.js';
 
@@ -66,6 +66,11 @@ router.get('/', adminLimiter, auth, list);
 
 router.get('/:refNumber/attachment/:storedAs', adminLimiter, auth, downloadAttachment);
 router.delete('/:refNumber/attachment/:storedAs', adminLimiter, auth, deleteAttachment);
+router.post('/:refNumber/attachment/:storedAs/verify', adminLimiter, auth,
+  body('approved').isBoolean().withMessage('approved must be a boolean'),
+  validate,
+  verifyAttachment,
+);
 
 router.post('/:id/assign-project', adminLimiter, auth,
   body('projectId').notEmpty().withMessage('projectId is required'),
