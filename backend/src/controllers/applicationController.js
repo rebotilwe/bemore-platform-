@@ -468,148 +468,6 @@ export async function bulkAssignDepartment(req, res, next) {
   }
 }
 
-// ── Admin: Professional workload summary ──
-// Returns capacity/availability across all Built Environment Professionals,
-// plus a per-professional breakdown for the admin workload view.
-export async function professionalsWorkload(req, res, next) {
-  try {
-    const professionals = await Application.find({ userType: 'professional' }).lean();
-
-    const summary = getProfessionalWorkloadSummary(professionals);
-
-    const breakdown = professionals.map((app) => ({
-      id: app._id,
-      refNumber: app.refNumber,
-      name: `${app.personal?.firstName ?? ''} ${app.personal?.surname ?? ''}`.trim(),
-      status: app.status,
-      activeProjects: app.workload?.activeProjects || 0,
-      maxProjects: app.workload?.maxProjects || 5,
-      atCapacity: (app.workload?.activeProjects || 0) >= (app.workload?.maxProjects || 5),
-      allocatedProjects: app.allocatedProjects || [],
-    }));
-
-    track('professionals.workload_viewed', 'admin', {
-      actor: { type: 'admin', id: req.admin?.id },
-      req,
-    });
-
-    res.json({ success: true, data: { summary, professionals: breakdown } });
-  } catch (err) {
-    next(err);
-  }
-}
-
-// ── Admin: Assign a project to a Built Environment Professional ──
-// Only allowed once the professional has been onboarded to the panel
-// (status must be 'invited'/"Onboarded" or 'funded'). Enforces the 5-project cap.
-export async function assignProject(req, res, next) {
-  try {
-    const { projectId } = req.body;
-    if (!projectId || typeof projectId !== 'string') {
-      return res.status(400).json({ success: false, message: 'projectId is required' });
-    }
-
-    const app = await Application.findById(req.params.id);
-    if (!app) return res.status(404).json({ success: false, message: 'Not found' });
-
-    if (app.userType !== 'professional') {
-      return res.status(400).json({ success: false, message: 'Application is not a Built Environment Professional' });
-    }
-
-    if (!['invited', 'funded'].includes(app.status)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Professional must be onboarded to the panel before a project can be assigned',
-      });
-    }
-
-    if (isProfessionalAtCapacity(app)) {
-      return res.status(400).json({
-        success: false,
-        message: `Professional is at capacity (${app.workload?.maxProjects || 5} projects max)`,
-      });
-    }
-
-    if ((app.allocatedProjects || []).includes(projectId)) {
-      return res.status(400).json({ success: false, message: 'Project already assigned to this professional' });
-    }
-
-    assignProjectToProfessional(app, projectId);
-    await app.save();
-
-    track('professional.project_assigned', 'admin', {
-      actor: { type: 'admin', id: req.admin?.id },
-      target: { model: 'Application', id: app._id.toString(), refNumber: app.refNumber },
-      meta: { projectId, activeProjects: app.workload.activeProjects },
-      req,
-    });
-
-    await AdminAuditLog.create({
-      admin: { id: req.admin?.id, email: redactEmail(req.admin?.email) },
-      action: 'professional_project_assigned',
-      target: { model: 'Application', id: app._id, refNumber: app.refNumber },
-      details: { projectId, activeProjects: app.workload.activeProjects },
-      ip: req.ip,
-      userAgent: req.get('user-agent'),
-      requestId: req.requestId,
-      status: 'success',
-    }).catch(err => logger.error('Audit log failed', { error: err.message }));
-
-    res.json({ success: true, data: app });
-  } catch (err) {
-    if (err.status === 400) return res.status(400).json({ success: false, message: err.message });
-    next(err);
-  }
-}
-
-// ── Admin: Mark a project complete for a Built Environment Professional ──
-// Frees up one of their 5 slots.
-export async function completeProject(req, res, next) {
-  try {
-    const { projectId } = req.body;
-    if (!projectId || typeof projectId !== 'string') {
-      return res.status(400).json({ success: false, message: 'projectId is required' });
-    }
-
-    const app = await Application.findById(req.params.id);
-    if (!app) return res.status(404).json({ success: false, message: 'Not found' });
-
-    if (app.userType !== 'professional') {
-      return res.status(400).json({ success: false, message: 'Application is not a Built Environment Professional' });
-    }
-
-    if (!(app.allocatedProjects || []).includes(projectId)) {
-      return res.status(400).json({ success: false, message: 'Project is not currently assigned to this professional' });
-    }
-
-    completeProjectForProfessional(app, projectId);
-    await app.save();
-
-    track('professional.project_completed', 'admin', {
-      actor: { type: 'admin', id: req.admin?.id },
-      target: { model: 'Application', id: app._id.toString(), refNumber: app.refNumber },
-      meta: { projectId, activeProjects: app.workload.activeProjects },
-      req,
-    });
-
-    await AdminAuditLog.create({
-      admin: { id: req.admin?.id, email: redactEmail(req.admin?.email) },
-      action: 'professional_project_completed',
-      target: { model: 'Application', id: app._id, refNumber: app.refNumber },
-      details: { projectId, activeProjects: app.workload.activeProjects },
-      ip: req.ip,
-      userAgent: req.get('user-agent'),
-      requestId: req.requestId,
-      status: 'success',
-    }).catch(err => logger.error('Audit log failed', { error: err.message }));
-
-    res.json({ success: true, data: app });
-  } catch (err) {
-    if (err.status === 400) return res.status(400).json({ success: false, message: err.message });
-    next(err);
-  }
-}
-
 // ──────────────────────────────────────────────────────────────
 // Attachments — spec §8.3, §8.4, §8.5
 // ──────────────────────────────────────────────────────────────
@@ -705,10 +563,60 @@ export async function deleteAttachment(req, res, next) {
   }
 }
 
-export async function downloadSignedAttachment(req, res, next) {
+export async function verifyAttachment(req, res, next) {
   try {
     const { refNumber, storedAs } = req.params;
-    const { expires, sig } = req.query;
+    const { approved, rejectionReason } = req.body;
+
+    if (typeof approved !== 'boolean') {
+      return res.status(400).json({ success: false, message: 'approved (boolean) is required' });
+    }
+    if (approved === false && !rejectionReason) {
+      return res.status(400).json({ success: false, message: 'rejectionReason is required when rejecting a document' });
+    }
+
+    const app = await Application.findOne({ refNumber });
+    if (!app) {
+      return res.status(404).json({ success: false, code: 'APPLICATION_NOT_FOUND', message: 'Application not found' });
+    }
+    const att = findAttachment(app, storedAs);
+    if (!att) {
+      return res.status(404).json({ success: false, code: 'ATTACHMENT_NOT_FOUND', message: 'Attachment not found' });
+    }
+
+    att.isVerified = approved;
+    att.verifiedAt = new Date();
+    att.verifiedBy = redactEmail(req.admin?.email) || 'unknown';
+    att.rejectionReason = approved ? undefined : rejectionReason;
+    await app.save();
+
+    track('attachment.verified', 'admin', {
+      actor: { type: 'admin', id: req.admin?.id },
+      target: { model: 'Application', id: app._id.toString(), refNumber: app.refNumber },
+      meta: { storedAs, field: att.field, approved },
+      req,
+    });
+
+    await AdminAuditLog.create({
+      admin: { id: req.admin?.id, email: redactEmail(req.admin?.email) },
+      action: approved ? 'attachment.verify' : 'attachment.reject',
+      target: { model: 'Application', id: app._id, refNumber: app.refNumber },
+      details: { storedAs, field: att.field, filename: att.filename, rejectionReason: att.rejectionReason },
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      requestId: req.requestId,
+      status: 'success',
+    }).catch((err) => logger.error('Audit log failed', { error: err.message }));
+
+    res.json({ success: true, data: app });
+  } catch (err) {
+    next(err);
+  }
+}
+
+
+export async function downloadSignedAttachment(req, res, next) {
+  try {
 
     const verdict = verifySignedLink(refNumber, storedAs, expires, sig);
     if (!verdict.ok) {
@@ -863,6 +771,148 @@ export async function exportMyData(req, res, next) {
     }
     return res.json({ success: true, data: app });
   } catch (err) {
+    next(err);
+  }
+}
+
+// ── Admin: Professional workload summary ──
+// Returns capacity/availability across all Built Environment Professionals,
+// plus a per-professional breakdown for the admin workload view.
+export async function professionalsWorkload(req, res, next) {
+  try {
+    const professionals = await Application.find({ userType: 'professional' }).lean();
+
+    const summary = getProfessionalWorkloadSummary(professionals);
+
+    const breakdown = professionals.map((app) => ({
+      id: app._id,
+      refNumber: app.refNumber,
+      name: `${app.personal?.firstName ?? ''} ${app.personal?.surname ?? ''}`.trim(),
+      status: app.status,
+      activeProjects: app.workload?.activeProjects || 0,
+      maxProjects: app.workload?.maxProjects || 5,
+      atCapacity: (app.workload?.activeProjects || 0) >= (app.workload?.maxProjects || 5),
+      allocatedProjects: app.allocatedProjects || [],
+    }));
+
+    track('professionals.workload_viewed', 'admin', {
+      actor: { type: 'admin', id: req.admin?.id },
+      req,
+    });
+
+    res.json({ success: true, data: { summary, professionals: breakdown } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ── Admin: Assign a project to a Built Environment Professional ──
+// Only allowed once the professional has been onboarded to the panel
+// (status must be 'invited'/"Onboarded" or 'funded'). Enforces the 5-project cap.
+export async function assignProject(req, res, next) {
+  try {
+    const { projectId } = req.body;
+    if (!projectId || typeof projectId !== 'string') {
+      return res.status(400).json({ success: false, message: 'projectId is required' });
+    }
+
+    const app = await Application.findById(req.params.id);
+    if (!app) return res.status(404).json({ success: false, message: 'Not found' });
+
+    if (app.userType !== 'professional') {
+      return res.status(400).json({ success: false, message: 'Application is not a Built Environment Professional' });
+    }
+
+    if (!['invited', 'funded'].includes(app.status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Professional must be onboarded to the panel before a project can be assigned',
+      });
+    }
+
+    if (isProfessionalAtCapacity(app)) {
+      return res.status(400).json({
+        success: false,
+        message: `Professional is at capacity (${app.workload?.maxProjects || 5} projects max)`,
+      });
+    }
+
+    if ((app.allocatedProjects || []).includes(projectId)) {
+      return res.status(400).json({ success: false, message: 'Project already assigned to this professional' });
+    }
+
+    assignProjectToProfessional(app, projectId);
+    await app.save();
+
+    track('professional.project_assigned', 'admin', {
+      actor: { type: 'admin', id: req.admin?.id },
+      target: { model: 'Application', id: app._id.toString(), refNumber: app.refNumber },
+      meta: { projectId, activeProjects: app.workload.activeProjects },
+      req,
+    });
+
+    await AdminAuditLog.create({
+      admin: { id: req.admin?.id, email: redactEmail(req.admin?.email) },
+      action: 'professional_project_assigned',
+      target: { model: 'Application', id: app._id, refNumber: app.refNumber },
+      details: { projectId, activeProjects: app.workload.activeProjects },
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      requestId: req.requestId,
+      status: 'success',
+    }).catch(err => logger.error('Audit log failed', { error: err.message }));
+
+    res.json({ success: true, data: app });
+  } catch (err) {
+    if (err.status === 400) return res.status(400).json({ success: false, message: err.message });
+    next(err);
+  }
+}
+
+// ── Admin: Mark a project complete for a Built Environment Professional ──
+// Frees up one of their 5 slots.
+export async function completeProject(req, res, next) {
+  try {
+    const { projectId } = req.body;
+    if (!projectId || typeof projectId !== 'string') {
+      return res.status(400).json({ success: false, message: 'projectId is required' });
+    }
+
+    const app = await Application.findById(req.params.id);
+    if (!app) return res.status(404).json({ success: false, message: 'Not found' });
+
+    if (app.userType !== 'professional') {
+      return res.status(400).json({ success: false, message: 'Application is not a Built Environment Professional' });
+    }
+
+    if (!(app.allocatedProjects || []).includes(projectId)) {
+      return res.status(400).json({ success: false, message: 'Project is not currently assigned to this professional' });
+    }
+
+    completeProjectForProfessional(app, projectId);
+    await app.save();
+
+    track('professional.project_completed', 'admin', {
+      actor: { type: 'admin', id: req.admin?.id },
+      target: { model: 'Application', id: app._id.toString(), refNumber: app.refNumber },
+      meta: { projectId, activeProjects: app.workload.activeProjects },
+      req,
+    });
+
+    await AdminAuditLog.create({
+      admin: { id: req.admin?.id, email: redactEmail(req.admin?.email) },
+      action: 'professional_project_completed',
+      target: { model: 'Application', id: app._id, refNumber: app.refNumber },
+      details: { projectId, activeProjects: app.workload.activeProjects },
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      requestId: req.requestId,
+      status: 'success',
+    }).catch(err => logger.error('Audit log failed', { error: err.message }));
+
+    res.json({ success: true, data: app });
+  } catch (err) {
+    if (err.status === 400) return res.status(400).json({ success: false, message: err.message });
     next(err);
   }
 }

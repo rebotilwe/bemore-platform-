@@ -182,6 +182,84 @@
   font-size: 11px;
 }
 
+/* ── Compliance Documents (Built Environment Professionals) ── */
+.compliance-doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+
+.compliance-doc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px solid rgba(249,245,238,0.06);
+  border-radius: var(--r-sm);
+  flex-wrap: wrap;
+}
+
+.compliance-doc-row.compliance-doc-missing {
+  opacity: 0.6;
+}
+
+.compliance-doc-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.compliance-doc-label {
+  font-size: var(--fs-label-md);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--steel-light);
+}
+
+.compliance-doc-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.doc-status {
+  display: inline-block;
+  width: fit-content;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.doc-status-valid {
+  background: rgba(76,184,122,0.15);
+  color: var(--green);
+}
+
+.doc-status-expiring {
+  background: rgba(201,168,76,0.18);
+  color: var(--gold);
+}
+
+.doc-status-expired {
+  background: rgba(201,76,76,0.15);
+  color: var(--red);
+}
+
+.doc-status-unknown {
+  background: rgba(138,138,154,0.15);
+  color: var(--steel-light);
+}
+
+.doc-verify-badge {
+  font-size: 11px;
+  color: var(--steel-light);
+}
+
 .detail-key {
   width: 130px;
   flex-shrink: 0;

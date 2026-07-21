@@ -1,78 +1,90 @@
-import express from 'express';
+import { Router } from 'express';
+import { body } from 'express-validator';
+import validate from '../middleware/validate.js';
+import auth from '../middleware/auth.js';
+import { publicApplicationLimiter, adminLimiter } from '../config/rateLimit.js';
 import {
-  uploadCv,
-  uploadDocument,
-  submit,
-  list,
-  getOne,
-  update,
-  stats,
-  exportCsv,
-  bulkUpdateStatus,
-  bulkAssignDepartment,
-  sendReminders,
-  downloadAttachment,
-  deleteAttachment,
-  downloadSignedAttachment,
-  getRoutingStats,
+  submit, list, getOne, update, stats, exportCsv, bulkUpdateStatus, sendReminders,
+  uploadCv, uploadDocument, downloadAttachment, deleteAttachment, downloadSignedAttachment,
+  bulkAssignDepartment, getRoutingStats, lookupStatus, exportMyData, deleteMyData,
+  professionalsWorkload, assignProject, completeProject, verifyAttachment,
 } from '../controllers/applicationController.js';
-import { authGuard } from '../middleware/auth.js';
-import { rateLimiters } from '../config/rateLimiters.js';
 import { singleCvUploadMiddleware, multiUploadMiddleware } from '../services/uploadService.js';
 
-const router = express.Router();
+const router = Router();
 
-// ──────────────────────────────────────────────────────────────
-// PUBLIC ROUTES (No auth required)
-// ──────────────────────────────────────────────────────────────
+// ── PUBLIC ROUTES — no auth, no CSRF ──────────────────────────
 
-// Submit application
-router.post('/', rateLimiters.public, submit);
+router.post('/', publicApplicationLimiter, submit);
 
-// Upload CV (single file)
-router.post('/upload', rateLimiters.public, singleCvUploadMiddleware, uploadCv);
+router.post('/upload', publicApplicationLimiter, singleCvUploadMiddleware, uploadCv);
 
-// Upload multi-document (for professionals) - NEW
-router.post('/upload-document', rateLimiters.public, multiUploadMiddleware, uploadDocument);
+router.post('/upload-document', publicApplicationLimiter, multiUploadMiddleware, uploadDocument);
 
-// Download signed attachment (self-service)
-router.get('/:refNumber/attachment/:storedAs/signed', rateLimiters.public, downloadSignedAttachment);
+router.post('/lookup',
+  publicApplicationLimiter,
+  body('refNumber').notEmpty().withMessage('Reference number required'),
+  body('email').isEmail().withMessage('Valid email required'),
+  validate,
+  lookupStatus,
+);
 
-// ──────────────────────────────────────────────────────────────
-// ADMIN ROUTES (Auth required)
-// ──────────────────────────────────────────────────────────────
+router.post('/data-export',
+  publicApplicationLimiter,
+  body('refNumber').notEmpty(),
+  body('email').isEmail(),
+  validate,
+  exportMyData,
+);
 
-// List all applications (with filters, search, pagination)
-router.get('/', authGuard, rateLimiters.admin, list);
+router.post('/data-delete',
+  publicApplicationLimiter,
+  body('refNumber').notEmpty(),
+  body('email').isEmail(),
+  body('confirm').equals('DELETE').withMessage('Must confirm deletion'),
+  validate,
+  deleteMyData,
+);
 
-// Get application statistics (dashboard KPIs)
-router.get('/stats', authGuard, rateLimiters.admin, stats);
+router.get('/:refNumber/attachment/:storedAs/signed',
+  publicApplicationLimiter,
+  downloadSignedAttachment,
+);
 
-// Export all applications to CSV
-router.get('/export/csv', authGuard, rateLimiters.admin, exportCsv);
+// ── ADMIN ROUTES — static paths before wildcards ──────────────
 
-// Get routing statistics - NEW
-router.get('/routing-stats', authGuard, rateLimiters.admin, getRoutingStats);
+router.get('/stats', adminLimiter, auth, stats);
+router.get('/export/csv', adminLimiter, auth, exportCsv);
+router.get('/routing-stats', adminLimiter, auth, getRoutingStats);
+router.get('/professionals/workload', adminLimiter, auth, professionalsWorkload);
 
-// Bulk status update (max 100)
-router.post('/bulk-status', authGuard, rateLimiters.admin, bulkUpdateStatus);
+router.post('/bulk-status', adminLimiter, auth, bulkUpdateStatus);
+router.post('/bulk-department', adminLimiter, auth, bulkAssignDepartment);
+router.post('/send-reminders', adminLimiter, auth, sendReminders);
 
-// Bulk department assignment - NEW (max 100)
-router.post('/bulk-department', authGuard, rateLimiters.admin, bulkAssignDepartment);
+router.get('/', adminLimiter, auth, list);
 
-// Send summit reminders to selected applications (max 100)
-router.post('/send-reminders', authGuard, rateLimiters.admin, sendReminders);
+router.get('/:refNumber/attachment/:storedAs', adminLimiter, auth, downloadAttachment);
+router.delete('/:refNumber/attachment/:storedAs', adminLimiter, auth, deleteAttachment);
+router.post('/:refNumber/attachment/:storedAs/verify', adminLimiter, auth,
+  body('approved').isBoolean().withMessage('approved must be a boolean'),
+  validate,
+  verifyAttachment,
+);
 
-// Get single application by ID
-router.get('/:id', authGuard, rateLimiters.admin, getOne);
+router.post('/:id/assign-project', adminLimiter, auth,
+  body('projectId').notEmpty().withMessage('projectId is required'),
+  validate,
+  assignProject,
+);
+router.post('/:id/complete-project', adminLimiter, auth,
+  body('projectId').notEmpty().withMessage('projectId is required'),
+  validate,
+  completeProject,
+);
 
-// Update single application (status, classification, notes, etc.)
-router.patch('/:id', authGuard, rateLimiters.admin, update);
-
-// Download attachment (admin)
-router.get('/:refNumber/attachment/:storedAs', authGuard, rateLimiters.admin, downloadAttachment);
-
-// Delete attachment (admin)
-router.delete('/:refNumber/attachment/:storedAs', authGuard, rateLimiters.admin, deleteAttachment);
+// /:id LAST — catches anything not matched above
+router.get('/:id', adminLimiter, auth, getOne);
+router.patch('/:id', adminLimiter, auth, update);
 
 export default router;

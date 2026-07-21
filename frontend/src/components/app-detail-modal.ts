@@ -121,6 +121,24 @@ function renderActivityBadge(tags: readonly string[]): string {
   return '';
 }
 
+const COMPLIANCE_DOC_LABELS: Record<string, string> = {
+  company_registration: 'Company Registration Certificate',
+  tax_clearance: 'Tax Clearance Certificate',
+  bee_certificate: 'BEE Certificate / Affidavit',
+  professional_indemnity: 'Professional Indemnity Insurance',
+};
+const COMPLIANCE_DOC_ORDER = ['company_registration', 'tax_clearance', 'bee_certificate', 'professional_indemnity'];
+
+function docExpiryStatus(expiryDate?: string): { label: string; cls: string } {
+  if (!expiryDate) return { label: 'No expiry set', cls: 'doc-status-unknown' };
+  const now = Date.now();
+  const exp = new Date(expiryDate).getTime();
+  const daysLeft = Math.floor((exp - now) / (1000 * 60 * 60 * 24));
+  if (daysLeft < 0) return { label: 'Expired', cls: 'doc-status-expired' };
+  if (daysLeft <= 30) return { label: `Expiring — ${daysLeft}d left`, cls: 'doc-status-expiring' };
+  return { label: 'Valid', cls: 'doc-status-valid' };
+}
+
 function renderAttachments(app: Application): string {
   const atts = app.attachments ?? [];
   if (app.userType !== 'professional' || !atts.length) return '';
@@ -145,6 +163,65 @@ function renderAttachments(app: Application): string {
     .join('');
   if (!items) return '';
   return `${sectionLabel('Attachments')}<div class="detail-attachments">${items}</div>`;
+}
+
+/** Compliance documents — Company Registration, Tax Clearance, BEE Certificate,
+ *  Professional Indemnity — with expiry status and admin verify/reject controls.
+ *  Built Environment Professionals only. */
+function renderComplianceDocuments(app: Application): string {
+  if (app.userType !== 'professional') return '';
+  const atts = app.attachments ?? [];
+
+  const rows = COMPLIANCE_DOC_ORDER.map((field) => {
+    const a = atts.find((x) => x && x.field === field);
+    const label = COMPLIANCE_DOC_LABELS[field];
+
+    if (!a || !a.storedAs) {
+      return `
+        <div class="compliance-doc-row compliance-doc-missing">
+          <div class="compliance-doc-meta">
+            <span class="compliance-doc-label">${esc(label)}</span>
+            <span class="doc-status doc-status-unknown">Not submitted</span>
+          </div>
+        </div>`;
+    }
+
+    const status = docExpiryStatus(a.expiryDate);
+    const sizeKb = a.size ? `${(a.size / 1024).toFixed(0)} KB` : '';
+    const expiryTxt = a.expiryDate ? `Expires ${formatDate(a.expiryDate)}` : '';
+
+    let verifyBadge = '';
+    if (a.isVerified === true) {
+      verifyBadge = `<span class="doc-verify-badge doc-verified">✅ Verified${a.verifiedAt ? ` — ${formatDate(a.verifiedAt)}` : ''}</span>`;
+    } else if (a.isVerified === false && a.rejectionReason) {
+      verifyBadge = `<span class="doc-verify-badge doc-rejected">❌ Rejected — ${esc(a.rejectionReason)}</span>`;
+    } else {
+      verifyBadge = `<span class="doc-verify-badge doc-pending">⏳ Pending review</span>`;
+    }
+
+    return `
+      <div class="compliance-doc-row" data-field="${esc(field)}" data-stored="${esc(a.storedAs)}">
+        <div class="compliance-doc-meta">
+          <span class="compliance-doc-label">${esc(label)}</span>
+          <span class="attachment-filename">${esc(a.filename)}</span>
+          <span class="attachment-size">${esc(sizeKb)}${expiryTxt ? ` · ${esc(expiryTxt)}` : ''}</span>
+          <span class="doc-status ${status.cls}">${esc(status.label)}</span>
+          ${verifyBadge}
+        </div>
+        <div class="compliance-doc-actions">
+          <button class="btn-action btn-action-sm attachment-download"
+                  data-ref="${esc(app.refNumber)}"
+                  data-stored="${esc(a.storedAs)}"
+                  data-filename="${esc(a.filename)}">
+            Download
+          </button>
+          <button class="btn-action btn-action-sm doc-verify-btn" data-field="${esc(field)}" data-stored="${esc(a.storedAs)}">Verify</button>
+          <button class="btn-action btn-action-sm btn-danger-ghost doc-reject-btn" data-field="${esc(field)}" data-stored="${esc(a.storedAs)}">Reject</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  return `<div id="compliance-doc-section">${sectionLabel('Compliance Documents')}<div class="compliance-doc-list">${rows}</div></div>`;
 }
 
 function renderWorkloadSection(app: Application): string {
@@ -316,6 +393,8 @@ export function renderAppDetail(app: Application): string {
 
         ${renderAttachments(app)}
 
+        ${renderComplianceDocuments(app)}
+
         ${app.userType === 'professional' ? renderWorkloadSection(app) : ''}
 
         ${sectionLabel('Consent')}
@@ -386,6 +465,23 @@ async function downloadAttachment(refNumber: string, storedAs: string, filename:
   }
 }
 
+function wireAttachmentDownloadButtons(root: ParentNode): void {
+  root.querySelectorAll<HTMLButtonElement>('.attachment-download').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const ref = btn.dataset.ref || '';
+      const stored = btn.dataset.stored || '';
+      const filename = btn.dataset.filename || 'cv';
+      if (!ref || !stored) return;
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = 'Downloading...';
+      await downloadAttachment(ref, stored, filename);
+      btn.disabled = false;
+      btn.textContent = original;
+    });
+  });
+}
+
 export function openModal(html: string, app?: Application, onUpdate?: (updated: Application) => void): void {
   const overlay = document.getElementById('modal-overlay');
   if (!overlay) return;
@@ -410,20 +506,7 @@ export function openModal(html: string, app?: Application, onUpdate?: (updated: 
   document.addEventListener('keydown', escHandler);
 
   // ── Attachment downloads ──
-  overlay.querySelectorAll<HTMLButtonElement>('.attachment-download').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const ref = btn.dataset.ref || '';
-      const stored = btn.dataset.stored || '';
-      const filename = btn.dataset.filename || 'cv';
-      if (!ref || !stored) return;
-      btn.disabled = true;
-      const original = btn.textContent;
-      btn.textContent = 'Downloading...';
-      await downloadAttachment(ref, stored, filename);
-      btn.disabled = false;
-      btn.textContent = original;
-    });
-  });
+  wireAttachmentDownloadButtons(overlay);
 
   // ── Status change ──
   if (app) {
@@ -522,6 +605,7 @@ export function openModal(html: string, app?: Application, onUpdate?: (updated: 
     // ── Project allocation (Built Environment Professionals only) ──
     if (app.userType === 'professional') {
       wireWorkloadHandlers(app, onUpdate);
+      wireComplianceDocHandlers(app, onUpdate);
     }
   }
 }
@@ -577,6 +661,62 @@ function wireWorkloadHandlers(app: Application, onUpdate?: (updated: Application
         toast(res.message || 'Failed to complete project');
         btn.disabled = false;
         btn.textContent = 'Mark Complete';
+      }
+    });
+  });
+}
+
+/** Re-renders the Compliance Documents section in place after a verify/reject action. */
+function refreshComplianceDocSection(app: Application, onUpdate?: (updated: Application) => void): void {
+  if (app.userType !== 'professional') return;
+  const section = document.getElementById('compliance-doc-section');
+  if (!section) return;
+  section.outerHTML = renderComplianceDocuments(app);
+  wireComplianceDocHandlers(app, onUpdate);
+  const refreshed = document.getElementById('compliance-doc-section');
+  if (refreshed) wireAttachmentDownloadButtons(refreshed);
+}
+
+/** Wires the Verify / Reject buttons for each compliance document. */
+function wireComplianceDocHandlers(app: Application, onUpdate?: (updated: Application) => void): void {
+  document.querySelectorAll<HTMLButtonElement>('.doc-verify-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const storedAs = btn.dataset.stored;
+      if (!storedAs) return;
+      btn.disabled = true;
+      btn.textContent = 'Verifying...';
+      const res = await api.verifyAttachment(app.refNumber, storedAs, true);
+      if (res.success && res.data) {
+        Object.assign(app, res.data);
+        toast('Document verified');
+        if (onUpdate) onUpdate(res.data);
+        refreshComplianceDocSection(res.data, onUpdate);
+      } else {
+        toast(res.message || 'Failed to verify document');
+        btn.disabled = false;
+        btn.textContent = 'Verify';
+      }
+    });
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('.doc-reject-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const storedAs = btn.dataset.stored;
+      if (!storedAs) return;
+      const reason = window.prompt('Reason for rejecting this document:');
+      if (!reason || !reason.trim()) return;
+      btn.disabled = true;
+      btn.textContent = 'Rejecting...';
+      const res = await api.verifyAttachment(app.refNumber, storedAs, false, reason.trim());
+      if (res.success && res.data) {
+        Object.assign(app, res.data);
+        toast('Document rejected');
+        if (onUpdate) onUpdate(res.data);
+        refreshComplianceDocSection(res.data, onUpdate);
+      } else {
+        toast(res.message || 'Failed to reject document');
+        btn.disabled = false;
+        btn.textContent = 'Reject';
       }
     });
   });

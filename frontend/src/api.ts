@@ -560,6 +560,19 @@ export const api = {
   async updateAdmin(id: string, data: { email?: string; password?: string; name?: string }): Promise<ApiResponse<unknown>> {
     return request('PATCH', `/admins/${id}`, data);
   },
+  // ── Document verification ──
+  async verifyAttachment(
+    refNumber: string,
+    storedAs: string,
+    approved: boolean,
+    rejectionReason?: string,
+  ): Promise<ApiResponse<Application>> {
+    return request('POST', `/applications/${encodeURIComponent(refNumber)}/attachment/${encodeURIComponent(storedAs)}/verify`, {
+      approved,
+      rejectionReason,
+    });
+  },
+
   async deleteAdmin(id: string): Promise<ApiResponse<unknown>> {
     return request('DELETE', `/admins/${id}`);
   },
