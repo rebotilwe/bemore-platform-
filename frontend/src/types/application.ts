@@ -48,6 +48,9 @@ export interface AttachmentRecord extends AttachmentRef {
   uploadedAt?: string;
   expiryDate?: string; // NEW: Document expiry tracking
   isVerified?: boolean; // NEW: Document verification status
+  verifiedAt?: string;
+  verifiedBy?: string;
+  rejectionReason?: string;
 }
 
 export interface Application {
