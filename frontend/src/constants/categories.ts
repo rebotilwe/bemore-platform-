@@ -12,7 +12,7 @@ export const CATEGORIES: CategoryMeta[] = [
   { slug: 'landowner',    icon: '🌍', title: 'Land Owner',                        description: 'You hold the asset. We unlock it — funding partnerships, institutional joint ventures, and development matching.' },
   { slug: 'investor',     icon: '💰', title: 'Investor',                          description: 'Deploy capital into vetted student accommodation developments. Access deal flow, co-investment opportunities, and institutional-grade projects.' },
   { slug: 'student',      icon: '🎓', title: 'Student Accommodation Operator',    description: 'Scale your portfolio with institutional backing from PBSA and funding partners. High-occupancy operators get priority access.' },
-  { slug: 'professional', icon: '📐', title: 'Built Environment Professional',    description: 'Architects, engineers, QS and PMs — find equity partnerships and turnkey development opportunities at scale.' },
+  { slug: 'professional', icon: '📐', title: 'Built Environment Professionals',    description: 'Architects, engineers, QS and PMs — find equity partnerships and turnkey development opportunities at scale.' },
   { slug: 'aspiring',     icon: '🚀', title: 'Aspiring Developer',                description: 'New to property development? Get mentorship, deal preparation support, and exposure to funding institutions through the Catalyst Programme.' },
 ];
 

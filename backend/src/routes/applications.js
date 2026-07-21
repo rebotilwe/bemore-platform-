@@ -7,6 +7,7 @@ import {
   submit, list, getOne, update, stats, exportCsv, bulkUpdateStatus, sendReminders,
   uploadCv, uploadDocument, downloadAttachment, deleteAttachment, downloadSignedAttachment,
   bulkAssignDepartment, getRoutingStats, lookupStatus, exportMyData, deleteMyData,
+  professionalsWorkload, assignProject, completeProject,
 } from '../controllers/applicationController.js';
 import { singleCvUploadMiddleware, multiUploadMiddleware } from '../services/uploadService.js';
 
@@ -55,6 +56,7 @@ router.get('/:refNumber/attachment/:storedAs/signed',
 router.get('/stats', adminLimiter, auth, stats);
 router.get('/export/csv', adminLimiter, auth, exportCsv);
 router.get('/routing-stats', adminLimiter, auth, getRoutingStats);
+router.get('/professionals/workload', adminLimiter, auth, professionalsWorkload);
 
 router.post('/bulk-status', adminLimiter, auth, bulkUpdateStatus);
 router.post('/bulk-department', adminLimiter, auth, bulkAssignDepartment);
@@ -64,6 +66,17 @@ router.get('/', adminLimiter, auth, list);
 
 router.get('/:refNumber/attachment/:storedAs', adminLimiter, auth, downloadAttachment);
 router.delete('/:refNumber/attachment/:storedAs', adminLimiter, auth, deleteAttachment);
+
+router.post('/:id/assign-project', adminLimiter, auth,
+  body('projectId').notEmpty().withMessage('projectId is required'),
+  validate,
+  assignProject,
+);
+router.post('/:id/complete-project', adminLimiter, auth,
+  body('projectId').notEmpty().withMessage('projectId is required'),
+  validate,
+  completeProject,
+);
 
 // /:id LAST — catches anything not matched above
 router.get('/:id', adminLimiter, auth, getOne);
