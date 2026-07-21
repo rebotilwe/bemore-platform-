@@ -374,6 +374,85 @@ export const api = {
     return { success: true, data: app };
   },
 
+  // ── Professional workload / project allocation ──
+  async getProfessionalsWorkload(): Promise<ApiResponse<{
+    summary: { total: number; atCapacity: number; available: number; totalActiveProjects: number; averageWorkload: number };
+    professionals: Array<{
+      id: string; refNumber: string; name: string; status: string;
+      activeProjects: number; maxProjects: number; atCapacity: boolean; allocatedProjects: string[];
+    }>;
+  }>> {
+    if (store.get('useApi')) return request('GET', '/applications/professionals/workload');
+    const apps = localStore.get().filter(a => a.userType === 'professional');
+    const professionals = apps.map(a => ({
+      id: a._id, refNumber: a.refNumber,
+      name: `${a.personal?.firstName ?? ''} ${a.personal?.surname ?? ''}`.trim(),
+      status: a.status,
+      activeProjects: a.workload?.activeProjects || 0,
+      maxProjects: a.workload?.maxProjects || 5,
+      atCapacity: (a.workload?.activeProjects || 0) >= (a.workload?.maxProjects || 5),
+      allocatedProjects: a.allocatedProjects || [],
+    }));
+    const summary = {
+      total: professionals.length,
+      atCapacity: professionals.filter(p => p.atCapacity).length,
+      available: professionals.filter(p => !p.atCapacity).length,
+      totalActiveProjects: professionals.reduce((sum, p) => sum + p.activeProjects, 0),
+      averageWorkload: professionals.length
+        ? Math.round((professionals.reduce((sum, p) => sum + p.activeProjects, 0) / professionals.length) * 10) / 10
+        : 0,
+    };
+    return { success: true, data: { summary, professionals } };
+  },
+
+  async assignProject(id: string, projectId: string): Promise<ApiResponse<Application>> {
+    if (store.get('useApi')) return request('POST', `/applications/${id}/assign-project`, { projectId });
+    const app = localStore.get().find(a => a._id === id);
+    if (!app) return { success: false, message: 'Not found' };
+    if (!['invited', 'funded'].includes(app.status)) {
+      return { success: false, message: 'Professional must be onboarded to the panel before a project can be assigned' };
+    }
+    const workload = app.workload || { activeProjects: 0, maxProjects: 5, projectHistory: [] };
+    if ((workload.activeProjects || 0) >= (workload.maxProjects || 5)) {
+      return { success: false, message: `Professional is at capacity (${workload.maxProjects || 5} projects max)` };
+    }
+    if ((app.allocatedProjects || []).includes(projectId)) {
+      return { success: false, message: 'Project already assigned to this professional' };
+    }
+    const updated: Partial<Application> = {
+      allocatedProjects: [...(app.allocatedProjects || []), projectId],
+      workload: {
+        activeProjects: (workload.activeProjects || 0) + 1,
+        maxProjects: workload.maxProjects || 5,
+        projectHistory: [...(workload.projectHistory || []), { projectId, allocatedAt: new Date().toISOString(), status: 'active' }],
+      },
+    };
+    localStore.update(id, updated);
+    return { success: true, data: localStore.get().find(a => a._id === id) };
+  },
+
+  async completeProject(id: string, projectId: string): Promise<ApiResponse<Application>> {
+    if (store.get('useApi')) return request('POST', `/applications/${id}/complete-project`, { projectId });
+    const app = localStore.get().find(a => a._id === id);
+    if (!app) return { success: false, message: 'Not found' };
+    if (!(app.allocatedProjects || []).includes(projectId)) {
+      return { success: false, message: 'Project is not currently assigned to this professional' };
+    }
+    const workload = app.workload || { activeProjects: 0, maxProjects: 5, projectHistory: [] };
+    const updated: Partial<Application> = {
+      allocatedProjects: (app.allocatedProjects || []).filter(p => p !== projectId),
+      workload: {
+        activeProjects: Math.max(0, (workload.activeProjects || 0) - 1),
+        maxProjects: workload.maxProjects || 5,
+        projectHistory: (workload.projectHistory || []).map(p =>
+          p.projectId === projectId ? { ...p, status: 'completed' as const, completedAt: new Date().toISOString() } : p
+        ),
+      },
+    };
+    localStore.update(id, updated);
+    return { success: true, data: localStore.get().find(a => a._id === id) };
+  },
+
   async getStats(): Promise<ApiResponse<StatsData>> {
     if (store.get('useApi')) return request('GET', '/applications/stats');
     const apps = localStore.get();
